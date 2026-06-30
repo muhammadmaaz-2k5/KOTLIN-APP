@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -41,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomBannerAd
 import com.job2day.nazaarabox.core.AnimeFilters
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
@@ -49,8 +48,6 @@ import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.presentation.shared.FilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
-import com.job2day.nazaarabox.widgets.AnimeGridCard
-import com.job2day.nazaarabox.widgets.BrowseGridCard
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.LoadingCenter
@@ -138,38 +135,64 @@ fun MediaBrowseScreen(
                     val adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
                     val adEnabled = com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled && adUrl.isNotBlank()
                     val cardRows = items.chunked(3)
-                    val gridItems = mutableListOf<Any>()
-                    cardRows.forEachIndexed { rowIndex, rowItems ->
-                        gridItems.addAll(rowItems)
-                        if (adEnabled && rowIndex < cardRows.lastIndex) {
-                            repeat(3) { gridItems.add(Unit) }
-                        }
-                    }
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
+                    var itemIndex = 0
+                    androidx.compose.foundation.lazy.LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        itemsIndexed(gridItems) { index, item ->
-                            if (item is Unit) {
-                                CustomSmallCardAd(
-                                    adUrl = adUrl,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(2f / 3f),
-                                    backgroundColor = AppColors.CardDark,
-                                )
-                            } else if (item is MediaItem) {
-                                val itemIndex = (index / 6) * 3 + (index % 3)
-                                if (itemIndex >= items.size - 4) {
-                                    viewModel.loadMoreIfNeeded(itemIndex)
+                        cardRows.forEachIndexed { rowIndex, rowItems ->
+                            item(key = "row_$rowIndex") {
+                                androidx.compose.foundation.layout.Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    rowItems.forEach { item ->
+                                        androidx.compose.material3.Surface(
+                                            onClick = { navController.navigateToDetail(item) },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = AppColors.CardDark,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .aspectRatio(2f / 3f),
+                                            ) {
+                                                com.job2day.nazaarabox.widgets.CustomImage(
+                                                    imageUrl = item.posterUrl,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                            }
+                                        }
+                                        if (itemIndex >= items.size - 4) {
+                                            viewModel.loadMoreIfNeeded(itemIndex)
+                                        }
+                                        itemIndex++
+                                    }
+                                    if (rowItems.size < 3) {
+                                        repeat(3 - rowItems.size) {
+                                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
                                 }
-                                if (mode == BrowseMode.ANIME) {
-                                    AnimeGridCard(item = item, onClick = { navController.navigateToDetail(item) })
-                                } else {
-                                    BrowseGridCard(item = item, onClick = { navController.navigateToDetail(item) })
+                            }
+                            if (adEnabled && rowIndex < cardRows.lastIndex) {
+                                item(key = "ad_$rowIndex") {
+                                    androidx.compose.foundation.layout.Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        repeat(3) {
+                                            CustomSmallCardAd(
+                                                adUrl = adUrl,
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .aspectRatio(2f / 3f),
+                                                backgroundColor = AppColors.CardDark,
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -177,20 +200,7 @@ fun MediaBrowseScreen(
                 }
             }
         }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                Box(
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomCenter)
-                        .fillMaxWidth()
-                ) {
-                    CustomBannerAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                        alwaysExpanded = true
-                    )
-                }
-            }
-        }
+    }
     }
 
     if (showFilters) {

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,11 +59,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 
@@ -226,6 +228,16 @@ fun SearchScreen(
                 }
                 state.results.isEmpty() -> EmptyState("No results for \"${state.query}\"")
                 else -> Column {
+                    val adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
+                    val adEnabled = com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled && adUrl.isNotBlank()
+                    val listItems = buildList<Any?> {
+                        addAll(state.results)
+                        state.results.forEachIndexed { index, _ ->
+                            if ((index + 1) % 5 == 0 && index < state.results.lastIndex) {
+                                add(Unit)
+                            }
+                        }
+                    }
                     Text(
                         text = "${state.results.size} result${if (state.results.size != 1) "s" else ""} for \"${state.query}\"",
                         color = AppColors.TextMuted,
@@ -236,11 +248,20 @@ fun SearchScreen(
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        items(state.results, key = { "${it.type}_${it.id}" }) { item ->
-                            SearchResultRow(item = item, onClick = {
-                                if (item.type == "person") navController.navigateToActor(item.id)
-                                else navController.navigateToDetail(item)
-                            })
+                        itemsIndexed(listItems) { index, item ->
+                            if (item == Unit && adEnabled) {
+                                CustomNativeAd(
+                                    adUrl = adUrl,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                )
+                            } else if (item is MediaItem) {
+                                SearchResultRow(item = item, onClick = {
+                                    if (item.type == "person") navController.navigateToActor(item.id)
+                                    else navController.navigateToDetail(item)
+                                })
+                            }
                         }
                     }
                 }
