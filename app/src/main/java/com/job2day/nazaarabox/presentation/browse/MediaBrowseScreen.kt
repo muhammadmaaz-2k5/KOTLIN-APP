@@ -131,12 +131,6 @@ fun MediaBrowseScreen(
                 )
             }
 
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomBannerAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                )
-            }
-
             when {
                 loading && items.isEmpty() -> LoadingCenter()
                 items.isEmpty() -> EmptyState("No titles found", modifier = Modifier.fillMaxSize())
