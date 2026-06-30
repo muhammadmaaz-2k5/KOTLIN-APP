@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToActor
@@ -230,6 +231,14 @@ fun SearchScreen(
                 else -> {
                     val adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
                     val adEnabled = com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled && adUrl.isNotBlank()
+                    val listItems = buildList<Any?> {
+                        state.results.forEachIndexed { index, item ->
+                            add(item)
+                            if ((index + 1) % 3 == 0 && index < state.results.lastIndex) {
+                                add(Unit)
+                            }
+                        }
+                    }
                     Text(
                         text = "${state.results.size} result${if (state.results.size != 1) "s" else ""} for \"${state.query}\"",
                         color = AppColors.TextMuted,
@@ -240,20 +249,19 @@ fun SearchScreen(
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        items(state.results.chunked(3)) { chunk ->
-                            chunk.forEach { item ->
-                                SearchResultRow(item = item, onClick = {
-                                    if (item.type == "person") navController.navigateToActor(item.id)
-                                    else navController.navigateToDetail(item)
-                                })
-                            }
-                            if (adEnabled && chunk != state.results.chunked(3).lastOrNull()) {
+                        itemsIndexed(listItems) { index, item ->
+                            if (item == Unit && adEnabled) {
                                 CustomNativeAd(
                                     adUrl = adUrl,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp, horizontal = 4.dp),
                                 )
+                            } else if (item is MediaItem) {
+                                SearchResultRow(item = item, onClick = {
+                                    if (item.type == "person") navController.navigateToActor(item.id)
+                                    else navController.navigateToDetail(item)
+                                })
                             }
                         }
                     }
