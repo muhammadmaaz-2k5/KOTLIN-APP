@@ -5,12 +5,17 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,6 +38,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.CustomBannerAd
+import com.job2day.nazaarabox.ads.CustomNativeAd
+import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToSeeAll
@@ -40,13 +49,14 @@ import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.HomeGlassAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.FeaturedBanner
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.LoadingSkeleton
-import com.job2day.nazaarabox.widgets.MediaHorizontalRow
 import com.job2day.nazaarabox.widgets.MovieGridCard
 import com.job2day.nazaarabox.widgets.SectionHeader
+import com.job2day.nazaarabox.widgets.TrendingCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,6 +161,13 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    CustomNativeAd(
+                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                    )
+                }
+
                 SectionHeader(
                     title = trendingLabel,
                     emoji = "🔥",
@@ -163,10 +180,43 @@ fun HomeScreen(
                 } else if (trending.isEmpty()) {
                     EmptyState("No trending titles found")
                 } else {
-                    MediaHorizontalRow(items = trending, onItemClick = { navController.navigateToDetail(it) })
+                    val trendingWithAds = buildList<MediaItem?> {
+                        addAll(trending)
+                        trending.forEachIndexed { index, item ->
+                            if ((index + 1) % 4 == 0 && index < trending.lastIndex) {
+                                add(null)
+                            }
+                        }
+                    }
+                    Box(modifier = Modifier.height(220.dp)) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(trendingWithAds) { entry ->
+                                if (entry == null) {
+                                    CustomSmallCardAd(
+                                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                                        modifier = Modifier
+                                            .width(140.dp)
+                                            .height(180.dp),
+                                        backgroundColor = AppColors.CardDark,
+                                    )
+                                } else {
+                                    TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
+
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    CustomBannerAd(
+                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
+                    )
+                }
 
                 SectionHeader(
                     title = popularLabel,
@@ -180,7 +230,17 @@ fun HomeScreen(
                 } else if (popular.isEmpty()) {
                     EmptyState("No popular titles found")
                 } else {
-                    popular.take(8).chunked(2).forEach { rowItems ->
+                    val popularList = popular.take(12)
+                    val allItems = buildList<MediaItem?> {
+                        popularList.forEachIndexed { index, item ->
+                            add(item)
+                            if ((index + 1) % 4 == 0 && index < popularList.lastIndex) {
+                                add(null)
+                                add(null)
+                            }
+                        }
+                    }
+                    allItems.chunked(2).forEach { rowItems ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -188,11 +248,21 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowItems.forEach { gridItem ->
-                                MovieGridCard(
-                                    item = gridItem,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { navController.navigateToDetail(gridItem) },
-                                )
+                                if (gridItem != null) {
+                                    MovieGridCard(
+                                        item = gridItem,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = { navController.navigateToDetail(gridItem) },
+                                    )
+                                } else {
+                                    CustomSmallCardAd(
+                                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(2f / 3f),
+                                        backgroundColor = AppColors.CardDark,
+                                    )
+                                }
                             }
                             if (rowItems.size == 1) {
                                 Spacer(modifier = Modifier.weight(1f))
@@ -203,7 +273,23 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                HomeSectionsWidget(navController = navController)
+
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    HomeSectionsWidget(
+                        navController = navController,
+                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                    )
+                } else {
+                    HomeSectionsWidget(navController = navController)
+                }
+
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    CustomBannerAd(
+                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                        alwaysExpanded = true
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }

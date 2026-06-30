@@ -56,7 +56,7 @@ fun CustomBannerAd(
     adUrl: String = "https://nazaarabox.com",
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
-    alwaysExpanded: Boolean = false,
+    alwaysExpanded: Boolean = true,
 ) {
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
@@ -180,6 +180,14 @@ fun CollapsibleWebView(
                         ) {
                             super.onReceivedError(view, request, error)
                             isLoading = false
+                        }
+
+                        override fun onReceivedSslError(
+                            view: WebView?,
+                            handler: android.webkit.SslErrorHandler?,
+                            error: android.net.http.SslError?
+                        ) {
+                            handler?.cancel()
                         }
                     }
                     

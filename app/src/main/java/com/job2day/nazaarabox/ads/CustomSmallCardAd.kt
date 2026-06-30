@@ -1,9 +1,13 @@
 package com.job2day.nazaarabox.ads
 
+import android.util.Log
+import android.view.View
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -30,7 +34,6 @@ fun CustomSmallCardAd(
     adUrl: String = "https://nazaarabox.com",
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
-    width: Int = 120,
 ) {
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
@@ -38,19 +41,53 @@ fun CustomSmallCardAd(
     if (isVisible) {
         Box(
             modifier = modifier
-                .width(width.dp)
-                .height(140.dp)
                 .background(backgroundColor, RoundedCornerShape(12.dp)),
         ) {
             AndroidView(
                 factory = {
                     WebView(context).apply {
-                        settings.javaScriptEnabled = true
-                        webViewClient = WebViewClient()
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            databaseEnabled = true
+                            builtInZoomControls = false
+                            displayZoomControls = false
+                            loadWithOverviewMode = true
+                            useWideViewPort = true
+                            cacheMode = WebSettings.LOAD_DEFAULT
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        }
+                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                Log.d("CustomSmallCardAd", "Page loaded: $url")
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: android.webkit.WebResourceRequest?,
+                                error: android.webkit.WebResourceError?
+                            ) {
+                                super.onReceivedError(view, request, error)
+                                Log.e("CustomSmallCardAd", "Error: ${error?.description} for ${request?.url}")
+                            }
+
+                            override fun onReceivedSslError(
+                                view: WebView?,
+                                handler: android.webkit.SslErrorHandler?,
+                                error: android.net.http.SslError?
+                            ) {
+                                Log.e("CustomSmallCardAd", "SSL Error: $error")
+                                handler?.cancel()
+                            }
+                        }
                         loadUrl(adUrl)
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
             )
             
             IconButton(
