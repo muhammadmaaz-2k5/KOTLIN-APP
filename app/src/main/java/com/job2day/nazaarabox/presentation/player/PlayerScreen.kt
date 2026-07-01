@@ -11,10 +11,12 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -315,6 +317,7 @@ fun PlayerScreen(navController: NavController) {
     } else {
     Scaffold(
         containerColor = Color.Black,
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -614,15 +617,16 @@ private fun PlayerWebView(
 }
 
 private fun loadPlayerContent(webView: WebView, url: String) {
+    val headers = mapOf("Referer" to "https://nazaarabox.com")
     if (PlayerWebHelper.shouldUseHtmlWrapper(url)) {
         webView.loadDataWithBaseURL(
-            url,
+            "https://nazaarabox.com",
             PlayerWebHelper.buildHtmlContent(url),
             "text/html",
             "UTF-8",
             null,
         )
     } else {
-        webView.loadUrl(url)
+        webView.loadUrl(url, headers)
     }
 }

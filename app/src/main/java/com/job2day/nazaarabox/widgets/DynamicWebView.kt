@@ -320,6 +320,7 @@ fun DynamicWebView(
                             }
                         }
 
+                        val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
                         var finalUrl = url
                         if (com.job2day.nazaarabox.BuildConfig.DEBUG) {
                             finalUrl = finalUrl
@@ -329,7 +330,7 @@ fun DynamicWebView(
                                 .replace(Regex("https?://127\\.0\\.0\\.1"), "http://10.0.2.2")
                                 .replace(Regex("https?://localhost"), "http://10.0.2.2")
                         }
-                        wv.loadUrl(finalUrl)
+                        wv.loadUrl(finalUrl, adHeaders)
                         webViewRef.value = wv
                     }
                 },

@@ -100,6 +100,7 @@ fun HomeGlassAppBar(
                 if (isBlurred) AppColors.BackgroundDark.copy(alpha = 0.75f)
                 else Color.Transparent,
             )
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Row(

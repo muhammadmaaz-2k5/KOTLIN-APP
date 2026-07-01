@@ -3,6 +3,7 @@ package com.job2day.nazaarabox.presentation.season
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,6 +70,7 @@ fun SeasonScreen(navController: NavController) {
 
     Scaffold(
         containerColor = AppColors.BackgroundDark,
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text(seasonName.ifBlank { "Season $seasonNumber" }, fontWeight = FontWeight.Bold) },

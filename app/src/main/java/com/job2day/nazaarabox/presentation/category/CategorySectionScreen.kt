@@ -3,6 +3,7 @@ package com.job2day.nazaarabox.presentation.category
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -107,6 +108,7 @@ fun CategorySectionScreen(navController: NavController) {
 
     Scaffold(
         containerColor = AppColors.BackgroundDark,
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("${section.emoji} ${section.title}", fontWeight = FontWeight.Bold) },

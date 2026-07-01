@@ -418,6 +418,7 @@ private fun YouTubePlayerWebView(
     modifier: Modifier = Modifier,
 ) {
     val embedUrl = "https://www.youtube.com/embed/$videoKey?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1"
+    val headers = mapOf("Referer" to "https://nazaarabox.com")
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -430,19 +431,19 @@ private fun YouTubePlayerWebView(
                     domStorageEnabled = true
                     mediaPlaybackRequiresUserGesture = false
                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    userAgentString = settings.userAgentString.replace("; wv", "")
+                    userAgentString = userAgentString.replace("; wv", "")
                 }
                 setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
-                loadUrl(embedUrl)
+                loadUrl(embedUrl, headers)
             }
         },
         update = { webView ->
             val target = "https://www.youtube.com/embed/$videoKey?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1"
             if (webView.tag != videoKey) {
                 webView.tag = videoKey
-                webView.loadUrl(target)
+                webView.loadUrl(target, headers)
             }
         },
         modifier = modifier,

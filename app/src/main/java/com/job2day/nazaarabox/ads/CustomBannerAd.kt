@@ -151,6 +151,8 @@ fun CollapsibleWebView(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     
+    val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
+    
     Box(modifier = modifier) {
         AndroidView(
             factory = {
@@ -191,7 +193,7 @@ fun CollapsibleWebView(
                         }
                     }
                     
-                    loadUrl(url)
+                    loadUrl(url, adHeaders)
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -356,6 +358,7 @@ fun InterstitialWebView(
 ) {
     val context = LocalContext.current
     val currentOnPageLoaded by rememberUpdatedState(onPageLoaded)
+    val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
     
     AndroidView(
         factory = {
@@ -388,7 +391,7 @@ fun InterstitialWebView(
                     }
                 }
                 
-                loadUrl(url)
+                loadUrl(url, adHeaders)
             }
         },
         modifier = modifier

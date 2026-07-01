@@ -85,7 +85,7 @@ fun CustomSmallCardAd(
                                 handler?.cancel()
                             }
                         }
-                        loadUrl(adUrl)
+                        loadUrl(adUrl, mapOf("Referer" to "https://nazaarabox.com"))
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
