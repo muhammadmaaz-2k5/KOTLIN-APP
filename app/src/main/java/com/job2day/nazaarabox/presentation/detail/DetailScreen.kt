@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToPlayer
@@ -43,6 +45,7 @@ import com.job2day.nazaarabox.navigation.navigateToSeason
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.DetailOverlayAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.AllTrailersSheet
 import com.job2day.nazaarabox.widgets.DetailBottomActionBar
@@ -112,6 +115,7 @@ fun DetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .background(AppColors.BackgroundDark),
     ) {
         LazyColumn(
@@ -163,6 +167,14 @@ fun DetailScreen(
                         color = AppColors.Primary,
                     )
                 }
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    item {
+                        CustomNativeAd(
+                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
+                }
             }
 
             if (state.seasons.isNotEmpty()) {
@@ -208,6 +220,14 @@ fun DetailScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
+                }
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    item {
+                        CustomNativeAd(
+                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
 
@@ -282,6 +302,14 @@ fun DetailScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(100.dp))
+                }
+                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    item {
+                        CustomNativeAd(
+                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             } else {
                 item { Spacer(modifier = Modifier.height(100.dp)) }

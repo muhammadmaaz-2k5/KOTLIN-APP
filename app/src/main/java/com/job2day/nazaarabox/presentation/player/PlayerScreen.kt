@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -63,10 +64,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.VideoServer
 import com.job2day.nazaarabox.services.MediaRepository
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.utils.PlayerWebHelper
 import com.job2day.nazaarabox.widgets.LoadingCenter
@@ -102,6 +106,8 @@ fun PlayerScreen(navController: NavController) {
     var showServerSheet by remember { mutableStateOf(false) }
     var showRotateNudge by remember { mutableStateOf(false) }
     var forceLandscape by remember { mutableStateOf(false) }
+    var showFullscreenAd by remember { mutableStateOf(false) }
+    var fullscreenAdCountdown by remember { mutableIntStateOf(15) }
     val repository = remember { MediaRepository() }
 
     val isFullscreen = isLandscape || forceLandscape
@@ -113,6 +119,24 @@ fun PlayerScreen(navController: NavController) {
         if (!isFullscreen) showRotateNudge = true
         delay(4000)
         showRotateNudge = false
+    }
+
+    LaunchedEffect(isFullscreen) {
+        showFullscreenAd = false
+        fullscreenAdCountdown = 15
+        if (isFullscreen && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+            while (isFullscreen) {
+                delay(240_000)
+                if (!isFullscreen) break
+                showFullscreenAd = true
+                fullscreenAdCountdown = 15
+                while (fullscreenAdCountdown > 0 && isFullscreen) {
+                    delay(1000)
+                    fullscreenAdCountdown--
+                }
+                showFullscreenAd = false
+            }
+        }
     }
 
     DisposableEffect(Unit) {
@@ -258,6 +282,35 @@ fun PlayerScreen(navController: NavController) {
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
+            if (showFullscreenAd && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 120.dp)
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.Black.copy(alpha = 0.92f))
+                        .padding(14.dp),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Ad closes in $fullscreenAdCountdown",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                        CustomNativeAd(
+                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
         }
     } else {
     Scaffold(
@@ -355,6 +408,7 @@ fun PlayerScreen(navController: NavController) {
                         if (item.runtime.isNotBlank()) PlayerMetaBadge(item.runtime)
                     }
                     Spacer(modifier = Modifier.height(18.dp))
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("🌐", fontSize = 14.sp)
                         Text(
@@ -411,6 +465,28 @@ fun PlayerScreen(navController: NavController) {
                             repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        repeat(2) { rowIndex ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                repeat(3) {
+                                    CustomSmallCardAd(
+                                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(2f / 3f),
+                                        backgroundColor = AppColors.CardDark,
+                                    )
+                                }
+                            }
+                            if (rowIndex < 1) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
+                        }
                     }
                 }
             }

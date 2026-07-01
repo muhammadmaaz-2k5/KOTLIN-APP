@@ -3,6 +3,7 @@ package com.job2day.nazaarabox.widgets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,7 +56,7 @@ fun AppBottomBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().navigationBarsPadding(),
         color = AppColors.SurfaceDark.copy(alpha = 0.92f),
         tonalElevation = 0.dp,
     ) {

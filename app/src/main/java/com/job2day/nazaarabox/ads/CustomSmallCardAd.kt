@@ -34,6 +34,7 @@ fun CustomSmallCardAd(
     adUrl: String = "https://nazaarabox.com",
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
+    showClose: Boolean = true,
 ) {
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
@@ -90,15 +91,17 @@ fun CustomSmallCardAd(
                 modifier = Modifier.fillMaxSize(),
             )
             
-            IconButton(
-                onClick = { isVisible = false },
-                modifier = Modifier.align(Alignment.TopEnd),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_close),
-                    contentDescription = "Close Ad",
-                    tint = AppColors.TextMuted,
-                )
+            if (showClose) {
+                IconButton(
+                    onClick = { isVisible = false },
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = "Close Ad",
+                        tint = AppColors.TextMuted,
+                    )
+                }
             }
         }
     }

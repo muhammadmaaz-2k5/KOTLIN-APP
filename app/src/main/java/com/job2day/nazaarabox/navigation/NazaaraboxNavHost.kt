@@ -1,5 +1,6 @@
 package com.job2day.nazaarabox.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ fun NazaaraboxNavHost() {
 
     Scaffold(
         containerColor = AppColors.BackgroundDark,
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
                 AppBottomBar(
