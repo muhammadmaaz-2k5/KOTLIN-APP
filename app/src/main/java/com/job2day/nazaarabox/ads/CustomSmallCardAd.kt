@@ -32,13 +32,12 @@ import androidx.compose.material3.IconButton
 
 @Composable
 fun CustomSmallCardAd(
-    adUrl: String = "https://nazaarabox.com",
+    adUrl: String = AdManager.webviewAdUrl,
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
     showClose: Boolean = true,
 ) {
-    // Respect global ads toggle
-    if (!AdManager.isAdsEnabled) {
+    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) {
         return
     }
 
@@ -91,7 +90,7 @@ fun CustomSmallCardAd(
                                 handler?.cancel()
                             }
                         }
-                        loadUrl(adUrl, mapOf("Referer" to "https://nazaarabox.com"))
+                        loadUrl(adUrl, mapOf("Referer" to AdManager.webviewAdUrl))
                     }
                 },
                 modifier = Modifier.fillMaxSize(),

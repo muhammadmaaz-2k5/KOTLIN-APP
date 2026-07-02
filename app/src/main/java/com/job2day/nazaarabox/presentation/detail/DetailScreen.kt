@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToPlayer
@@ -45,7 +44,6 @@ import com.job2day.nazaarabox.navigation.navigateToSeason
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.DetailOverlayAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.AllTrailersSheet
 import com.job2day.nazaarabox.widgets.DetailBottomActionBar
@@ -149,33 +147,25 @@ fun DetailScreen(
             }
 
             val overview = item.overview
-            if (overview.isNotBlank()) {
-                item { SectionHeader(title = "Overview", emoji = "📖") }
-                item {
-                    androidx.compose.material3.Text(
-                        text = overview,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = AppColors.TextPrimary,
-                        maxLines = if (state.isOverviewExpanded) Int.MAX_VALUE else 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    androidx.compose.material3.Text(
-                        text = if (state.isOverviewExpanded) "Show less" else "See More",
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .clickable { viewModel.toggleOverview() },
-                        color = AppColors.Primary,
-                    )
-                }
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                if (overview.isNotBlank()) {
+                    item { SectionHeader(title = "Overview", emoji = "📖") }
                     item {
-                        CustomNativeAd(
-                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        androidx.compose.material3.Text(
+                            text = overview,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = AppColors.TextPrimary,
+                            maxLines = if (state.isOverviewExpanded) Int.MAX_VALUE else 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        androidx.compose.material3.Text(
+                            text = if (state.isOverviewExpanded) "Show less" else "See More",
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clickable { viewModel.toggleOverview() },
+                            color = AppColors.Primary,
                         )
                     }
                 }
-            }
 
             if (state.seasons.isNotEmpty()) {
                 item {
@@ -220,14 +210,6 @@ fun DetailScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                }
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                    item {
-                        CustomNativeAd(
-                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                        )
-                    }
                 }
             }
 
@@ -303,16 +285,6 @@ fun DetailScreen(
                     }
                     Spacer(modifier = Modifier.height(100.dp))
                 }
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                    item {
-                        CustomNativeAd(
-                            adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            } else {
-                item { Spacer(modifier = Modifier.height(100.dp)) }
             }
         }
 

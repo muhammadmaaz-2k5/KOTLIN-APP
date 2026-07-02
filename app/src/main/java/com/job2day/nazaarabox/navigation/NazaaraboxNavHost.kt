@@ -1,5 +1,6 @@
 package com.job2day.nazaarabox.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -27,6 +28,7 @@ import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.AppBottomBar
+import com.job2day.nazaarabox.widgets.AdInterstitialOverlay
 
 @Composable
 fun NazaaraboxNavHost() {
@@ -36,87 +38,91 @@ fun NazaaraboxNavHost() {
     val mainRoutes = setOf(AppRoutes.HOME, AppRoutes.MOVIES, AppRoutes.TV_SHOWS, AppRoutes.ANIME)
     val showBottomBar = currentRoute in mainRoutes
 
-    Scaffold(
-        containerColor = AppColors.BackgroundDark,
-        contentWindowInsets = WindowInsets(0),
-        bottomBar = {
-            if (showBottomBar) {
-                AppBottomBar(
-                    currentRoute = currentRoute,
-                    onTabSelected = { route, isOverlay ->
-                        if (isOverlay) {
-                            navController.navigate(AppRoutes.SEARCH)
-                        } else {
-                            navController.navigate(route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+    Box {
+        Scaffold(
+            containerColor = AppColors.BackgroundDark,
+            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                if (showBottomBar) {
+                    AppBottomBar(
+                        currentRoute = currentRoute,
+                        onTabSelected = { route, isOverlay ->
+                            if (isOverlay) {
+                                navController.navigate(AppRoutes.SEARCH)
+                            } else {
+                                navController.navigate(route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    },
-                )
-            }
-        },
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = AppRoutes.HOME,
-            modifier = Modifier.padding(padding),
-        ) {
-            composable(AppRoutes.HOME) {
-                HomeScreen(navController = navController)
-            }
-            composable(AppRoutes.MOVIES) {
-                MediaBrowseScreen(
-                    mode = BrowseMode.MOVIES,
-                    title = "Movies",
-                    navController = navController,
-                )
-            }
-            composable(AppRoutes.TV_SHOWS) {
-                MediaBrowseScreen(
-                    mode = BrowseMode.TV,
-                    title = "TV Shows",
-                    navController = navController,
-                )
-            }
-            composable(AppRoutes.ANIME) {
-                MediaBrowseScreen(
-                    mode = BrowseMode.ANIME,
-                    title = "Anime",
-                    navController = navController,
-                )
-            }
-            composable(AppRoutes.SEARCH) {
-                SearchScreen(navController = navController)
-            }
-            composable(AppRoutes.DETAIL) {
-                DetailScreen(navController = navController)
-            }
-            composable(AppRoutes.PLAYER) {
-                PlayerScreen(navController = navController)
-            }
-            composable(
-                route = AppRoutes.ACTOR,
-                arguments = listOf(navArgument("personId") { type = NavType.IntType }),
-            ) { backStackEntry ->
-                val personId = backStackEntry.arguments?.getInt("personId") ?: 0
-                ActorScreen(personId = personId, navController = navController)
-            }
-            composable(AppRoutes.SEASON) {
-                SeasonScreen(navController = navController)
-            }
-            composable(AppRoutes.SEE_ALL) {
-                SeeAllScreen(navController = navController)
-            }
-            composable(AppRoutes.CATEGORY) {
-                CategorySectionScreen(navController = navController)
-            }
-            composable(AppRoutes.LANGUAGE_BROWSE) {
-                LanguageBrowseScreen(navController = navController)
+                        },
+                    )
+                }
+            },
+        ) { padding ->
+            NavHost(
+                navController = navController,
+                startDestination = AppRoutes.HOME,
+                modifier = Modifier.padding(padding),
+            ) {
+                composable(AppRoutes.HOME) {
+                    HomeScreen(navController = navController)
+                }
+                composable(AppRoutes.MOVIES) {
+                    MediaBrowseScreen(
+                        mode = BrowseMode.MOVIES,
+                        title = "Movies",
+                        navController = navController,
+                    )
+                }
+                composable(AppRoutes.TV_SHOWS) {
+                    MediaBrowseScreen(
+                        mode = BrowseMode.TV,
+                        title = "TV Shows",
+                        navController = navController,
+                    )
+                }
+                composable(AppRoutes.ANIME) {
+                    MediaBrowseScreen(
+                        mode = BrowseMode.ANIME,
+                        title = "Anime",
+                        navController = navController,
+                    )
+                }
+                composable(AppRoutes.SEARCH) {
+                    SearchScreen(navController = navController)
+                }
+                composable(AppRoutes.DETAIL) {
+                    DetailScreen(navController = navController)
+                }
+                composable(AppRoutes.PLAYER) {
+                    PlayerScreen(navController = navController)
+                }
+                composable(
+                    route = AppRoutes.ACTOR,
+                    arguments = listOf(navArgument("personId") { type = NavType.IntType }),
+                ) { backStackEntry ->
+                    val personId = backStackEntry.arguments?.getInt("personId") ?: 0
+                    ActorScreen(personId = personId, navController = navController)
+                }
+                composable(AppRoutes.SEASON) {
+                    SeasonScreen(navController = navController)
+                }
+                composable(AppRoutes.SEE_ALL) {
+                    SeeAllScreen(navController = navController)
+                }
+                composable(AppRoutes.CATEGORY) {
+                    CategorySectionScreen(navController = navController)
+                }
+                composable(AppRoutes.LANGUAGE_BROWSE) {
+                    LanguageBrowseScreen(navController = navController)
+                }
             }
         }
+
+        AdInterstitialOverlay()
     }
 }

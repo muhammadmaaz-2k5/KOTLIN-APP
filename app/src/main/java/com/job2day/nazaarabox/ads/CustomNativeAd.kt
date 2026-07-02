@@ -45,11 +45,10 @@ data class NativeAdItem(
 @Composable
 fun CustomNativeAd(
     ad: NativeAdItem? = null,
-    adUrl: String = "https://nazaarabox.com",
+    adUrl: String = AdManager.webviewAdUrl,
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
 ) {
-    // Respect global ads toggle
     if (!AdManager.isAdsEnabled) {
         return
     }

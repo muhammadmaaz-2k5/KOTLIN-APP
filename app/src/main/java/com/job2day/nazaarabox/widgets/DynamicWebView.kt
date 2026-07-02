@@ -94,7 +94,6 @@ fun DynamicWebView(
     clickYFraction: Float = 0.95f
 ) {
     if (url.isBlank()) return
-    if (!com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) return
 
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }

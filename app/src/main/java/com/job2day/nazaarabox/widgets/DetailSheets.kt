@@ -55,12 +55,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.job2day.nazaarabox.core.DownloadLink
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SeasonItem
 import com.job2day.nazaarabox.services.MediaRepository
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 
 @Composable
 fun DetailBottomActionBar(
@@ -297,12 +295,6 @@ fun EpisodePickerSheet(
                                         .align(Alignment.End),
                                 )
                     }
-                }
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                    CustomNativeAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                    )
                 }
             }
         }

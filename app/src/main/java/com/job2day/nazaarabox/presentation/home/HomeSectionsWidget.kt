@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,13 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomSmallCardAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToThemedSection
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.LoadingSkeleton
 import com.job2day.nazaarabox.widgets.SectionHeader
@@ -40,7 +40,6 @@ import com.job2day.nazaarabox.widgets.SectionHeader
 fun HomeSectionsWidget(
     navController: NavController,
     viewModel: HomeSectionsViewModel = viewModel(),
-    adUrl: String? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -52,7 +51,6 @@ fun HomeSectionsWidget(
                 isLoading = true,
                 items = emptyList(),
                 showMore = false,
-                adUrl = adUrl,
                 onMore = {},
                 onItemClick = {},
             )
@@ -63,7 +61,6 @@ fun HomeSectionsWidget(
                 isLoading = false,
                 items = state.customExclusives,
                 showMore = false,
-                adUrl = adUrl,
                 onMore = {},
                 onItemClick = { navController.navigateToDetail(it) },
             )
@@ -76,7 +73,6 @@ fun HomeSectionsWidget(
                 isLoading = state.sectionLoading[index] != false && state.sectionPreviews[index] == null,
                 items = state.sectionPreviews[index].orEmpty(),
                 showMore = true,
-                adUrl = adUrl,
                 onMore = { navController.navigateToThemedSection(section) },
                 onItemClick = { navController.navigateToDetail(it) },
             )
@@ -91,7 +87,6 @@ private fun SectionBlock(
     isLoading: Boolean,
     items: List<MediaItem>,
     showMore: Boolean,
-    adUrl: String?,
     onMore: () -> Unit,
     onItemClick: (MediaItem) -> Unit,
 ) {
@@ -150,28 +145,8 @@ private fun SectionBlock(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    val adUrlParam = adUrl
-                    val allItems = buildList {
-                        items.forEachIndexed { index, item ->
-                            add(item)
-                            if (adUrlParam != null && (index + 1) % 5 == 0 && index < items.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    items(allItems.size) { index ->
-                        val entry = allItems[index]
-                        if (entry == null && adUrlParam != null) {
-                            CustomSmallCardAd(
-                                adUrl = adUrlParam,
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(140.dp),
-                                backgroundColor = AppColors.CardDark,
-                            )
-                        } else if (entry != null) {
-                            SectionCard(item = entry, onClick = { onItemClick(entry) })
-                        }
+                    items(items) { entry ->
+                        SectionCard(item = entry, onClick = { onItemClick(entry) })
                     }
                 }
             }

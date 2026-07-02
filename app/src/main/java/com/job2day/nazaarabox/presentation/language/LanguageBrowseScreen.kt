@@ -1,6 +1,5 @@
 package com.job2day.nazaarabox.presentation.language
 
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomBannerAd
 import com.job2day.nazaarabox.core.LanguageOption
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToDetail
@@ -134,19 +132,6 @@ fun LanguageBrowseScreen(
             }
             HorizontalDivider(color = AppColors.SurfaceVariantDark)
 
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomNativeAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                )
-            }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomBannerAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                )
-            }
-
             when {
                 isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = accent)
@@ -167,20 +152,7 @@ fun LanguageBrowseScreen(
                 }
             }
         }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                Box(
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomCenter)
-                        .fillMaxWidth()
-                ) {
-                    CustomBannerAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                        alwaysExpanded = true
-                    )
-                }
-            }
-        }
+    }
     }
 }
 

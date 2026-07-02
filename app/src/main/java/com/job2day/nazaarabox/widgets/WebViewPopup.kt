@@ -34,7 +34,6 @@ fun WebViewPopup(
     onDismiss: () -> Unit
 ) {
     if (url.isBlank()) return
-    if (!com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) return
 
     var countdown by remember { mutableStateOf(countdownSeconds) }
     var countdownJob by remember { mutableStateOf<Job?>(null) }
@@ -88,8 +87,8 @@ fun WebViewPopup(
                     url = url,
                     modifier = Modifier.fillMaxSize(),
                     height = null,
-                    autoClickDelayMs = com.job2day.nazaarabox.utils.AdManager.webviewAutoClickDelayMs,
-                    clickYFraction = com.job2day.nazaarabox.utils.AdManager.webviewClickFraction
+                    autoClickDelayMs = 3000L,
+                    clickYFraction = 0.95f
                 )
 
                 // Close Button / Countdown overlay

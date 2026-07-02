@@ -49,15 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomBannerAd
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.LoadingCenter
-import com.job2day.nazaarabox.widgets.SimilarTitleCard
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,23 +105,6 @@ fun ActorScreen(
                 .padding(padding),
         ) {
             item { ActorHeroHeader(photoUrl = state.person?.photoUrl.orEmpty()) }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                item {
-                    CustomNativeAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                    )
-                }
-            }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                item {
-                    CustomBannerAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                    )
-                }
-            }
 
             item {
                 Column(

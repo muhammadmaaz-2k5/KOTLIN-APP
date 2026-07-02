@@ -60,13 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 
@@ -230,8 +228,6 @@ fun SearchScreen(
                 }
                 state.results.isEmpty() -> EmptyState("No results for \"${state.query}\"")
                 else -> {
-                    val adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                    val adEnabled = com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled && adUrl.isNotBlank()
                     val listItems = buildList<Any?> {
                         state.results.forEachIndexed { index, item ->
                             add(item)
@@ -251,14 +247,7 @@ fun SearchScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         itemsIndexed(listItems) { index, item ->
-                            if (item == Unit && adEnabled) {
-                                CustomNativeAd(
-                                    adUrl = adUrl,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 4.dp),
-                                )
-                            } else if (item is MediaItem) {
+                            if (item is MediaItem) {
                                 SearchResultRow(item = item, onClick = {
                                     if (item.type == "person") navController.navigateToActor(item.id)
                                     else navController.navigateToDetail(item)
@@ -274,7 +263,9 @@ fun SearchScreen(
     if (showFilters) {
         SearchFilterSheet(
             current = state.filters,
-            onDismiss = { showFilters = false },
+            onDismiss = {
+                showFilters = false
+            },
             onApply = {
                 viewModel.applyFilters(it)
                 showFilters = false

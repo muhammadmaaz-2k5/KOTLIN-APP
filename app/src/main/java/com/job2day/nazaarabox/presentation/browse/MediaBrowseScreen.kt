@@ -1,7 +1,5 @@
 package com.job2day.nazaarabox.presentation.browse
 
-import com.job2day.nazaarabox.ads.CustomNativeAd
-import com.job2day.nazaarabox.ads.CustomSmallCardAd
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +44,6 @@ import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.presentation.shared.FilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.LoadingCenter
@@ -121,19 +118,10 @@ fun MediaBrowseScreen(
             val items = state.itemsByTab[state.selectedTab].orEmpty()
             val loading = state.loadingByTab.contains(state.selectedTab)
 
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomNativeAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                )
-            }
-
             when {
                 loading && items.isEmpty() -> LoadingCenter()
                 items.isEmpty() -> EmptyState("No titles found", modifier = Modifier.fillMaxSize())
                 else -> {
-                    val adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                    val adEnabled = com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled && adUrl.isNotBlank()
                     val cardRows = items.chunked(3)
                     var itemIndex = 0
                     androidx.compose.foundation.lazy.LazyColumn(
@@ -177,46 +165,30 @@ fun MediaBrowseScreen(
                                     }
                                 }
                             }
-                            if (adEnabled && rowIndex < cardRows.lastIndex) {
-                                item(key = "ad_$rowIndex") {
-                                    androidx.compose.foundation.layout.Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    ) {
-                                        repeat(3) {
-                                            CustomSmallCardAd(
-                                                adUrl = adUrl,
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .aspectRatio(2f / 3f),
-                                                backgroundColor = AppColors.CardDark,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
             }
         }
     }
-    }
 
-    if (showFilters) {
-        FilterSheet(
-            mode = mode,
-            searchFilters = state.searchFilters,
-            animeFilters = state.animeFilters,
-            onDismiss = { showFilters = false },
-            onApplySearch = {
-                viewModel.updateSearchFilters(it)
-                showFilters = false
-            },
-            onApplyAnime = {
-                viewModel.updateAnimeFilters(it)
-                showFilters = false
-            },
-        )
+        if (showFilters) {
+            FilterSheet(
+                mode = mode,
+                searchFilters = state.searchFilters,
+                animeFilters = state.animeFilters,
+                onDismiss = {
+                    showFilters = false
+                },
+                onApplySearch = {
+                    viewModel.updateSearchFilters(it)
+                    showFilters = false
+                },
+                onApplyAnime = {
+                    viewModel.updateAnimeFilters(it)
+                    showFilters = false
+                },
+            )
+        }
     }
 }

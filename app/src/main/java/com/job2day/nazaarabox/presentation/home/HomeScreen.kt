@@ -38,10 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomBannerAd
-import com.job2day.nazaarabox.ads.CustomNativeAd
-import com.job2day.nazaarabox.ads.CustomSmallCardAd
-import com.job2day.nazaarabox.ads.NativeAdItem
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.navigation.navigateToDetail
@@ -50,7 +46,6 @@ import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.HomeGlassAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.FeaturedBanner
 import com.job2day.nazaarabox.widgets.LoadingCenter
@@ -58,6 +53,8 @@ import com.job2day.nazaarabox.widgets.LoadingSkeleton
 import com.job2day.nazaarabox.widgets.MovieGridCard
 import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.TrendingCard
+import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.utils.AdManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,18 +94,6 @@ fun HomeScreen(
         else -> "Popular ${category.label}"
     }
     
-    // Get native ad from API or use null for no native ad
-    val nativeAdItem = state.nativeAds.firstOrNull()?.let { adMap ->
-        NativeAdItem(
-            id = (adMap["id"] as? Double)?.toInt() ?: 0,
-            title = adMap["title"] as? String ?: "",
-            description = adMap["description"] as? String ?: "",
-            imageUrl = adMap["image_url"] as? String ?: "",
-            buttonText = adMap["button_text"] as? String ?: "Learn More",
-            buttonLink = adMap["button_link"] as? String ?: ""
-        )
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -174,13 +159,6 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (AdManager.isAdsEnabled && nativeAdItem != null) {
-                    CustomNativeAd(
-                        ad = nativeAdItem,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                    )
-                }
-
                 SectionHeader(
                     title = trendingLabel,
                     emoji = "🔥",
@@ -202,19 +180,19 @@ fun HomeScreen(
                         }
                     }
                     Box(modifier = Modifier.height(220.dp)) {
-LazyRow(
+                        LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(trendingWithAds) { entry ->
-                                when {
-                                    entry != null -> TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
-                                    AdManager.isAdsEnabled -> CustomSmallCardAd(
-                                        adUrl = AdManager.dynamicWebviewUrl,
+                                if (entry != null) {
+                                    TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
+                                } else if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                                    CustomSmallCardAd(
+                                        adUrl = AdManager.webviewAdUrl,
                                         modifier = Modifier
                                             .width(140.dp)
-                                            .height(180.dp),
-                                        backgroundColor = AppColors.CardDark,
+                                            .height(200.dp),
                                     )
                                 }
                             }
@@ -223,12 +201,6 @@ LazyRow(
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
-
-                if (AdManager.isAdsEnabled) {
-                    CustomBannerAd(
-                        adUrl = AdManager.dynamicWebviewUrl
-                    )
-                }
 
                 SectionHeader(
                     title = popularLabel,
@@ -260,18 +232,18 @@ LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowItems.forEach { gridItem ->
-                                when {
-                                    gridItem != null -> MovieGridCard(
+                                if (gridItem != null) {
+                                    MovieGridCard(
                                         item = gridItem,
                                         modifier = Modifier.weight(1f),
                                         onClick = { navController.navigateToDetail(gridItem) },
                                     )
-                                    AdManager.isAdsEnabled -> CustomSmallCardAd(
-                                        adUrl = AdManager.dynamicWebviewUrl,
+                                } else if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                                    CustomSmallCardAd(
+                                        adUrl = AdManager.webviewAdUrl,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .aspectRatio(2f / 3f),
-                                        backgroundColor = AppColors.CardDark,
+                                            .height(240.dp),
                                     )
                                 }
                             }
@@ -286,13 +258,6 @@ LazyRow(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 HomeSectionsWidget(navController = navController)
-
-                if (AdManager.isAdsEnabled) {
-                    CustomBannerAd(
-                        adUrl = AdManager.dynamicWebviewUrl,
-                        alwaysExpanded = true
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(100.dp))
             }

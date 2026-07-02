@@ -54,13 +54,12 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun CustomBannerAd(
-    adUrl: String = "https://nazaarabox.com",
+    adUrl: String = AdManager.webviewAdUrl,
     backgroundColor: Color = AppColors.SurfaceVariantDark,
     modifier: Modifier = Modifier,
     alwaysExpanded: Boolean = true,
 ) {
-    // Respect global ads toggle
-    if (!AdManager.isAdsEnabled) {
+    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) {
         return
     }
 
@@ -157,7 +156,7 @@ fun CollapsibleWebView(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     
-    val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
+    val adHeaders = mapOf("Referer" to AdManager.webviewAdUrl)
     
     Box(modifier = modifier) {
         AndroidView(
@@ -217,13 +216,12 @@ fun CollapsibleWebView(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun CustomInterstitialAd(
-    adUrl: String = "https://nazaarabox.com",
+    adUrl: String = AdManager.webviewAdUrl,
     countdownSeconds: Int = 10,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Respect global ads toggle
-    if (!AdManager.isAdsEnabled) {
+    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) {
         onDismiss()
         return
     }
@@ -373,7 +371,7 @@ fun InterstitialWebView(
 ) {
     val context = LocalContext.current
     val currentOnPageLoaded by rememberUpdatedState(onPageLoaded)
-    val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
+    val adHeaders = mapOf("Referer" to AdManager.webviewAdUrl)
     
     AndroidView(
         factory = {

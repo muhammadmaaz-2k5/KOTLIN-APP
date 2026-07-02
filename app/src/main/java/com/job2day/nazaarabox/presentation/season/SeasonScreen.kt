@@ -33,8 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.CustomBannerAd
-import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.core.EpisodeItem
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToPlayer
@@ -87,19 +85,6 @@ fun SeasonScreen(navController: NavController) {
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomNativeAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                )
-            }
-
-            if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                CustomBannerAd(
-                    adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
-                )
-            }
-
             when {
                 loading -> LoadingCenter()
                 episodes.isEmpty() -> Text(
@@ -107,27 +92,27 @@ fun SeasonScreen(navController: NavController) {
                 modifier = Modifier.padding(16.dp),
                 color = AppColors.TextMuted,
             )
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(episodes) { episode ->
-                    EpisodeRow(
-                        episode = episode,
-                        showItem = showItem,
-                        onPlay = {
-                            val playerItem = showItem.copy(
-                                season = seasonNumber,
-                                episode = episode.episodeNumber,
-                                title = "${showItem.title} S${seasonNumber}E${episode.episodeNumber}",
-                            )
-                            navController.navigateToPlayer(playerItem)
-                        },
-                    )
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(episodes) { episode ->
+                        EpisodeRow(
+                            episode = episode,
+                            showItem = showItem,
+                            onPlay = {
+                                val playerItem = showItem.copy(
+                                    season = seasonNumber,
+                                    episode = episode.episodeNumber,
+                                    title = "${showItem.title} S${seasonNumber}E${episode.episodeNumber}",
+                                )
+                                navController.navigateToPlayer(playerItem)
+                            },
+                        )
+                    }
                 }
             }
-        }
         }
     }
 }
@@ -141,7 +126,7 @@ private fun EpisodeRow(
     androidx.compose.material3.Surface(
         onClick = onPlay,
         shape = RoundedCornerShape(14.dp),
-        color = AppColors.CardDark,
+        color = AppColors.SurfaceDark,
     ) {
         Row(
             modifier = Modifier
