@@ -49,6 +49,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import kotlinx.coroutines.delay
 
 @Composable
@@ -58,6 +59,11 @@ fun CustomBannerAd(
     modifier: Modifier = Modifier,
     alwaysExpanded: Boolean = true,
 ) {
+    // Respect global ads toggle
+    if (!AdManager.isAdsEnabled) {
+        return
+    }
+
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
     var isExpanded by remember { mutableStateOf(if (alwaysExpanded) true else false) }
@@ -216,7 +222,16 @@ fun CustomInterstitialAd(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (adUrl.isBlank()) return
+    // Respect global ads toggle
+    if (!AdManager.isAdsEnabled) {
+        onDismiss()
+        return
+    }
+
+    if (adUrl.isBlank()) {
+        onDismiss()
+        return
+    }
     
     var countdown by remember { mutableStateOf(countdownSeconds) }
     var isLoading by remember { mutableStateOf(true) }

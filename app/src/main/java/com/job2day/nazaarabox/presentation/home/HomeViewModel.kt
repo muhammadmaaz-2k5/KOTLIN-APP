@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.job2day.nazaarabox.core.HomeCategory
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.services.MediaRepository
+import com.job2day.nazaarabox.utils.AdManager
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,8 @@ data class HomeUiState(
     val popularByCategory: Map<Int, List<MediaItem>> = emptyMap(),
     val loadingTrending: Set<Int> = emptySet(),
     val loadingPopular: Set<Int> = emptySet(),
+    val nativeAds: List<Map<String, String>> = emptyList(),
+    val buttonAds: List<Map<String, String>> = emptyList(),
 )
 
 class HomeViewModel(
@@ -30,6 +33,25 @@ class HomeViewModel(
 
     init {
         loadCategories()
+        loadGlobalSettings()
+        loadAds()
+    }
+
+    private fun loadGlobalSettings() {
+        viewModelScope.launch {
+            val settings = repository.getGlobalSettings()
+            AdManager.setAdUnitIds(settings)
+        }
+    }
+
+    private fun loadAds() {
+        viewModelScope.launch {
+            val nativeAds = repository.getNativeAds("home")
+            val buttonAds = repository.getButtonAds("home")
+            _uiState.update {
+                it.copy(nativeAds = nativeAds, buttonAds = buttonAds)
+            }
+        }
     }
 
     private fun loadCategories() {

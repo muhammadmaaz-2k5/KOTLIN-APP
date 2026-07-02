@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +23,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.job2day.nazaarabox.utils.AdManager
 import androidx.compose.ui.viewinterop.AndroidView
 import com.job2day.nazaarabox.R
 import com.job2day.nazaarabox.ui.theme.AppColors
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 @Composable
 fun CustomSmallCardAd(
@@ -36,6 +37,11 @@ fun CustomSmallCardAd(
     modifier: Modifier = Modifier,
     showClose: Boolean = true,
 ) {
+    // Respect global ads toggle
+    if (!AdManager.isAdsEnabled) {
+        return
+    }
+
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
     

@@ -18,6 +18,15 @@ interface ApiService {
     @GET("api/config/categories")
     suspend fun getCategories(): JsonArray
 
+    @GET("api/config/settings")
+    suspend fun getGlobalSettings(): JsonObject
+
+    @GET("api/config/native-ads")
+    suspend fun getNativeAds(@Query("screen") screen: String): JsonArray
+
+    @GET("api/config/button-ads")
+    suspend fun getButtonAds(@Query("screen") screen: String): JsonArray
+
     @GET("api/config/servers")
     suspend fun getServers(
         @Query("id") id: Int,

@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import com.job2day.nazaarabox.ads.CustomBannerAd
 import com.job2day.nazaarabox.ads.CustomNativeAd
 import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.ads.NativeAdItem
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.navigation.navigateToDetail
@@ -94,6 +95,18 @@ fun HomeScreen(
         "KDrama" -> "Popular KDramas"
         null -> "Popular"
         else -> "Popular ${category.label}"
+    }
+    
+    // Get native ad from API or use null for no native ad
+    val nativeAdItem = state.nativeAds.firstOrNull()?.let { adMap ->
+        NativeAdItem(
+            id = (adMap["id"] as? Double)?.toInt() ?: 0,
+            title = adMap["title"] as? String ?: "",
+            description = adMap["description"] as? String ?: "",
+            imageUrl = adMap["image_url"] as? String ?: "",
+            buttonText = adMap["button_text"] as? String ?: "Learn More",
+            buttonLink = adMap["button_link"] as? String ?: ""
+        )
     }
 
     Box(
@@ -161,9 +174,9 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                if (AdManager.isAdsEnabled && nativeAdItem != null) {
                     CustomNativeAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                        ad = nativeAdItem,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                     )
                 }
@@ -189,21 +202,20 @@ fun HomeScreen(
                         }
                     }
                     Box(modifier = Modifier.height(220.dp)) {
-                        LazyRow(
+LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(trendingWithAds) { entry ->
-                                if (entry == null) {
-                                    CustomSmallCardAd(
-                                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                                when {
+                                    entry != null -> TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
+                                    AdManager.isAdsEnabled -> CustomSmallCardAd(
+                                        adUrl = AdManager.dynamicWebviewUrl,
                                         modifier = Modifier
                                             .width(140.dp)
                                             .height(180.dp),
                                         backgroundColor = AppColors.CardDark,
                                     )
-                                } else {
-                                    TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
                                 }
                             }
                         }
@@ -212,9 +224,9 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                if (AdManager.isAdsEnabled) {
                     CustomBannerAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl
+                        adUrl = AdManager.dynamicWebviewUrl
                     )
                 }
 
@@ -248,15 +260,14 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowItems.forEach { gridItem ->
-                                if (gridItem != null) {
-                                    MovieGridCard(
+                                when {
+                                    gridItem != null -> MovieGridCard(
                                         item = gridItem,
                                         modifier = Modifier.weight(1f),
                                         onClick = { navController.navigateToDetail(gridItem) },
                                     )
-                                } else {
-                                    CustomSmallCardAd(
-                                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                                    AdManager.isAdsEnabled -> CustomSmallCardAd(
+                                        adUrl = AdManager.dynamicWebviewUrl,
                                         modifier = Modifier
                                             .weight(1f)
                                             .aspectRatio(2f / 3f),
@@ -274,18 +285,11 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
-                    HomeSectionsWidget(
-                        navController = navController,
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
-                    )
-                } else {
-                    HomeSectionsWidget(navController = navController)
-                }
+                HomeSectionsWidget(navController = navController)
 
-                if (com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                if (AdManager.isAdsEnabled) {
                     CustomBannerAd(
-                        adUrl = com.job2day.nazaarabox.utils.AdManager.dynamicWebviewUrl,
+                        adUrl = AdManager.dynamicWebviewUrl,
                         alwaysExpanded = true
                     )
                 }

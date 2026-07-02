@@ -155,11 +155,21 @@ object AdManager {
         private set
 
     fun setAdUnitIds(settings: Map<String, String>) {
-        val rawEnable = settings["enable_webview_ads"]?.trim()?.lowercase()
-        isWebviewAdsEnabled = rawEnable == "true" || rawEnable == "1" || rawEnable == "yes"
-
-        // Force enable ads statically, but check if webview ads are enabled on the backend
-        isAdsEnabled = STATIC_ADS_ENABLED && isWebviewAdsEnabled
+        // Global ads enabled check - controls all ads (webview, banner, native, button)
+        // If "false" or "0", ALL ads are disabled on all pages
+        // If "true" or "1", ads are enabled and shown on all pages
+        val globalAdsEnabled = settings["ads_enabled"]?.trim()?.lowercase()
+        isAdsEnabled = when (globalAdsEnabled) {
+            "false", "0" -> false
+            else -> STATIC_ADS_ENABLED
+        }
+        
+        // Webview ads toggle - defaults to true if ads are enabled
+        val rawWebviewEnable = settings["enable_webview_ads"]?.trim()?.lowercase()
+        isWebviewAdsEnabled = when (globalAdsEnabled) {
+            "false", "0" -> false
+            else -> rawWebviewEnable == "true" || rawWebviewEnable == "1" || rawWebviewEnable == "yes" || rawWebviewEnable == null
+        }
 
         val reviewMode = settings["app_review_mode"]?.trim()?.lowercase()
         isSafeMode = (reviewMode == "off")

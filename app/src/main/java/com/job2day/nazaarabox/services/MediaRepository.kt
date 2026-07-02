@@ -26,6 +26,28 @@ class MediaRepository {
         MediaParser.parseCategories(api.getCategories().asList())
     }.getOrElse { MediaParser.defaultCategories() }
 
+    suspend fun getGlobalSettings(): Map<String, String> = runCatching {
+        api.getGlobalSettings().asMap().map { entry ->
+            entry.key to entry.value.asString
+        }.toMap()
+    }.getOrDefault(emptyMap())
+
+    suspend fun getNativeAds(screen: String): List<Map<String, String>> = runCatching {
+        api.getNativeAds(screen).asList().map { element ->
+            element.asJsonObject.asMap().map { entry ->
+                entry.key to entry.value.asString
+            }.toMap()
+        }
+    }.getOrDefault(emptyList())
+
+    suspend fun getButtonAds(screen: String): List<Map<String, String>> = runCatching {
+        api.getButtonAds(screen).asList().map { element ->
+            element.asJsonObject.asMap().map { entry ->
+                entry.key to entry.value.asString
+            }.toMap()
+        }
+    }.getOrDefault(emptyList())
+
     suspend fun getCustomContent(params: Map<String, String>): List<MediaItem> = runCatching {
         MediaParser.parseCustomContent(api.getCustomContent(params).asList())
     }.getOrDefault(emptyList())
