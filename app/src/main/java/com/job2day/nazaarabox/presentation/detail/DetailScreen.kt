@@ -117,7 +117,12 @@ fun DetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .navigationBarsPadding()
+            .then(
+                if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) 
+                    Modifier.navigationBarsPadding() 
+                else 
+                    Modifier
+            )
             .background(AppColors.BackgroundDark),
     ) {
         LazyColumn(
@@ -304,7 +309,7 @@ fun DetailScreen(
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) Modifier.height(100.dp) else Modifier)
                 }
             }
         }

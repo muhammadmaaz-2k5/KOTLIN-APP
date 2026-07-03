@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.filterNotNull
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -31,6 +33,7 @@ import com.job2day.nazaarabox.presentation.search.SearchScreen
 import com.job2day.nazaarabox.presentation.season.SeasonScreen
 import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
 import com.job2day.nazaarabox.routes.AppRoutes
+import com.job2day.nazaarabox.screens.PrivacyPolicyScreen
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.AdInterstitialOverlay
@@ -42,7 +45,11 @@ fun NazaaraboxNavHost() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val mainRoutes = setOf(AppRoutes.HOME, AppRoutes.MOVIES, AppRoutes.TV_SHOWS, AppRoutes.ANIME)
-    val showBottomBar = currentRoute in mainRoutes
+    val showBottomBar = if (AdManager.isLiveMode) {
+        currentRoute in mainRoutes
+    } else {
+        false
+    }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     var appOpenAdShown by remember { mutableStateOf(false) }
@@ -89,6 +96,22 @@ fun NazaaraboxNavHost() {
                 appOpenAdShown = true
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { NotificationRouter.pendingRoute.value }
+            .filterNotNull()
+            .collect { route: String ->
+                kotlinx.coroutines.delay(100)
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                NotificationRouter.pendingRoute.value = null
+            }
     }
 
     Box {
@@ -172,6 +195,9 @@ fun NazaaraboxNavHost() {
                 }
                 composable(AppRoutes.LANGUAGE_BROWSE) {
                     LanguageBrowseScreen(navController = navController)
+                }
+                composable(AppRoutes.PRIVACY_POLICY) {
+                    PrivacyPolicyScreen(navController = navController)
                 }
             }
         }

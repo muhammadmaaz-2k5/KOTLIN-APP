@@ -71,7 +71,7 @@ fun DetailBottomActionBar(
     onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isLive = AdManager.isLiveMode
+    if (!AdManager.isLiveMode) return
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -85,23 +85,19 @@ fun DetailBottomActionBar(
             isActive = isInWatchlist,
             onClick = onWatchlistToggle,
         )
-        if (isLive) {
-            Spacer(modifier = Modifier.width(10.dp))
-            IconActionButton(
-                icon = Icons.Default.Download,
-                isActive = false,
-                onClick = onDownload,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            WatchButton(
-                item = item,
-                seasons = seasons,
-                modifier = Modifier.weight(1f),
-                onPlay = onPlay,
-            )
-        } else {
-            Spacer(modifier = Modifier.weight(1f))
-        }
+        Spacer(modifier = Modifier.width(10.dp))
+        IconActionButton(
+            icon = Icons.Default.Download,
+            isActive = false,
+            onClick = onDownload,
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        WatchButton(
+            item = item,
+            seasons = seasons,
+            modifier = Modifier.weight(1f),
+            onPlay = onPlay,
+        )
     }
 }
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48670063883",
+    "project_id": "nazaaraboxapp",
+    "storage_bucket": "nazaaraboxapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48670063883:android:9219a3d40ea93b9de1f60e",
+        "android_client_info": {
+          "package_name": "com.job2day.nazaarabox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_VkPBaHOhOIWyEP7CVMr2kmcZwLFzNts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

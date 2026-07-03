@@ -17,6 +17,7 @@ object AppRoutes {
     const val SEE_ALL = "see_all"
     const val CATEGORY = "category"
     const val LANGUAGE_BROWSE = "language_browse"
+    const val PRIVACY_POLICY = "privacy_policy"
 
     fun actor(personId: Int) = "actor/$personId"
 

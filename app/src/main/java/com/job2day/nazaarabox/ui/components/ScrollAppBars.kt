@@ -109,7 +109,7 @@ fun HomeGlassAppBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "CineTrack",
+                text = "Nazaarabox",
                 color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 22.sp,
