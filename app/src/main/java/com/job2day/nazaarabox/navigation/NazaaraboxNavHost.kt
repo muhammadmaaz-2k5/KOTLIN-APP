@@ -101,7 +101,7 @@ fun NazaaraboxNavHost() {
                         currentRoute = currentRoute,
                         onTabSelected = { route, isOverlay ->
                             if (isOverlay) {
-                                navController.navigate(AppRoutes.SEARCH)
+                                if (AdManager.isLiveMode) navController.navigate(AppRoutes.SEARCH)
                             } else {
                                 navController.navigate(route) {
                                     popUpTo(navController.graph.findStartDestination().id) {

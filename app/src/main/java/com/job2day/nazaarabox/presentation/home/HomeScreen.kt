@@ -187,14 +187,17 @@ fun HomeScreen(
                             }
                         }
                     }
-                    Box(modifier = Modifier.height(220.dp)) {
+Box(modifier = Modifier.height(220.dp)) {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(trendingWithAds) { entry ->
                                 if (entry != null) {
-                                    TrendingCard(item = entry, onClick = { navController.navigateToDetail(entry) })
+                                    TrendingCard(
+                                        item = entry,
+                                        onClick = { navController.navigateToDetail(entry) },
+                                    )
                                 } else if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
                                     CustomSmallCardAd(
                                         adUrl = AdManager.webviewAdUrl,

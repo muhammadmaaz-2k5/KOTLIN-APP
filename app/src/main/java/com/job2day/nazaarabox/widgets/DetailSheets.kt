@@ -71,6 +71,7 @@ fun DetailBottomActionBar(
     onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isLive = AdManager.isLiveMode
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -84,7 +85,7 @@ fun DetailBottomActionBar(
             isActive = isInWatchlist,
             onClick = onWatchlistToggle,
         )
-        if (AdManager.isLiveMode) {
+        if (isLive) {
             Spacer(modifier = Modifier.width(10.dp))
             IconActionButton(
                 icon = Icons.Default.Download,

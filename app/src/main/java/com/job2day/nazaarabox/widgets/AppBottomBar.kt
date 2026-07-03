@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 
 internal data class TabSpec(
     val label: String,
@@ -40,7 +41,7 @@ internal data class TabSpec(
     val isOverlay: Boolean = false,
 )
 
-private val tabs = listOf(
+private val allTabsList = listOf(
     TabSpec("Home", "home", Icons.Filled.Home, Icons.Outlined.Home, AppColors.TabHome),
     TabSpec("Movies", "movies", Icons.Filled.Movie, Icons.Outlined.Movie, AppColors.TabMovies),
     TabSpec("TV Shows", "tv_shows", Icons.Filled.Tv, Icons.Outlined.Tv, AppColors.TabTv),
@@ -54,6 +55,7 @@ fun AppBottomBar(
     onTabSelected: (route: String, isOverlay: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tabs = if (AdManager.isLiveMode) allTabsList else listOf(allTabsList.first { it.route == "home" })
     Surface(
         modifier = modifier.fillMaxWidth().navigationBarsPadding(),
         color = AppColors.SurfaceDark.copy(alpha = 0.92f),
@@ -104,10 +106,10 @@ fun AppBottomBar(
     }
 }
 
-internal fun tabRoutes(): List<String> = tabs.filter { !it.isOverlay }.map { it.route }
+internal fun tabRoutes(): List<String> = allTabsList.filter { !it.isOverlay }.map { it.route }
 
 internal fun overlayTabRoute(): String = "search"
 
 internal typealias BottomTab = TabSpec
 
-internal fun allTabs(): List<TabSpec> = tabs
+internal fun allTabs(): List<TabSpec> = allTabsList

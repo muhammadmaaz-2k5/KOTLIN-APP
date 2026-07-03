@@ -127,7 +127,11 @@ fun CategorySectionScreen(navController: NavController) {
             )
         },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             if (loading) {
                 LoadingCenter()
             } else {
@@ -150,9 +154,7 @@ fun CategorySectionScreen(navController: NavController) {
                     items(gridItems, key = { it?.let { k -> if (k is String) "category_ad_banner" else "${(k as com.job2day.nazaarabox.core.MediaItem).type}_${k.id}" } ?: "category_ad" }) { entry ->
                         if (entry is String && entry == "ad") {
                             Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
-                                InlineBannerAd(
-                                    modifier = Modifier.fillMaxSize(),
-                                )
+                                InlineBannerAd(modifier = Modifier.fillMaxSize())
                             }
                         } else if (entry is com.job2day.nazaarabox.core.MediaItem) {
                             MovieGridCard(

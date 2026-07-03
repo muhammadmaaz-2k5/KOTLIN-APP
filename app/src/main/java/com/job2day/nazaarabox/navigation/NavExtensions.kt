@@ -27,10 +27,13 @@ fun NavController.navigateToPlayer(item: MediaItem) {
 }
 
 fun NavController.navigateToActor(personId: Int) {
-    navigate(AppRoutes.actor(personId))
+    if (AdManager.isLiveMode) {
+        navigate(AppRoutes.actor(personId))
+    }
 }
 
 fun NavController.navigateToSeason(item: MediaItem, seasonNumber: Int, seasonName: String) {
+    if (!AdManager.isLiveMode) return
     currentBackStackEntry?.savedStateHandle?.set(MEDIA_ITEM_KEY, AppRoutes.encodeItem(item))
     currentBackStackEntry?.savedStateHandle?.set("seasonNumber", seasonNumber)
     currentBackStackEntry?.savedStateHandle?.set("seasonName", seasonName)
@@ -49,8 +52,10 @@ fun NavController.navigateToCategory(category: HomeCategory) {
 }
 
 fun NavController.navigateToThemedSection(section: ThemedSection) {
-    currentBackStackEntry?.savedStateHandle?.set(THEMED_SECTION_KEY, Json.encodeToString(section))
-    navigate(AppRoutes.CATEGORY)
+    if (AdManager.isLiveMode) {
+        currentBackStackEntry?.savedStateHandle?.set(THEMED_SECTION_KEY, Json.encodeToString(section))
+        navigate(AppRoutes.CATEGORY)
+    }
 }
 
 fun NavController.getMediaItem(handle: androidx.lifecycle.SavedStateHandle): MediaItem? {
