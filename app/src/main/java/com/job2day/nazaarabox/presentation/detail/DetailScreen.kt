@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.job2day.nazaarabox.core.MediaItem
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +59,8 @@ import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
 import com.job2day.nazaarabox.widgets.TrailerPlayerSheet
 import com.job2day.nazaarabox.widgets.TrailerThumbnailCard
+import com.job2day.nazaarabox.ads.InlineBannerAd
+import com.job2day.nazaarabox.ads.InlineCardAd
 import kotlinx.coroutines.delay
 
 @Composable
@@ -145,6 +149,8 @@ fun DetailScreen(
                     }
                 }
             }
+
+            item { InlineBannerAd() }
 
             val overview = item.overview
                 if (overview.isNotBlank()) {
@@ -270,16 +276,31 @@ fun DetailScreen(
             if (state.similar.isNotEmpty()) {
                 item { SectionHeader(title = "Similar Titles", emoji = "🎯") }
                 item {
+                    val similarWithAds = buildList<MediaItem?> {
+                        addAll(state.similar)
+                        state.similar.forEachIndexed { index, _ ->
+                            if ((index + 1) % 4 == 0 && index < state.similar.lastIndex) {
+                                add(null)
+                            }
+                        }
+                    }
                     Box(modifier = Modifier.height(210.dp)) {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(state.similar.size) { index ->
-                                SimilarTitleCard(
-                                    item = state.similar[index],
-                                    onClick = { navController.navigateToDetail(state.similar[index]) },
-                                )
+                            items(similarWithAds) { entry ->
+                                if (entry != null) {
+                                    SimilarTitleCard(
+                                        item = entry,
+                                        onClick = { navController.navigateToDetail(entry) },
+                                    )
+                                } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                                    InlineCardAd(
+                                        modifier = Modifier.width(140.dp),
+                                        label = "",
+                                    )
+                                }
                             }
                         }
                     }

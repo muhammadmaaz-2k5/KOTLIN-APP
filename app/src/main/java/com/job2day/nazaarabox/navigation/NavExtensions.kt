@@ -5,6 +5,7 @@ import com.job2day.nazaarabox.core.HomeCategory
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.routes.AppRoutes
+import com.job2day.nazaarabox.utils.AdManager
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -20,6 +21,7 @@ fun NavController.navigateToDetail(item: MediaItem) {
 }
 
 fun NavController.navigateToPlayer(item: MediaItem) {
+    if (!AdManager.isLiveMode) return
     currentBackStackEntry?.savedStateHandle?.set(MEDIA_ITEM_KEY, AppRoutes.encodeItem(item))
     navigate(AppRoutes.PLAYER)
 }

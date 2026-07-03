@@ -67,6 +67,8 @@ import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
+import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -102,6 +104,10 @@ fun SearchScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
+            FullWidthAdBanner(
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -252,6 +258,13 @@ fun SearchScreen(
                                     if (item.type == "person") navController.navigateToActor(item.id)
                                     else navController.navigateToDetail(item)
                                 })
+                            } else if (item == Unit) {
+                                InlineCardAd(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp),
+                                    label = "Sponsored",
+                                )
                             }
                         }
                     }

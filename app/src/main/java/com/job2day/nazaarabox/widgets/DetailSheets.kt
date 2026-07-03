@@ -59,6 +59,7 @@ import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SeasonItem
 import com.job2day.nazaarabox.services.MediaRepository
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 
 @Composable
 fun DetailBottomActionBar(
@@ -83,19 +84,23 @@ fun DetailBottomActionBar(
             isActive = isInWatchlist,
             onClick = onWatchlistToggle,
         )
-        Spacer(modifier = Modifier.width(10.dp))
-        IconActionButton(
-            icon = Icons.Default.Download,
-            isActive = false,
-            onClick = onDownload,
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        WatchButton(
-            item = item,
-            seasons = seasons,
-            modifier = Modifier.weight(1f),
-            onPlay = onPlay,
-        )
+        if (AdManager.isLiveMode) {
+            Spacer(modifier = Modifier.width(10.dp))
+            IconActionButton(
+                icon = Icons.Default.Download,
+                isActive = false,
+                onClick = onDownload,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            WatchButton(
+                item = item,
+                seasons = seasons,
+                modifier = Modifier.weight(1f),
+                onPlay = onPlay,
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
     }
 }
 

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,6 +43,7 @@ import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.adaptiveGridColumns
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MovieGridCard
+import com.job2day.nazaarabox.ads.InlineBannerAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,6 +131,14 @@ fun CategorySectionScreen(navController: NavController) {
             if (loading) {
                 LoadingCenter()
             } else {
+                val gridItems = buildList<Any?> {
+                    addAll(items)
+                    items.forEachIndexed { index, _ ->
+                        if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                            add("ad")
+                        }
+                    }
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     state = gridState,
@@ -136,12 +147,20 @@ fun CategorySectionScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(items, key = { "${it.type}_${it.id}" }) { item ->
-                        MovieGridCard(
-                            item = item,
-                            showTypeBadge = true,
-                            onClick = { navController.navigateToDetail(item) },
-                        )
+                    items(gridItems, key = { it?.let { k -> if (k is String) "category_ad_banner" else "${(k as com.job2day.nazaarabox.core.MediaItem).type}_${k.id}" } ?: "category_ad" }) { entry ->
+                        if (entry is String && entry == "ad") {
+                            Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
+                                InlineBannerAd(
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        } else if (entry is com.job2day.nazaarabox.core.MediaItem) {
+                            MovieGridCard(
+                                item = entry,
+                                showTypeBadge = true,
+                                onClick = { navController.navigateToDetail(entry) },
+                            )
+                        }
                     }
                 }
             }

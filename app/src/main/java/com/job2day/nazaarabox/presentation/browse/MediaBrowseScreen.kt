@@ -47,6 +47,8 @@ import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.LoadingCenter
+import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +84,11 @@ fun MediaBrowseScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-            androidx.compose.foundation.layout.Row(
+                FullWidthAdBanner(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+
+                androidx.compose.foundation.layout.Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
@@ -121,23 +127,40 @@ fun MediaBrowseScreen(
             when {
                 loading && items.isEmpty() -> LoadingCenter()
                 items.isEmpty() -> EmptyState("No titles found", modifier = Modifier.fillMaxSize())
-                else -> {
-                    val cardRows = items.chunked(3)
+            else -> {
+                val browseItemsWithAds = buildList<Any?> {
+                    addAll(items)
+                    items.forEachIndexed { index, _ ->
+                        if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                            add("ad")
+                        }
+                    }
+                }
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    val cardRows = browseItemsWithAds.chunked(3)
                     var itemIndex = 0
-                    androidx.compose.foundation.lazy.LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        cardRows.forEachIndexed { rowIndex, rowItems ->
-                            item(key = "row_$rowIndex") {
-                                androidx.compose.foundation.layout.Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    rowItems.forEach { item ->
+                    itemIndex = 0
+                    cardRows.forEachIndexed { rowIndex, rowItems ->
+                        item(key = "row_$rowIndex") {
+                            androidx.compose.foundation.layout.Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                rowItems.forEach { rowItem ->
+                                    if (rowItem is String && rowItem == "ad") {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            InlineCardAd(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                label = "Sponsored",
+                                            )
+                                        }
+                                    } else if (rowItem is com.job2day.nazaarabox.core.MediaItem) {
                                         androidx.compose.material3.Surface(
-                                            onClick = { navController.navigateToDetail(item) },
+                                            onClick = { navController.navigateToDetail(rowItem) },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp),
                                             color = AppColors.CardDark,
@@ -148,26 +171,29 @@ fun MediaBrowseScreen(
                                                     .aspectRatio(2f / 3f),
                                             ) {
                                                 com.job2day.nazaarabox.widgets.CustomImage(
-                                                    imageUrl = item.posterUrl,
+                                                    imageUrl = rowItem.posterUrl,
                                                     modifier = Modifier.fillMaxSize(),
                                                 )
                                             }
                                         }
+                                    }
+                                    if (rowItem is MediaItem) {
                                         if (itemIndex >= items.size - 4) {
                                             viewModel.loadMoreIfNeeded(itemIndex)
                                         }
                                         itemIndex++
                                     }
-                                    if (rowItems.size < 3) {
-                                        repeat(3 - rowItems.size) {
-                                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
-                                        }
+                                }
+                                if (rowItems.size < 3) {
+                                    repeat(3 - rowItems.size) {
+                                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
             }
         }
     }

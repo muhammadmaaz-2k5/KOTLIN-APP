@@ -1,11 +1,16 @@
 package com.job2day.nazaarabox.navigation
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -27,8 +32,9 @@ import com.job2day.nazaarabox.presentation.season.SeasonScreen
 import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.theme.AppColors
-import com.job2day.nazaarabox.widgets.AppBottomBar
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.widgets.AdInterstitialOverlay
+import com.job2day.nazaarabox.widgets.AppBottomBar
 
 @Composable
 fun NazaaraboxNavHost() {
@@ -37,6 +43,53 @@ fun NazaaraboxNavHost() {
     val currentRoute = navBackStackEntry?.destination?.route
     val mainRoutes = setOf(AppRoutes.HOME, AppRoutes.MOVIES, AppRoutes.TV_SHOWS, AppRoutes.ANIME)
     val showBottomBar = currentRoute in mainRoutes
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var appOpenAdShown by remember { mutableStateOf(false) }
+    val interstitialRoutes = remember {
+        mutableSetOf(
+            AppRoutes.MOVIES,
+            AppRoutes.TV_SHOWS,
+            AppRoutes.ANIME,
+            AppRoutes.SEARCH,
+            AppRoutes.DETAIL,
+            AppRoutes.PLAYER,
+            AppRoutes.ACTOR,
+            AppRoutes.SEE_ALL,
+            AppRoutes.CATEGORY,
+            AppRoutes.LANGUAGE_BROWSE,
+        )
+    }
+    var shownInterstitialFor by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(currentRoute) {
+        val route = currentRoute ?: return@LaunchedEffect
+        if (route in interstitialRoutes && route !in shownInterstitialFor && AdManager.canShowInterstitial()) {
+            kotlinx.coroutines.delay(400)
+            val activity = context as? Activity
+            if (activity != null && AdManager.canShowInterstitial()) {
+                AdManager.showInterstitial(activity) {
+                    shownInterstitialFor = shownInterstitialFor + route
+                }
+            } else {
+                shownInterstitialFor = shownInterstitialFor + route
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!appOpenAdShown && AdManager.canShowInterstitial()) {
+            kotlinx.coroutines.delay(600)
+            val activity = context as? Activity
+            if (activity != null && AdManager.canShowInterstitial()) {
+                AdManager.showAppOpenAd(activity) {
+                    appOpenAdShown = true
+                }
+            } else {
+                appOpenAdShown = true
+            }
+        }
+    }
 
     Box {
         Scaffold(

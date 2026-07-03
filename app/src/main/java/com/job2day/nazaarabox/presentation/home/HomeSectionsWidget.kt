@@ -35,6 +35,7 @@ import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.LoadingSkeleton
 import com.job2day.nazaarabox.widgets.SectionHeader
+import com.job2day.nazaarabox.ads.InlineCardAd
 
 @Composable
 fun HomeSectionsWidget(
@@ -145,8 +146,23 @@ private fun SectionBlock(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(items) { entry ->
-                        SectionCard(item = entry, onClick = { onItemClick(entry) })
+                    val rowItems = buildList<Any?> {
+                        addAll(items)
+                        items.forEachIndexed { index, _ ->
+                            if ((index + 1) % 4 == 0 && index < items.lastIndex) {
+                                add(null)
+                            }
+                        }
+                    }
+                    items(rowItems) { entry ->
+                        if (entry != null && entry is MediaItem) {
+                            SectionCard(item = entry, onClick = { onItemClick(entry) })
+                        } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                            InlineCardAd(
+                                modifier = Modifier.width(120.dp),
+                                label = "",
+                            )
+                        }
                     }
                 }
             }

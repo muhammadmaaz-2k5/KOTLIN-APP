@@ -39,7 +39,9 @@ import com.job2day.nazaarabox.navigation.navigateToPlayer
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.services.MediaRepository
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.MediaParser
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.LoadingCenter
 
@@ -97,10 +99,18 @@ fun SeasonScreen(navController: NavController) {
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                        item {
+                            FullWidthAdBanner(
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                    }
                     items(episodes) { episode ->
                         EpisodeRow(
                             episode = episode,
                             showItem = showItem,
+                            isLiveMode = AdManager.isLiveMode,
                             onPlay = {
                                 val playerItem = showItem.copy(
                                     season = seasonNumber,
@@ -121,10 +131,11 @@ fun SeasonScreen(navController: NavController) {
 private fun EpisodeRow(
     episode: EpisodeItem,
     showItem: MediaItem,
+    isLiveMode: Boolean,
     onPlay: () -> Unit,
 ) {
     androidx.compose.material3.Surface(
-        onClick = onPlay,
+        onClick = { if (isLiveMode) onPlay() },
         shape = RoundedCornerShape(14.dp),
         color = AppColors.SurfaceDark,
     ) {
@@ -157,7 +168,9 @@ private fun EpisodeRow(
                     )
                 }
             }
-            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AppColors.Primary)
+            if (isLiveMode) {
+                Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AppColors.Primary)
+            }
         }
     }
 }

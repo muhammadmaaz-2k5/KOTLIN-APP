@@ -54,6 +54,7 @@ import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
+import com.job2day.nazaarabox.ads.InlineBannerAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,14 +141,32 @@ fun LanguageBrowseScreen(
                     message = "No results for ${lang.label}\nTry switching to Movies or TV",
                     emoji = lang.flag,
                 )
-                else -> LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    contentPadding = PaddingValues(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    items(items, key = { "${it.type}_${it.id}" }) { item ->
-                        LanguageCard(item = item, accent = accent, onClick = { navController.navigateToDetail(item) })
+                else -> {
+                    val gridItems = buildList<Any?> {
+                        addAll(items)
+                        items.forEachIndexed { index, _ ->
+                            if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                                add("ad")
+                            }
+                        }
+                    }
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        contentPadding = PaddingValues(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        items(gridItems, key = { it?.let { k -> if (k is String) "lang_ad_banner" else "${(k as com.job2day.nazaarabox.core.MediaItem).type}_${k.id}" } ?: "lang_ad" }) { entry ->
+                            if (entry is String && entry == "ad") {
+                                Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
+                                    InlineBannerAd(
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                            } else if (entry is com.job2day.nazaarabox.core.MediaItem) {
+                                LanguageCard(item = entry, accent = accent, onClick = { navController.navigateToDetail(entry) })
+                            }
+                        }
                     }
                 }
             }

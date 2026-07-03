@@ -75,6 +75,8 @@ import com.job2day.nazaarabox.utils.PlayerWebHelper
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MoreMenuSheet
 import com.job2day.nazaarabox.widgets.ServerBottomSheet
+import com.job2day.nazaarabox.ads.InlineBannerAd
+import com.job2day.nazaarabox.ads.InlineCardAd
 import kotlinx.coroutines.delay
 import android.widget.Toast
 
@@ -358,6 +360,12 @@ fun PlayerScreen(navController: NavController) {
                         if (item.year.isNotBlank()) PlayerMetaBadge(item.year)
                         if (item.runtime.isNotBlank()) PlayerMetaBadge(item.runtime)
                     }
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    InlineBannerAd(
+                        modifier = Modifier.height(100.dp),
+                    )
+
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {

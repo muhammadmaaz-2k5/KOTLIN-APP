@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,6 +57,8 @@ import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
+import com.job2day.nazaarabox.ads.InlineBannerAd
+import com.job2day.nazaarabox.ads.InlineCardAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,6 +196,8 @@ fun ActorScreen(
                 }
             }
 
+            item { InlineBannerAd() }
+
             if (state.knownFor.isNotEmpty()) {
                 item {
                     Text(
@@ -204,15 +209,30 @@ fun ActorScreen(
                     )
                 }
                 item {
+                    val knownWithAds = buildList<MediaItem?> {
+                        addAll(state.knownFor)
+                        state.knownFor.forEachIndexed { index, _ ->
+                            if ((index + 1) % 4 == 0 && index < state.knownFor.lastIndex) {
+                                add(null)
+                            }
+                        }
+                    }
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        items(state.knownFor) { credit ->
-                            SimilarTitleCard(
-                                item = credit,
-                                onClick = { navController.navigateToDetail(credit) },
-                            )
+                        items(knownWithAds) { entry ->
+                            if (entry != null) {
+                                SimilarTitleCard(
+                                    item = entry,
+                                    onClick = { navController.navigateToDetail(entry) },
+                                )
+                            } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                                InlineCardAd(
+                                    modifier = Modifier.width(120.dp),
+                                    label = "",
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -242,11 +262,28 @@ fun ActorScreen(
             }
 
             val visibleCredits = if (state.showAllFilmography) state.credits else state.credits.take(4)
-            items(visibleCredits, key = { "${it.type}_${it.id}" }) { credit ->
-                FilmographyRow(
-                    item = credit,
-                    onClick = { navController.navigateToDetail(credit) },
-                )
+            val creditsWithAds: List<Any?> = buildList {
+                addAll(visibleCredits)
+                visibleCredits.forEachIndexed { index, _ ->
+                    if ((index + 1) % 4 == 0 && index < visibleCredits.lastIndex) {
+                        add(null)
+                    }
+                }
+            }
+            itemsIndexed(creditsWithAds, key = { idx, _ -> idx }) { index, credit ->
+                if (credit != null && credit is com.job2day.nazaarabox.core.MediaItem) {
+                    FilmographyRow(
+                        item = credit,
+                        onClick = { navController.navigateToDetail(credit) },
+                    )
+                } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                    InlineCardAd(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                        label = "",
+                    )
+                }
             }
 
             if (state.credits.size > 4) {

@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 object AdManager {
     private const val TAG = "AdManager"
+    private const val INTERSTITIAL_COOLDOWN_MS = 45_000L
+    private const val MAX_INTERSTITIALS_PER_SESSION = 6
+
     const val DEFAULT_WEBVIEW_AD_URL = "https://nazaarabox.com"
 
     var isAdsEnabled: Boolean = false
@@ -26,8 +29,23 @@ object AdManager {
     var isSafeMode: Boolean = true
         private set
 
+    var appMode: String = "live"
+        private set
+
+    val isLiveMode: Boolean
+        get() = appMode == "live"
+
+    val isSafeReviewMode: Boolean
+        get() = appMode == "safe_review"
+
     var isShowingAd = false
         private set
+
+    @Volatile
+    private var lastInterstitialAt: Long = 0L
+
+    @Volatile
+    private var interstitialCount: Int = 0
 
     private val _showInterstitial = MutableStateFlow(false)
     val showInterstitial: StateFlow<Boolean> = _showInterstitial.asStateFlow()
@@ -40,10 +58,13 @@ object AdManager {
         webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
             ?: DEFAULT_WEBVIEW_AD_URL
         isSafeMode = !isAdsEnabled
+        appMode = settings["app_mode"]?.trim()?.lowercase()?.takeIf {
+            it == "live" || it == "safe_review"
+        } ?: "live"
 
         Log.d(
             TAG,
-            "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl",
+            "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl, appMode=$appMode",
         )
     }
 
@@ -67,11 +88,22 @@ object AdManager {
     fun loadInterstitial(context: Context) {
     }
 
+    @Synchronized
+    fun canShowInterstitial(): Boolean {
+        if (!isAdsEnabled || !isWebviewAdsEnabled) return false
+        if (interstitialCount >= MAX_INTERSTITIALS_PER_SESSION) return false
+        val now = System.currentTimeMillis()
+        return (now - lastInterstitialAt > INTERSTITIAL_COOLDOWN_MS)
+    }
+
+    @Synchronized
+    fun recordInterstitial() {
+        lastInterstitialAt = System.currentTimeMillis()
+        interstitialCount++
+    }
+
     fun isInterstitialAdReady(): Boolean =
         isAdsEnabled && isWebviewAdsEnabled && webviewAdUrl.isNotBlank()
-
-    fun isRewardedAdReady(): Boolean = false
-    fun isRewardedInterstitialAdReady(): Boolean = false
 
     fun showInterstitial(activity: Activity, onAdDismissed: () -> Unit) {
         showWebviewAd(activity, onAdDismissed)
@@ -82,8 +114,17 @@ object AdManager {
             onAdDismissed()
             return
         }
+        if (isShowingAd) {
+            onAdDismissed()
+            return
+        }
+        if (!canShowInterstitial()) {
+            onAdDismissed()
+            return
+        }
         pendingDismissCallback = onAdDismissed
         isShowingAd = true
+        recordInterstitial()
         _showInterstitial.value = true
     }
 
@@ -95,7 +136,7 @@ object AdManager {
     }
 
     fun showAdMobInterstitialOnly(activity: Activity, onAdDismissed: () -> Unit) {
-        onAdDismissed()
+        showWebviewAd(activity, onAdDismissed)
     }
 
     fun showTmdbAd(activity: Activity, onAdDismissed: () -> Unit) {

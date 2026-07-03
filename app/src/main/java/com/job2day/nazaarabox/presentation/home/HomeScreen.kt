@@ -54,6 +54,7 @@ import com.job2day.nazaarabox.widgets.MovieGridCard
 import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.TrendingCard
 import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.utils.AdManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,6 +159,13 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                    FullWidthAdBanner(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
                 SectionHeader(
                     title = trendingLabel,
