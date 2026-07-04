@@ -65,6 +65,21 @@ class MainActivity : ComponentActivity() {
         val route = intent?.getStringExtra("route")
         if (route.isNullOrBlank()) return
         intent.removeExtra("route")
+
+        val data = mutableMapOf<String, String>()
+        intent.extras?.keySet()?.forEach { key ->
+            if (key != "route") {
+                intent.getStringExtra(key)?.let { value ->
+                    data[key] = value
+                }
+            }
+        }
+
+        data.keys.forEach { key ->
+            intent.removeExtra(key)
+        }
+
+        NotificationRouter.pendingData.value = data
         NotificationRouter.pendingRoute.value = route
     }
 

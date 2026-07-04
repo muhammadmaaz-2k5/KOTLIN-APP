@@ -54,6 +54,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             } else {
                 intent.putExtra("route", com.job2day.nazaarabox.routes.AppRoutes.HOME)
             }
+            
+            // Pass all notification payload data to the activity extras
+            data.forEach { (key, value) ->
+                intent.putExtra(key, value)
+            }
+
             val pendingIntent = PendingIntent.getActivity(
                 this, 0, intent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -124,6 +130,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         return when {
             screen == "home" -> com.job2day.nazaarabox.routes.AppRoutes.HOME
             screen == "search" -> com.job2day.nazaarabox.routes.AppRoutes.SEARCH
+            screen == "watch" -> com.job2day.nazaarabox.routes.AppRoutes.DETAIL
             else -> com.job2day.nazaarabox.routes.AppRoutes.HOME
         }
     }

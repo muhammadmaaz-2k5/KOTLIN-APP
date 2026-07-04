@@ -28,6 +28,7 @@ import com.job2day.nazaarabox.presentation.player.PlayerScreen
 import com.job2day.nazaarabox.presentation.search.SearchScreen
 import com.job2day.nazaarabox.presentation.season.SeasonScreen
 import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
+import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.screens.PrivacyPolicyScreen
 import com.job2day.nazaarabox.ui.theme.AppColors
@@ -49,6 +50,24 @@ fun NazaaraboxNavHost() {
             .filterNotNull()
             .collect { route: String ->
                 kotlinx.coroutines.delay(100)
+                val data = NotificationRouter.pendingData.value
+                val dramaSlug = data?.get("drama_slug")
+                val itemType = data?.get("item_type")
+                val id = dramaSlug?.toIntOrNull()
+
+                if (route == AppRoutes.DETAIL && id != null) {
+                    val mediaItem = MediaItem(
+                        id = id,
+                        type = itemType ?: "movie",
+                        isCustom = id >= 1000000000,
+                        title = data?.get("title") ?: "Details"
+                    )
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        "mediaItem",
+                        AppRoutes.encodeItem(mediaItem)
+                    )
+                }
+
                 navController.navigate(route) {
                     popUpTo(navController.graph.findStartDestination().id) {
                         saveState = true
@@ -57,6 +76,7 @@ fun NazaaraboxNavHost() {
                     restoreState = true
                 }
                 NotificationRouter.pendingRoute.value = null
+                NotificationRouter.pendingData.value = null
             }
     }
 
