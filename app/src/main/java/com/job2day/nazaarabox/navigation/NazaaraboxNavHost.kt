@@ -52,8 +52,10 @@ fun NazaaraboxNavHost() {
                 kotlinx.coroutines.delay(100)
                 val data = NotificationRouter.pendingData.value
                 val dramaSlug = data?.get("drama_slug")
+                val tmdbId = data?.get("tmdb_id")
                 val itemType = data?.get("item_type")
-                val id = dramaSlug?.toIntOrNull()
+                val idStr = if (!tmdbId.isNullOrBlank()) tmdbId else dramaSlug
+                val id = idStr?.toIntOrNull()
 
                 if (route == AppRoutes.DETAIL && id != null) {
                     val mediaItem = MediaItem(
