@@ -196,7 +196,28 @@ fun ActorScreen(
                 }
             }
 
-            item { InlineBannerAd() }
+item { InlineBannerAd() }
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                ) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                    ) {
+                        items(4) {
+                            InlineCardAd(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(160.dp),
+                                label = "",
+                            )
+                        }
+                    }
+                }
+            }
 
             if (state.knownFor.isNotEmpty()) {
                 item {

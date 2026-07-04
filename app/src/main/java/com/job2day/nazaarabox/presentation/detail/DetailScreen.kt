@@ -155,7 +155,22 @@ fun DetailScreen(
                 }
             }
 
-            item { InlineBannerAd() }
+item { InlineBannerAd() }
+
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                ) {
+                    items(4) {
+                        InlineCardAd(
+                            modifier = Modifier
+                                .width(140.dp)
+                                .height(200.dp),
+                        )
+                    }
+                }
+            }
 
             val overview = item.overview
                 if (overview.isNotBlank()) {

@@ -11,7 +11,6 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,7 +75,8 @@ import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MoreMenuSheet
 import com.job2day.nazaarabox.widgets.ServerBottomSheet
 import com.job2day.nazaarabox.ads.InlineBannerAd
-import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.CustomInterstitialAd
+import com.job2day.nazaarabox.utils.AdManager
 import kotlinx.coroutines.delay
 import android.widget.Toast
 
@@ -107,6 +107,8 @@ fun PlayerScreen(navController: NavController) {
     var showServerSheet by remember { mutableStateOf(false) }
     var showRotateNudge by remember { mutableStateOf(false) }
     var forceLandscape by remember { mutableStateOf(false) }
+    var showInterstitial by remember { mutableStateOf(false) }
+    var interstitialTimerActive by remember { mutableStateOf(false) }
     val repository = remember { MediaRepository() }
 
     val isFullscreen = isLandscape || forceLandscape
@@ -138,6 +140,8 @@ fun PlayerScreen(navController: NavController) {
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             } else {
+                interstitialTimerActive = false
+                showInterstitial = false
                 controller.show(WindowInsetsCompat.Type.systemBars())
             }
         }
@@ -182,6 +186,28 @@ fun PlayerScreen(navController: NavController) {
         if (isPageLoading && !PlayerWebHelper.detectVidsrc(currentUrl)) {
             autoSwitchServer()
         }
+    }
+
+    LaunchedEffect(isFullscreen) {
+        if (isFullscreen && forceLandscape) {
+            interstitialTimerActive = true
+            while (interstitialTimerActive) {
+                kotlinx.coroutines.delay(5 * 60 * 1000L)
+                if (forceLandscape && AdManager.canShowInterstitial()) {
+                    showInterstitial = true
+                }
+            }
+        }
+    }
+
+    if (showInterstitial && AdManager.isWebviewAdsEnabled) {
+        CustomInterstitialAd(
+            adUrl = AdManager.webviewAdUrl,
+            onDismiss = {
+                showInterstitial = false
+                AdManager.recordInterstitial()
+            },
+        )
     }
 
     if (isLoadingServers) {
