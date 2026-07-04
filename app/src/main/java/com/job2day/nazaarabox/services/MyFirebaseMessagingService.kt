@@ -125,12 +125,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun buildRouteFromData(data: Map<String, String>): String? {
-        val screen = data["screen"] ?: data["navigate"]
-        val dramaSlug = data["drama_slug"] ?: data["dramaSlug"]
-        return when {
-            screen == "home" -> com.job2day.nazaarabox.routes.AppRoutes.HOME
-            screen == "search" -> com.job2day.nazaarabox.routes.AppRoutes.SEARCH
-            screen == "watch" -> com.job2day.nazaarabox.routes.AppRoutes.DETAIL
+        val screen = data["screen"] ?: data["navigate"] ?: data["path"]
+        val dramaSlug = data["drama_slug"] ?: data["dramaSlug"] ?: data["tmdb_id"] ?: data["id"]
+        return when (screen?.lowercase()?.trim()) {
+            "home" -> com.job2day.nazaarabox.routes.AppRoutes.HOME
+            "movies" -> com.job2day.nazaarabox.routes.AppRoutes.MOVIES
+            "tv_shows", "tv", "tvshows" -> com.job2day.nazaarabox.routes.AppRoutes.TV_SHOWS
+            "anime" -> com.job2day.nazaarabox.routes.AppRoutes.ANIME
+            "search" -> com.job2day.nazaarabox.routes.AppRoutes.SEARCH
+            "watch", "detail" -> com.job2day.nazaarabox.routes.AppRoutes.DETAIL
+            "actor" -> {
+                val actorId = dramaSlug?.toIntOrNull() ?: 0
+                com.job2day.nazaarabox.routes.AppRoutes.actor(actorId)
+            }
+            "privacy", "privacy_policy" -> com.job2day.nazaarabox.routes.AppRoutes.PRIVACY_POLICY
             else -> com.job2day.nazaarabox.routes.AppRoutes.HOME
         }
     }
