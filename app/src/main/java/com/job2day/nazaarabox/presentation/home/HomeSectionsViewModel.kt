@@ -79,8 +79,10 @@ class HomeSectionsViewModel(
                     emoji = "📅",
                     title = "Upcoming",
                     tmdbParams = mapOf(
-                        "release_date.gte" to today,
-                        "sort_by" to "release_date.asc",
+                        "primary_release_date.gte" to today,
+                        "primary_release_date.lte" to "2027-12-31",
+                        "sort_by" to "primary_release_date.asc",
+                        "vote_count.gte" to "1",
                     ),
                 ),
                 ThemedSection("🏆", "Top 20 Movies", mapOf("sort_by" to "vote_average.desc", "vote_count.gte" to "500")),
