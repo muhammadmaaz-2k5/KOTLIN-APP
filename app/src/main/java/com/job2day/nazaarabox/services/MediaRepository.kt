@@ -170,7 +170,17 @@ class MediaRepository {
             if (tmdbId > 0) {
                 runCatching {
                     val tmdbResponse = tmdb("$mediaType/$tmdbId", emptyMap())
-                    enriched = MediaParser.enrichDetails(tmdbResponse, enriched)
+                    val parsed = MediaParser.enrichDetails(tmdbResponse, enriched)
+                    // Explicitly restore custom overrides so generic TMDB details don't override them
+                    enriched = parsed.copy(
+                        title = title,
+                        posterUrl = if (posterPath.isNotEmpty()) MediaParser.imageUrl(posterPath) else parsed.posterUrl,
+                        backdropUrl = if (backdropPath.isNotEmpty()) MediaParser.imageUrl(backdropPath, "w780") else parsed.backdropUrl,
+                        rating = if (rating > 0) rating else parsed.rating,
+                        year = if (year.isNotEmpty()) year else parsed.year,
+                        overview = if (overview.isNotEmpty()) overview else parsed.overview,
+                        id = if (item.id >= 1000000000) item.id else parsed.id
+                    )
                 }
             }
             enriched
