@@ -87,8 +87,10 @@ fun WebViewPopup(
                     url = url,
                     modifier = Modifier.fillMaxSize(),
                     height = null,
-                    autoClickDelayMs = 3000L,
-                    clickYFraction = 0.95f
+                    autoClickDelayMs = 2000L,
+                    autoClickIntervalMs = 2000L,
+                    clickYFraction = 0.5f,
+                    wrapInCard = false
                 )
 
                 // Close Button / Countdown overlay

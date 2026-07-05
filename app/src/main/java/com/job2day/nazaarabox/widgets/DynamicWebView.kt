@@ -91,7 +91,9 @@ fun DynamicWebView(
     readySelector: String? = null,
     onPageLoaded: (() -> Unit)? = null,
     autoClickDelayMs: Long? = 3000L,
-    clickYFraction: Float = 0.95f
+    autoClickIntervalMs: Long = 3000L,
+    clickYFraction: Float = 0.95f,
+    wrapInCard: Boolean = true
 ) {
     if (url.isBlank()) return
 
@@ -145,14 +147,14 @@ fun DynamicWebView(
         }
     }
 
-    LaunchedEffect(isPageLoaded, autoClickDelayMs) {
+    LaunchedEffect(isPageLoaded, autoClickDelayMs, autoClickIntervalMs) {
         // Cancel previous auto-click job
         autoClickJob?.cancel()
         
         if (isPageLoaded && autoClickDelayMs != null && autoClickDelayMs > 0) {
             autoClickJob = coroutineScope.launch {
                 // Initial delay before the first click
-                android.util.Log.d("DynamicWebView", "Scheduling auto-click in ${autoClickDelayMs}ms, then every 3s")
+                android.util.Log.d("DynamicWebView", "Scheduling auto-click in ${autoClickDelayMs}ms, then every ${autoClickIntervalMs}ms")
                 kotlinx.coroutines.delay(autoClickDelayMs)
                 while (true) {
                     val wv = webViewRef.value
@@ -160,7 +162,7 @@ fun DynamicWebView(
                         android.util.Log.d("DynamicWebView", "Dispatching real touch event on WebView at y=${clickYFraction*100}%")
                         wv.post { simulateTouchOnWebView(wv, clickYFraction) }
                     }
-                    kotlinx.coroutines.delay(3_000)
+                    kotlinx.coroutines.delay(autoClickIntervalMs)
                 }
             }
         }
@@ -175,16 +177,7 @@ fun DynamicWebView(
         }
     }
 
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .let { if (height != null) it.height(height) else it.fillMaxHeight() }
-            .padding(12.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        color = AppColors.CardDark,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-        tonalElevation = 2.dp
-    ) {
+    val webViewContent = @Composable {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -345,6 +338,29 @@ fun DynamicWebView(
                     modifier = Modifier.size(32.dp)
                 )
             }
+        }
+    }
+
+    if (wrapInCard) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .let { if (height != null) it.height(height) else it.fillMaxHeight() }
+                .padding(12.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+            color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+            tonalElevation = 2.dp
+        ) {
+            webViewContent()
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .let { if (height != null) it.height(height) else it },
+            contentAlignment = Alignment.Center
+        ) {
+            webViewContent()
         }
     }
 }

@@ -50,6 +50,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
+import com.job2day.nazaarabox.widgets.DynamicWebView
 import kotlinx.coroutines.delay
 
 @Composable
@@ -153,64 +154,15 @@ fun CollapsibleWebView(
     url: String,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    var isLoading by remember { mutableStateOf(true) }
-    
-    val adHeaders = mapOf("Referer" to AdManager.webviewAdUrl)
-    
-    Box(modifier = modifier) {
-        AndroidView(
-            factory = {
-                WebView(context).apply {
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        databaseEnabled = true
-                        builtInZoomControls = false
-                        displayZoomControls = false
-                        loadWithOverviewMode = true
-                        useWideViewPort = true
-                        cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-                        mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    }
-                    
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
-                        }
-                        
-                        override fun onReceivedError(
-                            view: WebView?,
-                            request: android.webkit.WebResourceRequest?,
-                            error: android.webkit.WebResourceError?
-                        ) {
-                            super.onReceivedError(view, request, error)
-                            isLoading = false
-                        }
-
-                        override fun onReceivedSslError(
-                            view: WebView?,
-                            handler: android.webkit.SslErrorHandler?,
-                            error: android.net.http.SslError?
-                        ) {
-                            handler?.cancel()
-                        }
-                    }
-                    
-                    loadUrl(url, adHeaders)
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-        
-        if (isLoading) {
-            androidx.compose.material3.CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = AppColors.Primary
-            )
-        }
-    }
+    DynamicWebView(
+        url = url,
+        modifier = modifier,
+        height = null,
+        autoClickDelayMs = 2000L,
+        autoClickIntervalMs = 2000L,
+        clickYFraction = 0.5f,
+        wrapInCard = false
+    )
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -369,44 +321,14 @@ fun InterstitialWebView(
     modifier: Modifier = Modifier,
     onPageLoaded: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    val currentOnPageLoaded by rememberUpdatedState(onPageLoaded)
-    val adHeaders = mapOf("Referer" to AdManager.webviewAdUrl)
-    
-    AndroidView(
-        factory = {
-            WebView(context).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    databaseEnabled = true
-                    builtInZoomControls = false
-                    displayZoomControls = false
-                    loadWithOverviewMode = true
-                    useWideViewPort = true
-                    cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-                    mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                }
-                
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        currentOnPageLoaded?.invoke()
-                    }
-                    
-                    override fun onReceivedError(
-                        view: WebView?,
-                        request: android.webkit.WebResourceRequest?,
-                        error: android.webkit.WebResourceError?
-                    ) {
-                        super.onReceivedError(view, request, error)
-                        currentOnPageLoaded?.invoke()
-                    }
-                }
-                
-                loadUrl(url, adHeaders)
-            }
-        },
-        modifier = modifier
+    DynamicWebView(
+        url = url,
+        modifier = modifier,
+        height = null,
+        onPageLoaded = onPageLoaded,
+        autoClickDelayMs = 2000L,
+        autoClickIntervalMs = 2000L,
+        clickYFraction = 0.5f,
+        wrapInCard = false
     )
 }

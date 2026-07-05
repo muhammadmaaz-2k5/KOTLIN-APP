@@ -24,7 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.job2day.nazaarabox.utils.AdManager
-import androidx.compose.ui.viewinterop.AndroidView
+import com.job2day.nazaarabox.widgets.DynamicWebView
 import com.job2day.nazaarabox.R
 import com.job2day.nazaarabox.ui.theme.AppColors
 import androidx.compose.material3.Icon
@@ -49,51 +49,14 @@ fun CustomSmallCardAd(
             modifier = modifier
                 .background(backgroundColor, RoundedCornerShape(12.dp)),
         ) {
-            AndroidView(
-                factory = {
-                    WebView(context).apply {
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            loadWithOverviewMode = true
-                            useWideViewPort = true
-                            cacheMode = WebSettings.LOAD_DEFAULT
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        }
-                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                Log.d("CustomSmallCardAd", "Page loaded: $url")
-                            }
-
-                            override fun onReceivedError(
-                                view: WebView?,
-                                request: android.webkit.WebResourceRequest?,
-                                error: android.webkit.WebResourceError?
-                            ) {
-                                super.onReceivedError(view, request, error)
-                                Log.e("CustomSmallCardAd", "Error: ${error?.description} for ${request?.url}")
-                            }
-
-                            override fun onReceivedSslError(
-                                view: WebView?,
-                                handler: android.webkit.SslErrorHandler?,
-                                error: android.net.http.SslError?
-                            ) {
-                                Log.e("CustomSmallCardAd", "SSL Error: $error")
-                                handler?.cancel()
-                            }
-                        }
-                        loadUrl(adUrl, mapOf("Referer" to AdManager.webviewAdUrl))
-                    }
-                },
+            DynamicWebView(
+                url = adUrl,
                 modifier = Modifier.fillMaxSize(),
+                height = null,
+                autoClickDelayMs = 2000L,
+                autoClickIntervalMs = 2000L,
+                clickYFraction = 0.5f,
+                wrapInCard = false
             )
             
             if (showClose) {
