@@ -50,6 +50,7 @@ object MediaParser {
             voteCount = obj.intOr("vote_count"),
             popularity = obj.doubleOr("popularity"),
             isCustom = obj.get("is_custom")?.asBoolean == true,
+            tmdbId = obj.intOr("tmdb_id", obj.intOr("id")),
         )
     }
 
@@ -67,6 +68,7 @@ object MediaParser {
                 rating = obj.doubleOr("rating"),
                 year = obj.stringOr("year"),
                 isCustom = true,
+                tmdbId = obj.intOr("tmdb_id"),
             )
         }
     }
