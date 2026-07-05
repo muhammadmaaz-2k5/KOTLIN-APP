@@ -24,10 +24,11 @@ import com.job2day.nazaarabox.utils.AdManager
 
 @Composable
 fun InlineCardAd(
+    placement: String = "generic",
     modifier: Modifier = Modifier,
     label: String = "Sponsored",
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) return
+    if (!AdManager.isAdPlacementEnabled(placement)) return
 
     Column(modifier = modifier) {
         if (label.isNotBlank()) {
@@ -40,7 +41,7 @@ fun InlineCardAd(
             )
         }
         CustomSmallCardAd(
-            adUrl = AdManager.webviewAdUrl,
+            adUrl = AdManager.getAdPlacementUrl(placement),
             modifier = Modifier
                 .width(140.dp)
                 .height(200.dp),
@@ -51,9 +52,10 @@ fun InlineCardAd(
 
 @Composable
 fun InlineBannerAd(
+    placement: String = "generic",
     modifier: Modifier = Modifier,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) return
+    if (!AdManager.isAdPlacementEnabled(placement)) return
 
     Box(
         modifier = modifier
@@ -63,7 +65,7 @@ fun InlineBannerAd(
         contentAlignment = Alignment.Center,
     ) {
         CustomBannerAd(
-            adUrl = AdManager.webviewAdUrl,
+            adUrl = AdManager.getAdPlacementUrl(placement),
             modifier = Modifier.fillMaxWidth(),
             alwaysExpanded = true,
         )
@@ -72,12 +74,13 @@ fun InlineBannerAd(
 
 @Composable
 fun FullWidthAdBanner(
+    placement: String = "generic",
     modifier: Modifier = Modifier,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) return
+    if (!AdManager.isAdPlacementEnabled(placement)) return
 
     CustomBannerAd(
-        adUrl = AdManager.webviewAdUrl,
+        adUrl = AdManager.getAdPlacementUrl(placement),
         modifier = modifier.fillMaxWidth(),
         alwaysExpanded = true,
     )

@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.search
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -105,24 +107,30 @@ fun SearchScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
-            FullWidthAdBanner(
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-            ) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
+            if (AdManager.isAdPlacementEnabled("search_banner")) {
+                FullWidthAdBanner(
+                    placement = "search_banner",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            if (AdManager.isAdPlacementEnabled("search_inline")) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
                 ) {
-                    items(4) {
-                        InlineCardAd(
-                            modifier = Modifier
-                                .width(140.dp)
-                                .height(200.dp),
-                        )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                    ) {
+                        items(4) {
+                            InlineCardAd(
+                                placement = "search_inline",
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .height(200.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -256,7 +264,7 @@ fun SearchScreen(
                     val listItems = buildList<Any?> {
                         state.results.forEachIndexed { index, item ->
                             add(item)
-                            if ((index + 1) % 3 == 0 && index < state.results.lastIndex) {
+                            if ((index + 1) % 3 == 0 && index < state.results.lastIndex && AdManager.isAdPlacementEnabled("search_inline")) {
                                 add(Unit)
                             }
                         }
@@ -279,6 +287,7 @@ fun SearchScreen(
                                 })
                             } else if (item == Unit) {
                                 InlineCardAd(
+                                    placement = "search_inline",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(160.dp),

@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.browse
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -87,20 +89,26 @@ fun MediaBrowseScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-                FullWidthAdBanner(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                if (AdManager.isAdPlacementEnabled("browse_banner")) {
+                    FullWidthAdBanner(
+                        placement = "browse_banner",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
 
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                ) {
-                    items(4) {
-                        InlineCardAd(
-                            modifier = Modifier
-                                .width(140.dp)
-                                .height(200.dp),
-                        )
+                if (AdManager.isAdPlacementEnabled("browse_inline")) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                    ) {
+                        items(4) {
+                            InlineCardAd(
+                                placement = "browse_inline",
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .height(200.dp),
+                            )
+                        }
                     }
                 }
 
@@ -147,7 +155,7 @@ fun MediaBrowseScreen(
                 val browseItemsWithAds = buildList<Any?> {
                     addAll(items)
                     items.forEachIndexed { index, _ ->
-                        if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                        if ((index + 1) % 6 == 0 && index < items.lastIndex && AdManager.isAdPlacementEnabled("browse_inline")) {
                             add("ad")
                         }
                     }
@@ -163,13 +171,14 @@ fun MediaBrowseScreen(
                     cardRows.forEachIndexed { rowIndex, rowItems ->
                         item(key = "row_$rowIndex") {
                             androidx.compose.foundation.layout.Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                  modifier = Modifier.fillMaxWidth(),
+                                  horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 rowItems.forEach { rowItem ->
                                     if (rowItem is String && rowItem == "ad") {
                                         Box(modifier = Modifier.weight(1f)) {
                                             InlineCardAd(
+                                                placement = "browse_inline",
                                                 modifier = Modifier.fillMaxWidth(),
                                                 label = "Sponsored",
                                             )

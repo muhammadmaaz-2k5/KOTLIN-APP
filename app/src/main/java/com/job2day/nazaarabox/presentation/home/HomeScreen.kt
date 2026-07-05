@@ -160,8 +160,9 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                if (AdManager.isAdPlacementEnabled("home_banner")) {
                     FullWidthAdBanner(
+                        placement = "home_banner",
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -198,9 +199,9 @@ Box(modifier = Modifier.height(220.dp)) {
                                         item = entry,
                                         onClick = { navController.navigateToDetail(entry) },
                                     )
-                                } else if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
                                     CustomSmallCardAd(
-                                        adUrl = AdManager.webviewAdUrl,
+                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
                                         modifier = Modifier
                                             .width(140.dp)
                                             .height(200.dp),
@@ -249,9 +250,9 @@ Box(modifier = Modifier.height(220.dp)) {
                                         modifier = Modifier.weight(1f),
                                         onClick = { navController.navigateToDetail(gridItem) },
                                     )
-                                } else if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
                                     CustomSmallCardAd(
-                                        adUrl = AdManager.webviewAdUrl,
+                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(240.dp),

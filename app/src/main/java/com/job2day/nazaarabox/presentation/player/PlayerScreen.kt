@@ -200,9 +200,9 @@ fun PlayerScreen(navController: NavController) {
         }
     }
 
-    if (showInterstitial && AdManager.isWebviewAdsEnabled) {
+    if (showInterstitial && AdManager.isAdPlacementEnabled("player_banner")) {
         CustomInterstitialAd(
-            adUrl = AdManager.webviewAdUrl,
+            adUrl = AdManager.getAdPlacementUrl("player_banner"),
             onDismiss = {
                 showInterstitial = false
                 AdManager.recordInterstitial()
@@ -388,11 +388,13 @@ fun PlayerScreen(navController: NavController) {
                     }
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    InlineBannerAd(
-                        modifier = Modifier.height(100.dp),
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
+                    if (AdManager.isAdPlacementEnabled("player_banner")) {
+                        InlineBannerAd(
+                            placement = "player_banner",
+                            modifier = Modifier.height(100.dp),
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("🌐", fontSize = 14.sp)

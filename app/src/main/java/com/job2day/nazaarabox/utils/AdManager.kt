@@ -52,7 +52,10 @@ object AdManager {
 
     private var pendingDismissCallback: (() -> Unit)? = null
 
+    private var rawSettings: Map<String, String> = emptyMap()
+
     fun applySettings(settings: Map<String, String>) {
+        rawSettings = settings
         isAdsEnabled = parseBoolean(settings["ads_enabled"])
         isWebviewAdsEnabled = parseBoolean(settings["enable_webview_ads"])
         webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
@@ -66,6 +69,25 @@ object AdManager {
             TAG,
             "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl, appMode=$appMode",
         )
+    }
+
+    fun isAdPlacementEnabled(placement: String): Boolean {
+        if (!isAdsEnabled) return false
+        val specificToggle = rawSettings["enable_ad_$placement"]
+        return if (specificToggle != null) {
+            parseBoolean(specificToggle)
+        } else {
+            isWebviewAdsEnabled
+        }
+    }
+
+    fun getAdPlacementUrl(placement: String): String {
+        val specificUrl = rawSettings["ad_url_$placement"]?.trim()
+        return if (!specificUrl.isNullOrBlank()) {
+            specificUrl
+        } else {
+            webviewAdUrl
+        }
     }
 
     /** @deprecated Use [applySettings] instead */

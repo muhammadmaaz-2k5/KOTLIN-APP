@@ -99,9 +99,10 @@ fun SeasonScreen(navController: NavController) {
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (AdManager.isAdsEnabled && AdManager.isWebviewAdsEnabled) {
+                    if (AdManager.isAdPlacementEnabled("season_banner")) {
                         item {
                             FullWidthAdBanner(
+                                placement = "season_banner",
                                 modifier = Modifier.padding(bottom = 4.dp),
                             )
                         }

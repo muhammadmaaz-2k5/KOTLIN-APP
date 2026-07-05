@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.actor
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -196,24 +198,29 @@ fun ActorScreen(
                 }
             }
 
-item { InlineBannerAd() }
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                ) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
+            if (AdManager.isAdPlacementEnabled("actor_banner")) {
+                item { InlineBannerAd("actor_banner") }
+            }
+            if (AdManager.isAdPlacementEnabled("actor_inline")) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                     ) {
-                        items(4) {
-                            InlineCardAd(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(160.dp),
-                                label = "",
-                            )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp),
+                        ) {
+                            items(4) {
+                                InlineCardAd(
+                                    placement = "actor_inline",
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(160.dp),
+                                    label = "",
+                                )
+                            }
                         }
                     }
                 }
@@ -233,7 +240,7 @@ item { InlineBannerAd() }
                     val knownWithAds = buildList<MediaItem?> {
                         addAll(state.knownFor)
                         state.knownFor.forEachIndexed { index, _ ->
-                            if ((index + 1) % 4 == 0 && index < state.knownFor.lastIndex) {
+                            if ((index + 1) % 4 == 0 && index < state.knownFor.lastIndex && AdManager.isAdPlacementEnabled("actor_inline")) {
                                 add(null)
                             }
                         }
@@ -248,8 +255,9 @@ item { InlineBannerAd() }
                                     item = entry,
                                     onClick = { navController.navigateToDetail(entry) },
                                 )
-                            } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                            } else if (com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled("actor_inline")) {
                                 InlineCardAd(
+                                    placement = "actor_inline",
                                     modifier = Modifier.width(120.dp),
                                     label = "",
                                 )
@@ -286,7 +294,7 @@ item { InlineBannerAd() }
             val creditsWithAds: List<Any?> = buildList {
                 addAll(visibleCredits)
                 visibleCredits.forEachIndexed { index, _ ->
-                    if ((index + 1) % 4 == 0 && index < visibleCredits.lastIndex) {
+                    if ((index + 1) % 4 == 0 && index < visibleCredits.lastIndex && AdManager.isAdPlacementEnabled("actor_inline")) {
                         add(null)
                     }
                 }
@@ -297,8 +305,9 @@ item { InlineBannerAd() }
                         item = credit,
                         onClick = { navController.navigateToDetail(credit) },
                     )
-                } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                } else if (com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled("actor_inline")) {
                     InlineCardAd(
+                        placement = "actor_inline",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 6.dp),

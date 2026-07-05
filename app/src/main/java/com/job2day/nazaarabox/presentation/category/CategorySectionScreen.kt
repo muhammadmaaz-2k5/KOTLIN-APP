@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.category
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -138,7 +140,7 @@ fun CategorySectionScreen(navController: NavController) {
                 val gridItems = buildList<Any?> {
                     addAll(items)
                     items.forEachIndexed { index, _ ->
-                        if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                        if ((index + 1) % 6 == 0 && index < items.lastIndex && AdManager.isAdPlacementEnabled("category_banner")) {
                             add("ad")
                         }
                     }
@@ -154,7 +156,10 @@ fun CategorySectionScreen(navController: NavController) {
                     items(gridItems, key = { it?.let { k -> if (k is String) "category_ad_banner" else "${(k as com.job2day.nazaarabox.core.MediaItem).type}_${k.id}" } ?: "category_ad" }) { entry ->
                         if (entry is String && entry == "ad") {
                             Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
-                                InlineBannerAd(modifier = Modifier.fillMaxSize())
+                                InlineBannerAd(
+                                    placement = "category_banner",
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         } else if (entry is com.job2day.nazaarabox.core.MediaItem) {
                             MovieGridCard(

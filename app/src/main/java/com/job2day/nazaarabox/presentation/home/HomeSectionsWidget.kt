@@ -157,8 +157,9 @@ private fun SectionBlock(
                     items(rowItems) { entry ->
                         if (entry != null && entry is MediaItem) {
                             SectionCard(item = entry, onClick = { onItemClick(entry) })
-                        } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                        } else if (com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled("home_inline")) {
                             InlineCardAd(
+                                placement = "home_inline",
                                 modifier = Modifier.width(120.dp),
                                 label = "",
                             )

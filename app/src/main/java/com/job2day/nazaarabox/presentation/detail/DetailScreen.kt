@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.detail
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -155,19 +157,24 @@ fun DetailScreen(
                 }
             }
 
-item { InlineBannerAd() }
+            if (AdManager.isAdPlacementEnabled("detail_banner")) {
+                item { InlineBannerAd("detail_banner") }
+            }
 
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                ) {
-                    items(4) {
-                        InlineCardAd(
-                            modifier = Modifier
-                                .width(140.dp)
-                                .height(200.dp),
-                        )
+            if (AdManager.isAdPlacementEnabled("detail_inline")) {
+                item {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                    ) {
+                        items(4) {
+                            InlineCardAd(
+                                placement = "detail_inline",
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .height(200.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -315,8 +322,9 @@ item { InlineBannerAd() }
                                         item = entry,
                                         onClick = { navController.navigateToDetail(entry) },
                                     )
-                                } else if (com.job2day.nazaarabox.utils.AdManager.isAdsEnabled && com.job2day.nazaarabox.utils.AdManager.isWebviewAdsEnabled) {
+                                } else if (com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled("detail_inline")) {
                                     InlineCardAd(
+                                        placement = "detail_inline",
                                         modifier = Modifier.width(140.dp),
                                         label = "",
                                     )

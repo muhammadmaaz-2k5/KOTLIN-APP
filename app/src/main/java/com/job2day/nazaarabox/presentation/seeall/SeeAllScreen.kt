@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.seeall
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -65,7 +67,7 @@ fun SeeAllScreen(navController: NavController) {
             val gridItems = buildList<Any?> {
                 addAll(items)
                 items.forEachIndexed { index, _ ->
-                    if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                    if ((index + 1) % 6 == 0 && index < items.lastIndex && AdManager.isAdPlacementEnabled("seeall_banner")) {
                         add("ad")
                     }
                 }
@@ -83,6 +85,7 @@ fun SeeAllScreen(navController: NavController) {
                     if (entry is String && entry == "ad") {
                         Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
                             InlineBannerAd(
+                                placement = "seeall_banner",
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

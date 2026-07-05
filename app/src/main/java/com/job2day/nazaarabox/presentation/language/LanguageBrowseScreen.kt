@@ -1,5 +1,7 @@
 package com.job2day.nazaarabox.presentation.language
 
+import com.job2day.nazaarabox.utils.AdManager
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -145,7 +147,7 @@ fun LanguageBrowseScreen(
                     val gridItems = buildList<Any?> {
                         addAll(items)
                         items.forEachIndexed { index, _ ->
-                            if ((index + 1) % 6 == 0 && index < items.lastIndex) {
+                            if ((index + 1) % 6 == 0 && index < items.lastIndex && AdManager.isAdPlacementEnabled("language_banner")) {
                                 add("ad")
                             }
                         }
@@ -160,6 +162,7 @@ fun LanguageBrowseScreen(
                             if (entry is String && entry == "ad") {
                                 Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
                                     InlineBannerAd(
+                                        placement = "language_banner",
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
