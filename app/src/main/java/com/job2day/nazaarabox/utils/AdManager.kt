@@ -60,24 +60,23 @@ object AdManager {
         isWebviewAdsEnabled = parseBoolean(settings["enable_webview_ads"])
         webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
             ?: DEFAULT_WEBVIEW_AD_URL
-        isSafeMode = !isAdsEnabled
-        appMode = settings["app_mode"]?.trim()?.lowercase()?.takeIf {
-            it == "live" || it == "safe_review"
-        } ?: "live"
+        val modeValue = settings["app_mode"]?.trim()?.lowercase()
+        appMode = if (modeValue == "live") "live" else if (modeValue == "safe_review") "safe_review" else "live"
+        isSafeMode = appMode == "safe_review"
 
         Log.d(
             TAG,
-            "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl, appMode=$appMode",
+            "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl, appMode=$appMode, safeMode=$isSafeMode",
         )
     }
 
     fun isAdPlacementEnabled(placement: String): Boolean {
-        if (!isAdsEnabled) return false
+        if (!isAdsEnabled || !isWebviewAdsEnabled) return false
         val specificToggle = rawSettings["enable_ad_$placement"]
         return if (specificToggle != null) {
             parseBoolean(specificToggle)
         } else {
-            isWebviewAdsEnabled
+            true
         }
     }
 

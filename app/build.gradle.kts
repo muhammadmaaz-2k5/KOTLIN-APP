@@ -13,7 +13,7 @@ android {
         applicationId = "com.job2day.nazaarabox"
         minSdk = 24
         targetSdk = 36
-        versionCode = 23
+        versionCode = 24
         versionName = "1.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://moviebox.nazaarabox.com\"")

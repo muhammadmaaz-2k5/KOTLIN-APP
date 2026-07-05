@@ -71,33 +71,50 @@ fun DetailBottomActionBar(
     onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!AdManager.isLiveMode) return
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
-            .border(0.5.dp, Color.White.copy(alpha = 0.08f))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconActionButton(
-            icon = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-            isActive = isInWatchlist,
-            onClick = onWatchlistToggle,
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        IconActionButton(
-            icon = Icons.Default.Download,
-            isActive = false,
-            onClick = onDownload,
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        WatchButton(
-            item = item,
-            seasons = seasons,
-            modifier = Modifier.weight(1f),
-            onPlay = onPlay,
-        )
+    if (AdManager.isLiveMode) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
+                .border(0.5.dp, Color.White.copy(alpha = 0.08f))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconActionButton(
+                icon = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                isActive = isInWatchlist,
+                onClick = onWatchlistToggle,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            IconActionButton(
+                icon = Icons.Default.Download,
+                isActive = false,
+                onClick = onDownload,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            WatchButton(
+                item = item,
+                seasons = seasons,
+                modifier = Modifier.weight(1f),
+                onPlay = onPlay,
+            )
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
+                .border(0.5.dp, Color.White.copy(alpha = 0.08f))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.Text(
+                text = "Safe Review Mode — Info Only",
+                color = AppColors.TextMuted,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+            )
+        }
     }
 }
 

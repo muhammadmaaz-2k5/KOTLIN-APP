@@ -57,11 +57,24 @@ object PlayerWebHelper {
 
     fun detectDoodstream(url: String): Boolean {
         val lower = url.lowercase()
-        return lower.contains("doodstream.com") ||
+        return lower.contains("doodstream") ||
+            lower.contains("playmogo") ||
             lower.contains("dsvplay.com") ||
-            lower.contains("dood.to") ||
             lower.contains("ds2play.com") ||
-            lower.contains("ds2video.com")
+            lower.contains("ds2video.com") ||
+            lower.contains("dood.to") ||
+            lower.contains("dood.so") ||
+            lower.contains("dood.la") ||
+            lower.contains("dood.ws") ||
+            lower.contains("dood.wf") ||
+            lower.contains("dood.pm") ||
+            lower.contains("dood.cx") ||
+            lower.contains("dood.sh") ||
+            lower.contains("dood.re") ||
+            lower.contains("dood.yt") ||
+            lower.contains("dood.li") ||
+            lower.contains("dood.video") ||
+            lower.contains("doodp.to")
     }
 
     fun isAllowedVideoHosting(url: String): Boolean = getVideoHostingService(url) != null
@@ -132,7 +145,11 @@ object PlayerWebHelper {
 
     fun shouldUseHtmlWrapper(url: String): Boolean {
         if (url.isBlank()) return false
-        if (url.contains("youtube.com", ignoreCase = true) && url.contains("/embed/", ignoreCase = true)) {
+        val lower = url.lowercase()
+        if (lower.contains("youtube.com") && lower.contains("/embed/")) {
+            return false
+        }
+        if (detectDoodstream(lower)) {
             return false
         }
         return true
