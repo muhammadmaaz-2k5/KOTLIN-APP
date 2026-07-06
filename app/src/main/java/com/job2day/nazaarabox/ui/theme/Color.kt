@@ -2,6 +2,12 @@ package com.job2day.nazaarabox.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val NazaaraBlackBackground = Color(0xFF0F0808)
+val NazaaraBoxHeaderBackground = Color(0xFF1B0F0F)
+val NazaaraBoxPrimary = Color(0xFFE63946)
+val NazaaraBoxCardBackground = Color(0xFF1F0D0D)
+val PrimaryRed = Color(0xFFE63946)
+
 object AppColors {
     val Primary = Color(0xFF6C5CE7)
     val PrimaryContainer = Color(0xFF3D2F9E)

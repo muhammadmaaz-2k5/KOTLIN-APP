@@ -26,6 +26,9 @@ object AdManager {
     var webviewAdUrl: String = DEFAULT_WEBVIEW_AD_URL
         private set
 
+    val popupWebviewUrl: String
+        get() = webviewAdUrl
+
     var isSafeMode: Boolean = true
         private set
 
