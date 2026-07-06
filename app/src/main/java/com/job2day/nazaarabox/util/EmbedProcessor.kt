@@ -224,10 +224,10 @@ object EmbedProcessor {
                 processedUrl = "https://drive.google.com/file/d/$fileId/preview"
             }
             
-            // Auto-apply Google Drive custom styling if not already present
+            // Auto-apply Google Drive custom styling to crop the desktop header bar
             if (!hasDivWrapper) {
                 divStyle = "width: 100%; height: 100%; overflow: hidden; position: relative; background: #000;"
-                iframeStyle = "width: 100%; height: 100%; border: none; display: block; position: absolute; top: 0; left: 0;"
+                iframeStyle = "width: 100%; height: calc(100% + 56px); border: none; display: block; position: absolute; top: -56px; left: 0;"
                 iframeAttributes["allow"] = "autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture"
                 iframeAttributes["allowfullscreen"] = "true"
             }
@@ -375,7 +375,7 @@ object EmbedProcessor {
 
         return EmbedData(
             url = processedUrl,
-            hasCustomStyling = hasDivWrapper && (divStyle != null || iframeStyle != null),
+            hasCustomStyling = (hasDivWrapper || processedUrl.contains("drive.google.com")) && (divStyle != null || iframeStyle != null),
             divStyle = divStyle,
             iframeStyle = iframeStyle,
             iframeAttributes = iframeAttributes

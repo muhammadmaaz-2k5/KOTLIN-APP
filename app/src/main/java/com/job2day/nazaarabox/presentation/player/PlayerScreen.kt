@@ -79,6 +79,8 @@ import com.job2day.nazaarabox.ads.CustomInterstitialAd
 import com.job2day.nazaarabox.utils.AdManager
 import kotlinx.coroutines.delay
 import android.widget.Toast
+import com.job2day.nazaarabox.components.VideoPlayer
+import com.job2day.nazaarabox.screens.FullscreenPlayerScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -222,74 +224,31 @@ fun PlayerScreen(navController: NavController) {
         return
     }
 
-    if (isFullscreen) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-        ) {
-            PlayerWebView(
-                url = currentUrl,
-                onPageLoaded = { isPageLoading = false },
-                onUrlChanged = { isPageLoading = true },
-                modifier = Modifier.fillMaxSize(),
+    if (isFullscreen && currentUrl.isNotEmpty()) {
+        val mappedServers = servers.map { server ->
+            com.job2day.nazaarabox.model.EmbedServer(
+                name = server.label,
+                link = server.buildUrl(item, item.season, item.episode)
             )
-            if (isPageLoading) {
-                CircularProgressIndicator(
-                    color = AppColors.Primary,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-            currentServer?.let { server ->
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 16.dp, top = 16.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { showServerSheet = true }
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, AppColors.Primary.copy(alpha = 0.31f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(server.icon, fontSize = 13.sp)
-                    Text(
-                        text = server.label,
-                        modifier = Modifier.padding(start = 5.dp),
-                        color = AppColors.Primary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable { exitFullscreen() }
-                    .background(Color.Black.copy(alpha = 0.63f))
-                    .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Default.FullscreenExit, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                Text(
-                    text = "Exit fullscreen",
-                    modifier = Modifier.padding(start = 6.dp),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                )
-            }
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 8.dp, end = 8.dp),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-            }
         }
+        FullscreenPlayerScreen(
+            initialEmbedUrl = currentUrl,
+            initialTitle = item.title,
+            availableServers = mappedServers,
+            episodes = emptyList(),
+            tvId = if (item.type == "tv" || item.type == "tv_show") item.id else -1,
+            totalSeasons = item.season ?: 1,
+            aniId = -1,
+            totalEpisodes = 0,
+            onBack = {
+                exitFullscreen()
+            }
+        )
+        return
+    }
+
+    if (false) {
+        // Dummy block to keep else bracket matching
     } else {
     Scaffold(
         containerColor = Color.Black,
@@ -343,30 +302,14 @@ fun PlayerScreen(navController: NavController) {
                         .aspectRatio(16f / 9f)
                         .background(Color.Black),
                 ) {
-                    PlayerWebView(
-                        url = currentUrl,
-                        onPageLoaded = { isPageLoading = false },
-                        onUrlChanged = { isPageLoading = true },
+                    VideoPlayer(
+                        embedUrl = currentUrl,
                         modifier = Modifier.fillMaxSize(),
+                        aspectRatio = 16f / 9f,
+                        showFullscreenButton = true,
+                        onFullscreenClick = { enterFullscreen() },
+                        onServerError = { autoSwitchServer() }
                     )
-                    if (isPageLoading) {
-                        CircularProgressIndicator(
-                            color = AppColors.Primary,
-                            modifier = Modifier.align(Alignment.Center),
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(8.dp)
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { enterFullscreen() }
-                            .background(Color.Black.copy(alpha = 0.55f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Default.Fullscreen, contentDescription = "Fullscreen", tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {

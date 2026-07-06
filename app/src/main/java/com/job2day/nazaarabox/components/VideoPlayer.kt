@@ -289,7 +289,7 @@ fun VideoPlayer(
             if (processedUrl.contains("youtube.com")) {
                 append(" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\"")
             }
-            if (embedData.iframeStyle != null && !embedData.hasCustomStyling) {
+            if (embedData.iframeStyle != null) {
                 append(" style=\"${embedData.iframeStyle}\"")
             } else {
                 append(" style=\"$iframeBaseStyle\"")
@@ -627,6 +627,15 @@ fun VideoPlayer(
                         setSupportMultipleWindows(false) // Disable to prevent crash: Parent WebView cannot host its own popup
                         javaScriptCanOpenWindowsAutomatically = false
                         
+                        // Set User-Agent: Desktop for Google Drive to hide mobile webkit player controls, mobile Chrome for others
+                        val isGoogleDrive = processedUrl.lowercase().contains("drive.google.com") || 
+                                            processedUrl.lowercase().contains("google.com/file/d")
+                        if (isGoogleDrive) {
+                            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        } else {
+                            userAgentString = userAgentString.replace("; wv", "")
+                        }
+
                         // Additional settings for better vidsrc compatibility
                         if (isVidsrc) {
                             allowUniversalAccessFromFileURLs = true
