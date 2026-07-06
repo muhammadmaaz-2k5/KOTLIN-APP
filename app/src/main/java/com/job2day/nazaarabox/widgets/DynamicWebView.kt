@@ -93,7 +93,9 @@ fun DynamicWebView(
     autoClickDelayMs: Long? = 3000L,
     autoClickIntervalMs: Long = 3000L,
     clickYFraction: Float = 0.95f,
-    wrapInCard: Boolean = true
+    wrapInCard: Boolean = true,
+    enableVideoNavigationGuard: Boolean = false,
+    onTouch: (() -> Unit)? = null
 ) {
     if (url.isBlank()) return
 
@@ -260,6 +262,48 @@ fun DynamicWebView(
                                 val originalUrl = request?.url?.toString() ?: return false
                                 var clickedUrl = originalUrl
 
+                                if (enableVideoNavigationGuard) {
+                                    // Always allow the current video URL to load
+                                    if (clickedUrl == url) {
+                                        return false
+                                    }
+
+                                    // Block known ad/spam domains immediately
+                                    if (VideoNavigationGuard.shouldBlockNavigation(clickedUrl)) {
+                                        android.util.Log.d("DynamicWebView", "🚫 Blocked ad/spam: $clickedUrl")
+                                        return true
+                                    }
+
+                                    // Block non-http schemas to prevent redirect to store apps
+                                    if (!clickedUrl.startsWith("http://") && !clickedUrl.startsWith("https://")) {
+                                        android.util.Log.d("DynamicWebView", "🚫 Blocked non-http navigation attempt: $clickedUrl")
+                                        return true
+                                    }
+
+                                    // For iframe/subframe resources, allow it
+                                    if (request != null && !request.isForMainFrame) {
+                                        return false
+                                    }
+
+                                    // For main frame navigation (user clicks/redirects), check if it's within the same service
+                                    if (request != null && request.isForMainFrame) {
+                                        val initialService = VideoNavigationGuard.getVideoHostingService(url)
+                                        val requestService = VideoNavigationGuard.getVideoHostingService(clickedUrl)
+
+                                        if (initialService != null && 
+                                            requestService != null && 
+                                            initialService == requestService
+                                        ) {
+                                            android.util.Log.d("DynamicWebView", "✅ Allowing same-service navigation: $clickedUrl")
+                                            return false
+                                        }
+
+                                        // Block all other main frame navigation (clicks on ads, etc.)
+                                        android.util.Log.d("DynamicWebView", "🚫 Blocked user navigation attempt: $clickedUrl")
+                                        return true
+                                    }
+                                }
+
                                 if (com.job2day.nazaarabox.BuildConfig.DEBUG) {
                                     val isLocalOrBlogUrl =
                                         clickedUrl.contains("nazaaracircle.com", ignoreCase = true) ||
@@ -322,6 +366,14 @@ fun DynamicWebView(
                                 .replace(Regex("https?://127\\.0\\.0\\.1"), "http://10.0.2.2")
                                 .replace(Regex("https?://localhost"), "http://10.0.2.2")
                         }
+                        if (onTouch != null) {
+                            wv.setOnTouchListener { _, event ->
+                                if (event.action == android.view.MotionEvent.ACTION_UP) {
+                                    onTouch()
+                                }
+                                false
+                            }
+                        }
                         wv.loadUrl(finalUrl, adHeaders)
                         webViewRef.value = wv
                     }
@@ -362,5 +414,145 @@ fun DynamicWebView(
         ) {
             webViewContent()
         }
+    }
+}
+
+object VideoNavigationGuard {
+    fun getVideoHostingService(url: String): String? {
+        val lowerUrl = url.lowercase()
+
+        // OneDrive service (multiple domains)
+        if (lowerUrl.contains("1drv.ms") ||
+            lowerUrl.contains("onedrive.live.com") ||
+            lowerUrl.contains("sharepoint.com")
+        ) {
+            return "onedrive"
+        }
+
+        // Doodstream service
+        if (lowerUrl.contains("doodstream.com") ||
+            lowerUrl.contains("dsvplay.com") ||
+            lowerUrl.contains("dood.to") ||
+            lowerUrl.contains("ds2play.com") ||
+            lowerUrl.contains("ds2video.com")
+        ) {
+            return "doodstream"
+        }
+
+        // Vidsrc service (multiple domains)
+        if (lowerUrl.contains("vidsrc.icu") ||
+            lowerUrl.contains("vidsrc.to") ||
+            lowerUrl.contains("vidsrc.me") ||
+            lowerUrl.contains("vidsrc.net") ||
+            lowerUrl.contains("vidsrc.xyz") ||
+            lowerUrl.contains("vidsrc.cc")
+        ) {
+            return "vidsrc"
+        }
+
+        // Mixdrop service
+        if (lowerUrl.contains("mixdrop.co") ||
+            lowerUrl.contains("mixdrop.to") ||
+            lowerUrl.contains("mixdrop.sx") ||
+            lowerUrl.contains("mixdrop.bz")
+        ) {
+            return "mixdrop"
+        }
+
+        // Streamtape service
+        if (lowerUrl.contains("streamtape.com") ||
+            lowerUrl.contains("streamtape.net") ||
+            lowerUrl.contains("streamtape.to")
+        ) {
+            return "streamtape"
+        }
+
+        // Other single-domain services
+        if (lowerUrl.contains("embedsito.com")) return "embedsito"
+        if (lowerUrl.contains("embed.su")) return "embedsu"
+        if (lowerUrl.contains("upstream.to")) return "upstream"
+        if (lowerUrl.contains("youtube.com") || lowerUrl.contains("youtu.be")) return "youtube"
+        if (lowerUrl.contains("vimeo.com")) return "vimeo"
+        if (lowerUrl.contains("dailymotion.com")) return "dailymotion"
+        if (lowerUrl.contains("streamable.com")) return "streamable"
+
+        // Additional embed servers
+        if (lowerUrl.contains("mdy48tn97.com")) return "mdy48tn97"
+        if (lowerUrl.contains("vidstream.pro")) return "vidstream"
+        if (lowerUrl.contains("gogo-stream.com")) return "gogostream"
+        if (lowerUrl.contains("mp4upload.com")) return "mp4upload"
+        if (lowerUrl.contains("streamlare.com")) return "streamlare"
+        if (lowerUrl.contains("filemoon.sx")) return "filemoon"
+
+        // CDN services (always allow)
+        if (lowerUrl.contains("cloudflare.com") ||
+            lowerUrl.contains("cloudfront.net") ||
+            lowerUrl.contains("googleapis.com") ||
+            lowerUrl.contains("gstatic.com") ||
+            lowerUrl.contains("jwpcdn.com") ||
+            lowerUrl.contains("jwplatform.com")
+        ) {
+            return "cdn"
+        }
+
+        return null
+    }
+
+    fun isAllowedVideoHosting(url: String): Boolean {
+        return getVideoHostingService(url) != null
+    }
+
+    fun shouldBlockNavigation(url: String): Boolean {
+        // First check if it's an allowed video hosting domain
+        if (isAllowedVideoHosting(url)) {
+            return false // Don't block video hosting domains
+        }
+
+        // List of known ad/spam domains to block
+        val blockedPatterns = listOf(
+            "doubleclick.net",
+            "googlesyndication.com",
+            "google-analytics.com",
+            "adservice.google",
+            "advertising.com",
+            "adnxs.com",
+            "adsystem.com",
+            "adsrvr.org",
+            "adroll.com",
+            "serving-sys.com",
+            "adcolony.com",
+            "applovin.com",
+            "chartboost.com",
+            "unity3d.com",
+            "ironsrc.com",
+            "facebook.com",
+            "twitter.com",
+            "instagram.com",
+            "pinterest.com",
+            "linkedin.com",
+            "reddit.com",
+            "tiktok.com",
+            "snapchat.com",
+            "play.google.com",
+            "apps.apple.com",
+            "itunes.apple.com"
+        )
+
+        val lowerUrl = url.lowercase()
+
+        // Block known ad/social domains
+        for (pattern in blockedPatterns) {
+            if (lowerUrl.contains(pattern)) {
+                return true
+            }
+        }
+
+        // Block obvious app store links
+        if (lowerUrl.contains("/app/") || lowerUrl.contains("/apps/")) {
+            return true
+        }
+
+        // Allow everything else
+        return false
     }
 }

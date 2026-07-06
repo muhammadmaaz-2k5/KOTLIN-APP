@@ -32,7 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.job2day.nazaarabox.core.VideoServer
-import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.ui.theme.NazaaraBoxPrimary
+import com.job2day.nazaarabox.ui.theme.NazaaraBoxCardBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,15 +48,15 @@ fun PickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = AppColors.SurfaceDark,
+        containerColor = NazaaraBoxCardBackground,
     ) {
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Icon(icon, contentDescription = null, tint = AppColors.Primary)
+                Icon(icon, contentDescription = null, tint = NazaaraBoxPrimary)
                 Text(
                     text = title,
                     modifier = Modifier.padding(start = 8.dp),
-                    color = AppColors.TextPrimary,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -64,13 +65,13 @@ fun PickerBottomSheet(
                     headlineContent = {
                         Text(
                             text = option,
-                            color = if (selected == index) AppColors.Primary else AppColors.TextPrimary,
+                            color = if (selected == index) NazaaraBoxPrimary else Color.White,
                             fontWeight = if (selected == index) FontWeight.Bold else FontWeight.Normal,
                         )
                     },
                     trailingContent = {
                         if (selected == index) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.Primary)
+                            Icon(Icons.Default.Check, contentDescription = null, tint = NazaaraBoxPrimary)
                         }
                     },
                     modifier = Modifier
@@ -91,14 +92,14 @@ fun CastBottomSheet(onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = AppColors.SurfaceDark,
+        containerColor = NazaaraBoxCardBackground,
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text("Cast to device", color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
+            Text("Cast to device", color = Color.White, fontWeight = FontWeight.Bold)
             Text(
                 text = "No devices found. Make sure your device is on the same Wi-Fi network.",
                 modifier = Modifier.padding(top = 12.dp),
-                color = AppColors.TextMuted,
+                color = Color.Gray,
             )
         }
     }
@@ -115,7 +116,7 @@ fun ServerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF1E1E2E),
+        containerColor = NazaaraBoxCardBackground,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
@@ -123,13 +124,13 @@ fun ServerBottomSheet(
                     .padding(vertical = 10.dp)
                     .size(width = 40.dp, height = 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFF444466)),
+                    .background(Color.White.copy(alpha = 0.2f)),
             )
         },
     ) {
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
-                CustomIconWidget(iconName = "dns_rounded", size = 18.dp, color = AppColors.Primary)
+                CustomIconWidget(iconName = "dns_rounded", size = 18.dp, color = NazaaraBoxPrimary)
                 Text(
                     text = "Select Server",
                     modifier = Modifier.padding(start = 8.dp),
@@ -144,7 +145,7 @@ fun ServerBottomSheet(
                     headlineContent = {
                         Text(
                             text = server.label,
-                            color = if (isActive) AppColors.Primary else Color.White,
+                            color = if (isActive) NazaaraBoxPrimary else Color.White,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                         )
                     },
@@ -154,8 +155,8 @@ fun ServerBottomSheet(
                                 .size(38.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
-                                    if (isActive) AppColors.Primary.copy(alpha = 0.12f)
-                                    else AppColors.SurfaceVariantDark,
+                                    if (isActive) NazaaraBoxPrimary.copy(alpha = 0.12f)
+                                    else Color.White.copy(alpha = 0.05f),
                                 ),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -168,7 +169,7 @@ fun ServerBottomSheet(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(AppColors.Primary),
+                                    .background(NazaaraBoxPrimary),
                             )
                         }
                     },
@@ -194,19 +195,19 @@ fun MoreMenuSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = AppColors.SurfaceDark,
+        containerColor = NazaaraBoxCardBackground,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
     ) {
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Text(
                 text = title,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                color = AppColors.TextPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
             ListItem(
-                headlineContent = { Text("Share", color = AppColors.TextPrimary) },
+                headlineContent = { Text("Share", color = Color.White) },
                 modifier = Modifier.clickable {
                     onShare()
                     onDismiss()

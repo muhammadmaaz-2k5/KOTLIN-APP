@@ -14,6 +14,7 @@ object AppRoutes {
     const val ACTOR = "actor/{personId}"
     const val SEASON = "season"
     const val PLAYER = "player"
+    const val FULLSCREEN_PLAYER = "fullscreen_player"
     const val SEE_ALL = "see_all"
     const val CATEGORY = "category"
     const val LANGUAGE_BROWSE = "language_browse"
