@@ -487,6 +487,10 @@ fun VideoPlayer(
     
     // Check if URL is allowed video hosting
     fun isAllowedVideoHosting(url: String): Boolean {
+        val lowerUrl = url.lowercase()
+        if (lowerUrl.contains("drive.google.com") || lowerUrl.contains("docs.google.com") || lowerUrl.contains("google.com/file/d")) {
+            return true
+        }
         return getVideoHostingService(url) != null
     }
     
@@ -494,13 +498,28 @@ fun VideoPlayer(
     fun shouldBlockNavigation(url: String, currentUrl: String): Boolean {
         // Always allow the current video URL
         if (url == currentUrl || url == processedUrl) {
-            Logger.d("VideoPlayer", "âœ… Allowing video URL: $url")
+            Logger.d("VideoPlayer", "✅ Allowing video URL: $url")
             return false
+        }
+        
+        val lowerUrl = url.lowercase()
+
+        // For Google Drive embeds, do not block any google-related requests
+        val isGoogleDrive = processedUrl.lowercase().contains("drive.google.com") || 
+                           processedUrl.lowercase().contains("google.com/file/d") ||
+                           currentUrl.lowercase().contains("drive.google.com")
+        if (isGoogleDrive) {
+            if (lowerUrl.contains("google.com") || 
+                lowerUrl.contains("gstatic.com") || 
+                lowerUrl.contains("googleapis.com") || 
+                lowerUrl.contains("googleusercontent.com")) {
+                Logger.d("VideoPlayer", "✅ Allowing Google Drive resource: $url")
+                return false
+            }
         }
         
         // For vidsrc, be very lenient - allow most domains that vidsrc uses
         if (isVidsrc) {
-            val lowerUrl = url.lowercase()
             // Block only obvious ad/spam domains, allow everything else
             val strictBlockedPatterns = listOf(
                 "doubleclick.net",
@@ -523,7 +542,7 @@ fun VideoPlayer(
                 lowerUrl.contains(pattern)
             }
             if (!shouldBlock) {
-                Logger.d("VideoPlayer", "âœ… Allowing vidsrc resource: $url")
+                Logger.d("VideoPlayer", "✅ Allowing vidsrc resource: $url")
                 return false
             }
         }
@@ -563,17 +582,16 @@ fun VideoPlayer(
             "itunes.apple.com"
         )
         
-        val lowerUrl = url.lowercase()
         for (pattern in blockedPatterns) {
             if (lowerUrl.contains(pattern)) {
-                Logger.d("VideoPlayer", "ðŸš« Blocked ad/spam: $url")
+                Logger.d("VideoPlayer", "🚫 Blocked ad/spam: $url")
                 return true
             }
         }
         
         // Block app store links
         if (lowerUrl.contains("/app/") || lowerUrl.contains("/apps/")) {
-            Logger.d("VideoPlayer", "ðŸš« Blocked app store link: $url")
+            Logger.d("VideoPlayer", "🚫 Blocked app store link: $url")
             return true
         }
         
