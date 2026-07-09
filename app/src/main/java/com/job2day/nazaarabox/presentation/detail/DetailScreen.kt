@@ -280,6 +280,18 @@ fun DetailScreen(
                 }
             }
 
+            // ===== INLINE BANNER AD ABOVE REVIEWS =====
+            if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
+                item {
+                    InlineBannerAd(
+                        placement = "detail_banner_reviews",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
             if (state.reviews.isNotEmpty()) {
                 item {
                     DetailSectionHeader(
