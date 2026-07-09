@@ -61,6 +61,7 @@ import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -333,6 +334,30 @@ fun ActorScreen(
                             text = if (state.showAllFilmography) "Show Less" else "Show All ${state.credits.size} Titles",
                             color = AppColors.Primary,
                             fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+
+            // ===== FULL WIDTH BANNER AD AT THE BOTTOM =====
+            if (AdManager.isAdPlacementEnabled("actor_banner_bottom")) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Advertisement",
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        FullWidthAdBanner(
+                            placement = "actor_banner_bottom",
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }

@@ -63,6 +63,8 @@ import com.job2day.nazaarabox.widgets.TrailerPlayerSheet
 import com.job2day.nazaarabox.widgets.TrailerThumbnailCard
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
+import androidx.compose.material3.Text
 import kotlinx.coroutines.delay
 
 @Composable
@@ -345,6 +347,30 @@ fun DetailScreen(
                         }
                     }
                     Spacer(modifier = if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) Modifier.height(100.dp) else Modifier)
+                }
+            }
+
+            // ===== FULL WIDTH BANNER AD AT THE BOTTOM =====
+            if (AdManager.isAdPlacementEnabled("detail_banner_bottom")) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Advertisement",
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        FullWidthAdBanner(
+                            placement = "detail_banner_bottom",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
