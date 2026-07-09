@@ -1,7 +1,5 @@
 package com.job2day.nazaarabox.presentation.language
 
-import com.job2day.nazaarabox.utils.AdManager
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,7 +56,6 @@ import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
-import com.job2day.nazaarabox.ads.InlineBannerAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,73 +107,56 @@ fun LanguageBrowseScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                viewModel.languages.forEachIndexed { index, option ->
-                    LanguageChip(
-                        option = option,
-                        selected = state.selectedLangIndex == index,
-                        onClick = { viewModel.selectLanguage(index) },
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TypeChip("All", "all", Icons.Default.Apps, state.selectedType, accent) { viewModel.selectType(it) }
-                TypeChip("Movies", "movie", Icons.Default.Movie, state.selectedType, accent) { viewModel.selectType(it) }
-                TypeChip("TV", "tv", Icons.Default.Tv, state.selectedType, accent) { viewModel.selectType(it) }
-            }
-            HorizontalDivider(color = AppColors.SurfaceVariantDark)
-
-            when {
-                isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accent)
-                }
-                items.isEmpty() -> EmptyState(
-                    message = "No results for ${lang.label}\nTry switching to Movies or TV",
-                    emoji = lang.flag,
-                )
-                else -> {
-                    val gridItems = buildList<Any?> {
-                        addAll(items)
-                        items.forEachIndexed { index, _ ->
-                            if ((index + 1) % 6 == 0 && index < items.lastIndex && AdManager.isAdPlacementEnabled("language_banner")) {
-                                add("ad")
-                            }
-                        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    viewModel.languages.forEachIndexed { index, option ->
+                        LanguageChip(
+                            option = option,
+                            selected = state.selectedLangIndex == index,
+                            onClick = { viewModel.selectLanguage(index) },
+                        )
                     }
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        contentPadding = PaddingValues(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        items(gridItems, key = { it?.let { k -> if (k is String) "lang_ad_banner" else "${(k as com.job2day.nazaarabox.core.MediaItem).type}_${k.id}" } ?: "lang_ad" }) { entry ->
-                            if (entry is String && entry == "ad") {
-                                Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
-                                    InlineBannerAd(
-                                        placement = "language_banner",
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                }
-                            } else if (entry is com.job2day.nazaarabox.core.MediaItem) {
-                                LanguageCard(item = entry, accent = accent, onClick = { navController.navigateToDetail(entry) })
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TypeChip("All", "all", Icons.Default.Apps, state.selectedType, accent) { viewModel.selectType(it) }
+                    TypeChip("Movies", "movie", Icons.Default.Movie, state.selectedType, accent) { viewModel.selectType(it) }
+                    TypeChip("TV", "tv", Icons.Default.Tv, state.selectedType, accent) { viewModel.selectType(it) }
+                }
+                HorizontalDivider(color = AppColors.SurfaceVariantDark)
+
+                when {
+                    isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = accent)
+                    }
+                    items.isEmpty() -> EmptyState(
+                        message = "No results for ${lang.label}\nTry switching to Movies or TV",
+                        emoji = lang.flag,
+                    )
+                    else -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
+                            contentPadding = PaddingValues(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            items(items, key = { "${it.type}_${it.id}" }) { item ->
+                                LanguageCard(item = item, accent = accent, onClick = { navController.navigateToDetail(item) })
                             }
                         }
                     }
                 }
             }
         }
-    }
     }
 }
 
@@ -232,49 +214,89 @@ private fun TypeChip(
 
 @Composable
 private fun LanguageCard(item: MediaItem, accent: Color, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(12.dp), color = AppColors.CardDark) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
-                CustomImage(imageUrl = item.posterUrl, modifier = Modifier.fillMaxSize())
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = AppColors.CardDark,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Poster with perfect aspect ratio (2:3 for movie posters)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+            ) {
+                CustomImage(
+                    imageUrl = item.posterUrl,
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Type badge
                 Surface(
-                    modifier = Modifier.padding(6.dp).align(Alignment.TopStart),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart),
                     shape = RoundedCornerShape(4.dp),
-                    color = accent.copy(alpha = 0.78f),
+                    color = accent.copy(alpha = 0.85f),
                 ) {
                     Text(
                         text = if (item.type == "tv") "TV" else "FILM",
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                         color = Color.White,
-                        fontSize = 8.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                     )
                 }
+                
+                // Rating
                 if (item.rating > 0) {
-                    Text(
-                        text = "★ ${String.format("%.1f", item.rating)}",
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
-                        color = AppColors.Accent,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Surface(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .align(Alignment.BottomEnd),
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color.Black.copy(alpha = 0.7f),
+                    ) {
+                        Text(
+                            text = "★ ${String.format("%.1f", item.rating)}",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            color = AppColors.Accent,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
+            
+            // Title
             Text(
                 text = item.title,
-                modifier = Modifier.padding(horizontal = 7.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 color = AppColors.TextPrimary,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            
+            // Year
             if (item.year.isNotBlank()) {
                 Text(
                     text = item.year,
-                    modifier = Modifier.padding(start = 7.dp, bottom = 8.dp),
+                    modifier = Modifier
+                        .padding(start = 8.dp, bottom = 8.dp),
                     color = AppColors.TextMuted,
                     fontSize = 10.sp,
                 )
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
