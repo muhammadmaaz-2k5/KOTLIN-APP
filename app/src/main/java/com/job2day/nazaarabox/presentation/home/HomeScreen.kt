@@ -80,8 +80,6 @@ fun HomeScreen(
     val selected = state.selectedCategoryIndex
     val trending = state.trendingByCategory[selected].orEmpty()
     val popular = state.popularByCategory[selected].orEmpty()
-    val cinemaTrending = state.cinemaTrendingByCategory[selected].orEmpty()
-    val topReleases = state.topReleasesByCategory[selected].orEmpty() // Assuming this exists in ViewModel
     val featured = state.trendingByCategory[0].orEmpty().take(3)
     val category = state.categories.getOrNull(selected)
     val trendingLabel = when (category?.label) {
@@ -95,18 +93,6 @@ fun HomeScreen(
         "KDrama" -> "Popular KDramas"
         null -> "Popular"
         else -> "Popular ${category.label}"
-    }
-    val cinemaTrendingLabel = when (category?.label) {
-        "All" -> "Trending in Cinema"
-        "KDrama" -> "Trending KDramas in Cinema"
-        null -> "Trending in Cinema"
-        else -> "Trending ${category.label} in Cinema"
-    }
-    val topReleasesLabel = when (category?.label) {
-        "All" -> "Top 20 Movie Releases"
-        "KDrama" -> "Top 20 KDrama Releases"
-        null -> "Top 20 Movie Releases"
-        else -> "Top 20 ${category.label} Releases"
     }
     
     Box(
@@ -176,9 +162,11 @@ fun HomeScreen(
 
                 // 🔄 REPLACED: Native Card Ads Row (6 cards) instead of banner
                 if (AdManager.isAdPlacementEnabled("home_inline")) {
+                    // Ad row with 6 cards - horizontally scrollable
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
+                        // Optional: Add a small header to indicate sponsored content
                         Text(
                             text = "Sponsored",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -191,7 +179,7 @@ fun HomeScreen(
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.height(220.dp),
+                            modifier = Modifier.height(220.dp), // Fixed height for consistency
                         ) {
                             items(6) { index ->
                                 CustomSmallCardAd(
@@ -206,7 +194,6 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                // Section 1: Trending
                 SectionHeader(
                     title = trendingLabel,
                     emoji = "🔥",
@@ -253,136 +240,6 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Section 2: Trending in Cinema
-                if (cinemaTrending.isNotEmpty()) {
-                    SectionHeader(
-                        title = cinemaTrendingLabel,
-                        emoji = "🎬",
-                        onSeeAll = if (cinemaTrending.isNotEmpty()) {
-                            { navController.navigateToSeeAll(cinemaTrendingLabel, cinemaTrending) }
-                        } else null,
-                    )
-                    
-                    val cinemaTrendingWithAds = buildList<MediaItem?> {
-                        addAll(cinemaTrending)
-                        cinemaTrending.forEachIndexed { index, item ->
-                            if ((index + 1) % 4 == 0 && index < cinemaTrending.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    
-                    Box(modifier = Modifier.height(220.dp)) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(cinemaTrendingWithAds) { entry ->
-                                if (entry != null) {
-                                    TrendingCard(
-                                        item = entry,
-                                        onClick = { navController.navigateToDetail(entry) },
-                                    )
-                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
-                                    CustomSmallCardAd(
-                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                        modifier = Modifier
-                                            .width(140.dp)
-                                            .height(200.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(28.dp))
-                }
-
-                // 🆕 NEW: Top 20 Movie Releases Section
-                if (topReleases.isNotEmpty()) {
-                    SectionHeader(
-                        title = topReleasesLabel,
-                        emoji = "🏆",
-                        onSeeAll = if (topReleases.isNotEmpty()) {
-                            { navController.navigateToSeeAll(topReleasesLabel, topReleases) }
-                        } else null,
-                    )
-                    
-                    // Show top releases in grid format (2 columns) with ads
-                    val topReleasesList = topReleases.take(20)
-                    val allItems = buildList<MediaItem?> {
-                        topReleasesList.forEachIndexed { index, item ->
-                            add(item)
-                            // Add ad after every 4th item (index 3, 7, 11, 15, 19)
-                            if ((index + 1) % 4 == 0 && index < topReleasesList.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    
-                    allItems.chunked(2).forEachIndexed { rowIndex, rowItems ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            rowItems.forEach { gridItem ->
-                                if (gridItem != null) {
-                                    // Show rank number for top releases
-                                    val globalIndex = rowIndex * 2 + rowItems.indexOf(gridItem)
-                                    MovieGridCard(
-                                        item = gridItem,
-                                        modifier = Modifier.weight(1f),
-                                        onClick = { navController.navigateToDetail(gridItem) },
-                                        showRank = true,
-                                        rank = globalIndex + 1,
-                                    )
-                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
-                                    CustomSmallCardAd(
-                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(240.dp),
-                                    )
-                                }
-                            }
-                            // Fill empty space if only one item in row
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                    
-                    // Add a "See All 20" button if there are exactly 20 items
-                    if (topReleasesList.size >= 20) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(AppColors.SurfaceDark)
-                                .border(1.dp, AppColors.Outline, RoundedCornerShape(14.dp))
-                                .clickable { 
-                                    navController.navigateToSeeAll(topReleasesLabel, topReleases)
-                                }
-                                .padding(vertical = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "See All 20 Releases",
-                                color = AppColors.Primary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    
-                    Spacer(modifier = Modifier.height(28.dp))
-                }
-
-                // Section 3: Popular
                 SectionHeader(
                     title = popularLabel,
                     emoji = "⭐",
