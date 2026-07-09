@@ -95,11 +95,6 @@ fun HomeScreen(
         else -> "Popular ${category.label}"
     }
     
-    // 🆕 Cinema trending items (you can get these from a separate API call or filter)
-    // For now, using the same trending data but you should fetch cinema-specific data
-    val cinemaTrending = state.trendingByCategory[selected].orEmpty().take(10)
-    val cinemaTrendingLabel = "Trending in Cinema 🎬"
-    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -199,7 +194,6 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                // 📌 Section 1: Trending
                 SectionHeader(
                     title = trendingLabel,
                     emoji = "🔥",
@@ -246,52 +240,38 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // 🆕 Section 2: Trending in Cinema
-                SectionHeader(
-                    title = cinemaTrendingLabel,
-                    emoji = "🎬",
-                    onSeeAll = if (cinemaTrending.isNotEmpty()) {
-                        { navController.navigateToSeeAll(cinemaTrendingLabel, cinemaTrending) }
-                    } else null,
-                )
-                if (cinemaTrending.isEmpty()) {
-                    EmptyState("No cinema trending titles found")
-                } else {
-                    val cinemaWithAds = buildList<MediaItem?> {
-                        addAll(cinemaTrending)
-                        cinemaTrending.forEachIndexed { index, item ->
-                            if ((index + 1) % 4 == 0 && index < cinemaTrending.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    Box(modifier = Modifier.height(220.dp)) {
+                // 🆕 NEW: 6 Native Cards below Trending section
+                if (AdManager.isAdPlacementEnabled("home_inline")) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "Sponsored Recommendations",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                        )
+                        
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.height(220.dp),
                         ) {
-                            items(cinemaWithAds) { entry ->
-                                if (entry != null) {
-                                    TrendingCard(
-                                        item = entry,
-                                        onClick = { navController.navigateToDetail(entry) },
-                                    )
-                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
-                                    CustomSmallCardAd(
-                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                        modifier = Modifier
-                                            .width(140.dp)
-                                            .height(200.dp),
-                                    )
-                                }
+                            items(6) { index ->
+                                CustomSmallCardAd(
+                                    adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .height(200.dp),
+                                )
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // 📌 Section 3: Popular
                 SectionHeader(
                     title = popularLabel,
                     emoji = "⭐",
@@ -346,7 +326,6 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 📌 Section 4: Home Sections Widget
                 HomeSectionsWidget(navController = navController)
 
                 Spacer(modifier = Modifier.height(16.dp))
