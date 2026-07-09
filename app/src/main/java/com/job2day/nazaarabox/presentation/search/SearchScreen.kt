@@ -1,7 +1,5 @@
 package com.job2day.nazaarabox.presentation.search
 
-import com.job2day.nazaarabox.utils.AdManager
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,8 +67,15 @@ import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
-import com.job2day.nazaarabox.ads.InlineCardAd
-import com.job2day.nazaarabox.ads.FullWidthAdBanner
+import com.job2day.nazaarabox.ads.InlineBannerAd
+
+// Define ad constants for better maintainability
+private object AdConfig {
+    const val BANNER_PLACEMENT = "search_banner"
+    const val BANNER_INTERVAL = 5 // Show ad after every 5 results
+    const val MAX_BANNERS = 3 // Maximum banners to show
+    const val AD_HEIGHT = 100 // Height of the ad banner in dp
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -83,6 +87,9 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     var showFilters by remember { mutableStateOf(false) }
     var searchFocused by remember { mutableStateOf(false) }
+    
+    // Track which items are expanded for better UX - using String keys
+    var expandedItems by remember { mutableStateOf<MutableSet<String>>(mutableSetOf()) }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -107,34 +114,7 @@ fun SearchScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
-            if (AdManager.isAdPlacementEnabled("search_banner")) {
-                FullWidthAdBanner(
-                    placement = "search_banner",
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-            }
-            if (AdManager.isAdPlacementEnabled("search_inline")) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                ) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                    ) {
-                        items(4) {
-                            InlineCardAd(
-                                placement = "search_inline",
-                                modifier = Modifier
-                                    .width(140.dp)
-                                    .height(200.dp),
-                            )
-                        }
-                    }
-                }
-            }
-
+            // Search input and filters
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -189,6 +169,7 @@ fun SearchScreen(
                 }
             }
 
+            // Type filter chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -261,38 +242,48 @@ fun SearchScreen(
                 }
                 state.results.isEmpty() -> EmptyState("No results for \"${state.query}\"")
                 else -> {
-                    val listItems = buildList<Any?> {
-                        state.results.forEachIndexed { index, item ->
-                            add(item)
-                            if ((index + 1) % 3 == 0 && index < state.results.lastIndex && AdManager.isAdPlacementEnabled("search_inline")) {
-                                add(Unit)
-                            }
-                        }
-                    }
                     Text(
                         text = "${state.results.size} result${if (state.results.size != 1) "s" else ""} for \"${state.query}\"",
                         color = AppColors.TextMuted,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 10.dp),
                     )
+                    
+                    // Build list with ads inserted at regular intervals
+                    val itemsWithAds = remember(state.results) {
+                        buildSearchResultWithAds(state.results)
+                    }
+                    
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        itemsIndexed(listItems) { index, item ->
-                            if (item is MediaItem) {
-                                SearchResultRow(item = item, onClick = {
-                                    if (item.type == "person") navController.navigateToActor(item.id)
-                                    else navController.navigateToDetail(item)
-                                })
-                            } else if (item == Unit) {
-                                InlineCardAd(
-                                    placement = "search_inline",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp),
-                                    label = "Sponsored",
-                                )
+                        itemsIndexed(itemsWithAds) { index, item ->
+                            when (item) {
+                                is MediaItem -> {
+                                    val itemKey = "${item.type}_${item.id}"
+                                    SearchResultRow(
+                                        item = item,
+                                        isExpanded = expandedItems.contains(itemKey),
+                                        onToggleExpand = {
+                                            if (expandedItems.contains(itemKey)) {
+                                                expandedItems.remove(itemKey)
+                                            } else {
+                                                expandedItems.add(itemKey)
+                                            }
+                                        },
+                                        onClick = {
+                                            if (item.type == "person") {
+                                                navController.navigateToActor(item.id)
+                                            } else {
+                                                navController.navigateToDetail(item)
+                                            }
+                                        }
+                                    )
+                                }
+                                is SearchAdItem -> {
+                                    SearchAdBanner(item = item)
+                                }
                             }
                         }
                     }
@@ -304,9 +295,7 @@ fun SearchScreen(
     if (showFilters) {
         SearchFilterSheet(
             current = state.filters,
-            onDismiss = {
-                showFilters = false
-            },
+            onDismiss = { showFilters = false },
             onApply = {
                 viewModel.applyFilters(it)
                 showFilters = false
@@ -315,8 +304,115 @@ fun SearchScreen(
     }
 }
 
+// Data class for ad items in the list
+private data class SearchAdItem(
+    val placement: String,
+    val id: String = "ad_${System.currentTimeMillis()}"
+)
+
+// Build results with ads at regular intervals
+private fun buildSearchResultWithAds(
+    results: List<MediaItem>,
+    interval: Int = AdConfig.BANNER_INTERVAL,
+    maxAds: Int = AdConfig.MAX_BANNERS
+): List<Any> {
+    if (results.isEmpty()) return emptyList()
+    
+    // Only show ads if placement is enabled
+    if (!com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled(AdConfig.BANNER_PLACEMENT)) {
+        return results
+    }
+    
+    return buildList {
+        var adCount = 0
+        results.forEachIndexed { index, item ->
+            add(item)
+            
+            // Insert ad after interval, but not at the end, and limited by maxAds
+            val shouldInsertAd = 
+                (index + 1) % interval == 0 &&
+                index < results.lastIndex &&
+                adCount < maxAds &&
+                index < results.size - 1 // Don't add after last item
+            
+            if (shouldInsertAd) {
+                add(SearchAdItem(
+                    placement = AdConfig.BANNER_PLACEMENT,
+                    id = "ad_${index}_${System.currentTimeMillis()}"
+                ))
+                adCount++
+            }
+        }
+    }
+}
+
+// Separate composable for ad banner with better styling and UX
 @Composable
-private fun SearchResultRow(item: MediaItem, onClick: () -> Unit) {
+private fun SearchAdBanner(
+    item: SearchAdItem,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = AppColors.SurfaceVariantDark.copy(alpha = 0.3f),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = AppColors.Outline.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            // Ad label with proper styling
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sponsored",
+                    color = AppColors.TextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.5.sp,
+                )
+                // Optional: Small close/feedback button
+                Text(
+                    text = "ⓘ",
+                    color = AppColors.TextMuted,
+                    fontSize = 10.sp,
+                    modifier = Modifier.clickable {
+                        // Could show ad feedback dialog
+                    }
+                )
+            }
+            
+            // The actual ad banner with increased height
+            InlineBannerAd(
+                placement = item.placement,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AdConfig.AD_HEIGHT.dp) // Using the constant from AdConfig
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchResultRow(
+    item: MediaItem,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onClick: () -> Unit,
+) {
     val isPerson = item.type == "person"
     val imageUrl = if (isPerson) item.posterUrl else item.posterUrl
     val typeColor = when (item.type) {
@@ -358,9 +454,20 @@ private fun SearchResultRow(item: MediaItem, onClick: () -> Unit) {
                     color = AppColors.TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
-                    maxLines = 2,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                
+                // Expand/collapse for long titles
+                if (item.title.length > 30) {
+                    Text(
+                        text = if (isExpanded) "Show less" else "Show more",
+                        color = AppColors.Primary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.clickable { onToggleExpand() }
+                    )
+                }
+                
                 Row(
                     modifier = Modifier.padding(top = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
