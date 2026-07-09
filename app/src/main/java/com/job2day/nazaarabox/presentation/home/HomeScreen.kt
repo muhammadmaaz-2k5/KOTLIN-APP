@@ -160,11 +160,37 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (AdManager.isAdPlacementEnabled("home_banner")) {
-                    FullWidthAdBanner(
-                        placement = "home_banner",
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
+                // 🔄 REPLACED: Native Card Ads Row (6 cards) instead of banner
+                if (AdManager.isAdPlacementEnabled("home_inline")) {
+                    // Ad row with 6 cards - horizontally scrollable
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        // Optional: Add a small header to indicate sponsored content
+                        Text(
+                            text = "Sponsored",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                        )
+                        
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.height(220.dp), // Fixed height for consistency
+                        ) {
+                            items(6) { index ->
+                                CustomSmallCardAd(
+                                    adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .height(200.dp),
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
@@ -188,7 +214,7 @@ fun HomeScreen(
                             }
                         }
                     }
-Box(modifier = Modifier.height(220.dp)) {
+                    Box(modifier = Modifier.height(220.dp)) {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -232,7 +258,6 @@ Box(modifier = Modifier.height(220.dp)) {
                             add(item)
                             if ((index + 1) % 4 == 0 && index < popularList.lastIndex) {
                                 add(null)
-                                add(null)
                             }
                         }
                     }
@@ -270,6 +295,31 @@ Box(modifier = Modifier.height(220.dp)) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 HomeSectionsWidget(navController = navController)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ✅ MOVED: Banner Ad to the end of the page
+                if (AdManager.isAdPlacementEnabled("home_banner")) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            text = "Advertisement",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                        )
+                        FullWidthAdBanner(
+                            placement = "home_banner",
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 Spacer(modifier = Modifier.height(100.dp))
             }
