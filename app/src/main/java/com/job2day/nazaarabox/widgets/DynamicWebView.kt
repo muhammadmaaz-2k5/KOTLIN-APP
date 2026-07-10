@@ -95,7 +95,12 @@ fun DynamicWebView(
     clickYFraction: Float = 0.95f,
     wrapInCard: Boolean = true,
     enableVideoNavigationGuard: Boolean = false,
-    onTouch: (() -> Unit)? = null
+    onTouch: (() -> Unit)? = null,
+    // Multi-tab specific parameters
+    enableMultiTabs: Boolean = false,
+    onNewTabCreated: ((WebView) -> Unit)? = null,
+    onTabClosed: ((Int) -> Unit)? = null,
+    onTabSwitched: ((Int) -> Unit)? = null
 ) {
     if (url.isBlank()) return
 
@@ -103,6 +108,7 @@ fun DynamicWebView(
     var isLoading by remember { mutableStateOf(true) }
     var isPageLoaded by remember { mutableStateOf(false) }
     var scriptInjected by remember { mutableStateOf(false) }
+    var currentTabId by remember { mutableStateOf(0) }
 
     val currentOnPageLoaded by rememberUpdatedState(onPageLoaded)
     val currentInjectionScript by rememberUpdatedState(
@@ -117,6 +123,10 @@ fun DynamicWebView(
     var timeoutJob by remember { mutableStateOf<Job?>(null) }
     var scriptInjectionJob by remember { mutableStateOf<Job?>(null) }
     var autoClickJob by remember { mutableStateOf<Job?>(null) }
+
+    // Track multiple WebViews for multi-tab support
+    val tabWebViews = remember { mutableStateMapOf<Int, WebView>() }
+    var nextTabId by remember { mutableStateOf(1) }
 
     LaunchedEffect(url) {
         isPageLoaded = false
@@ -176,6 +186,15 @@ fun DynamicWebView(
             timeoutJob?.cancel()
             scriptInjectionJob?.cancel()
             autoClickJob?.cancel()
+            
+            // Clean up all WebViews
+            tabWebViews.values.forEach { wv ->
+                wv.stopLoading()
+                wv.loadUrl("about:blank")
+                wv.clearHistory()
+                wv.destroy()
+            }
+            tabWebViews.clear()
         }
     }
 
@@ -216,8 +235,9 @@ fun DynamicWebView(
                             cacheMode = WebSettings.LOAD_DEFAULT
                             setSupportZoom(false)
                             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            javaScriptCanOpenWindowsAutomatically = false
-                            setSupportMultipleWindows(false)
+                            // Enable multi-tab support if requested
+                            setSupportMultipleWindows(enableMultiTabs)
+                            javaScriptCanOpenWindowsAutomatically = enableMultiTabs
                             mediaPlaybackRequiresUserGesture = false
                         }
 
@@ -352,7 +372,154 @@ fun DynamicWebView(
                                 isUserGesture: Boolean,
                                 resultMsg: android.os.Message?
                             ): Boolean {
-                                return false
+                                if (!enableMultiTabs) {
+                                    return false
+                                }
+
+                                if (view == null) return false
+                                
+                                android.util.Log.d("DynamicWebView", "Creating new tab/window")
+                                
+                                try {
+                                    // Create a new WebView for the new window/tab
+                                    val newWebView = WebView(view.context).apply {
+                                        layoutParams = ViewGroup.LayoutParams(
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                            ViewGroup.LayoutParams.MATCH_PARENT
+                                        )
+
+                                        setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                                        isVerticalScrollBarEnabled = isScrollEnabled
+                                        isHorizontalScrollBarEnabled = isScrollEnabled
+
+                                        settings.apply {
+                                            javaScriptEnabled = true
+                                            domStorageEnabled = true
+                                            databaseEnabled = true
+                                            builtInZoomControls = false
+                                            displayZoomControls = false
+                                            this.useWideViewPort = useWideViewPort
+                                            loadWithOverviewMode = true
+                                            cacheMode = WebSettings.LOAD_DEFAULT
+                                            setSupportZoom(false)
+                                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                            setSupportMultipleWindows(true)
+                                            javaScriptCanOpenWindowsAutomatically = true
+                                            mediaPlaybackRequiresUserGesture = false
+                                        }
+
+                                        // Copy WebViewClient from parent
+                                        webViewClient = object : WebViewClient() {
+                                            override fun onPageFinished(webView: WebView?, pageUrl: String?) {
+                                                super.onPageFinished(webView, pageUrl)
+                                                webView?.post {
+                                                    // Notify that new tab is loaded
+                                                    onNewTabCreated?.invoke(webView)
+                                                }
+                                            }
+
+                                            override fun onReceivedError(
+                                                webView: WebView?,
+                                                request: WebResourceRequest?,
+                                                error: WebResourceError?
+                                            ) {
+                                                super.onReceivedError(webView, request, error)
+                                                if (request?.isForMainFrame == true) {
+                                                    android.util.Log.e(
+                                                        "DynamicWebView",
+                                                        "New tab error: ${error?.description} (${error?.errorCode}) for ${request?.url}"
+                                                    )
+                                                }
+                                            }
+
+                                            override fun shouldOverrideUrlLoading(
+                                                webView: WebView?,
+                                                request: WebResourceRequest?
+                                            ): Boolean {
+                                                // Delegate to the main WebViewClient logic
+                                                val originalUrl = request?.url?.toString() ?: return false
+                                                
+                                                // Handle non-http URLs
+                                                if (!originalUrl.startsWith("http://") && !originalUrl.startsWith("https://")) {
+                                                    try {
+                                                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(originalUrl))
+                                                        context.startActivity(intent)
+                                                        return true
+                                                    } catch (e: Exception) {
+                                                        return false
+                                                    }
+                                                }
+                                                
+                                                // Allow loading in the new tab
+                                                return false
+                                            }
+                                        }
+
+                                        webChromeClient = object : WebChromeClient() {
+                                            override fun onCloseWindow(window: WebView?) {
+                                                super.onCloseWindow(window)
+                                                if (window != null) {
+                                                    // Find and remove the closed tab
+                                                    val tabId = tabWebViews.entries.find { it.value == window }?.key
+                                                    if (tabId != null) {
+                                                        tabWebViews.remove(tabId)
+                                                        window.stopLoading()
+                                                        window.loadUrl("about:blank")
+                                                        window.clearHistory()
+                                                        onTabClosed?.invoke(tabId)
+                                                        android.util.Log.d("DynamicWebView", "Tab closed: $tabId")
+                                                    }
+                                                }
+                                            }
+
+                                            override fun onCreateWindow(
+                                                webView: WebView?,
+                                                isDialog: Boolean,
+                                                isUserGesture: Boolean,
+                                                resultMsg: android.os.Message?
+                                            ): Boolean {
+                                                // Allow nested window creation
+                                                return webView?.webChromeClient?.onCreateWindow(webView, isDialog, isUserGesture, resultMsg) ?: false
+                                            }
+                                        }
+
+                                        // Set touch listener if provided
+                                        if (onTouch != null) {
+                                            setOnTouchListener { _, event ->
+                                                if (event.action == MotionEvent.ACTION_UP) {
+                                                    onTouch()
+                                                }
+                                                false
+                                            }
+                                        }
+                                    }
+
+                                    // Assign a tab ID and store the WebView
+                                    val tabId = nextTabId++
+                                    tabWebViews[tabId] = newWebView
+                                    
+                                    // Notify about new tab
+                                    onNewTabCreated?.invoke(newWebView)
+                                    
+                                    // Transfer the WebView to the result message
+                                    val transport = resultMsg?.obj as? WebView.WebViewTransport
+                                    transport?.webView = newWebView
+                                    resultMsg?.sendToTarget()
+                                    
+                                    android.util.Log.d("DynamicWebView", "New tab created with ID: $tabId")
+                                    return true
+                                    
+                                } catch (e: Exception) {
+                                    android.util.Log.e("DynamicWebView", "Error creating new tab: ${e.message}")
+                                    return false
+                                }
+                            }
+
+                            override fun onCloseWindow(window: WebView?) {
+                                super.onCloseWindow(window)
+                                // Handle window close if needed
                             }
                         }
 
