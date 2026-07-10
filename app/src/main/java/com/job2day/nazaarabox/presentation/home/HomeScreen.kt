@@ -55,6 +55,7 @@ import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.TrendingCard
 import com.job2day.nazaarabox.ads.CustomSmallCardAd
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
+import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.utils.AdManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,93 +161,13 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 🔄 REPLACED: Native Card Ads Row (6 cards) instead of banner
+                // Native Card Ads Row (6 cards) - above Trending section
                 if (AdManager.isAdPlacementEnabled("home_inline")) {
-                    // Ad row with 6 cards - horizontally scrollable
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        // Optional: Add a small header to indicate sponsored content
                         Text(
                             text = "Sponsored",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                        )
-                        
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.height(220.dp), // Fixed height for consistency
-                        ) {
-                            items(6) { index ->
-                                CustomSmallCardAd(
-                                    adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                    modifier = Modifier
-                                        .width(140.dp)
-                                        .height(200.dp),
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
-
-                SectionHeader(
-                    title = trendingLabel,
-                    emoji = "🔥",
-                    onSeeAll = if (trending.isNotEmpty()) {
-                        { navController.navigateToSeeAll(trendingLabel, trending) }
-                    } else null,
-                )
-                if (state.loadingTrending.contains(selected) && trending.isEmpty()) {
-                    LoadingSkeleton(modifier = Modifier.padding(horizontal = 16.dp))
-                } else if (trending.isEmpty()) {
-                    EmptyState("No trending titles found")
-                } else {
-                    val trendingWithAds = buildList<MediaItem?> {
-                        addAll(trending)
-                        trending.forEachIndexed { index, item ->
-                            if ((index + 1) % 4 == 0 && index < trending.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    Box(modifier = Modifier.height(220.dp)) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(trendingWithAds) { entry ->
-                                if (entry != null) {
-                                    TrendingCard(
-                                        item = entry,
-                                        onClick = { navController.navigateToDetail(entry) },
-                                    )
-                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
-                                    CustomSmallCardAd(
-                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                        modifier = Modifier
-                                            .width(140.dp)
-                                            .height(200.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // 🆕 NEW: 6 Native Cards below Trending section
-                if (AdManager.isAdPlacementEnabled("home_inline")) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = "Sponsored Recommendations",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             color = Color(0xFF888899),
                             fontSize = 11.sp,
@@ -273,6 +194,60 @@ fun HomeScreen(
                 }
 
                 SectionHeader(
+                    title = trendingLabel,
+                    emoji = "🔥",
+                    onSeeAll = if (trending.isNotEmpty()) {
+                        { navController.navigateToSeeAll(trendingLabel, trending) }
+                    } else null,
+                )
+                if (state.loadingTrending.contains(selected) && trending.isEmpty()) {
+                    LoadingSkeleton(modifier = Modifier.padding(horizontal = 16.dp))
+                } else if (trending.isEmpty()) {
+                    EmptyState("No trending titles found")
+                } else {
+                    Box(modifier = Modifier.height(220.dp)) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(trending) { entry ->
+                                TrendingCard(
+                                    item = entry,
+                                    onClick = { navController.navigateToDetail(entry) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // ===== INLINE BANNER AD BETWEEN TRENDING AND POPULAR =====
+                if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            text = "Advertisement",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            color = Color(0xFF888899),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                        )
+                        InlineBannerAd(
+                            placement = "detail_banner_reviews",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                SectionHeader(
                     title = popularLabel,
                     emoji = "⭐",
                     onSeeAll = if (popular.isNotEmpty()) {
@@ -285,15 +260,7 @@ fun HomeScreen(
                     EmptyState("No popular titles found")
                 } else {
                     val popularList = popular.take(12)
-                    val allItems = buildList<MediaItem?> {
-                        popularList.forEachIndexed { index, item ->
-                            add(item)
-                            if ((index + 1) % 4 == 0 && index < popularList.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    allItems.chunked(2).forEach { rowItems ->
+                    popularList.chunked(2).forEach { rowItems ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -301,20 +268,11 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowItems.forEach { gridItem ->
-                                if (gridItem != null) {
-                                    MovieGridCard(
-                                        item = gridItem,
-                                        modifier = Modifier.weight(1f),
-                                        onClick = { navController.navigateToDetail(gridItem) },
-                                    )
-                                } else if (AdManager.isAdPlacementEnabled("home_inline")) {
-                                    CustomSmallCardAd(
-                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(240.dp),
-                                    )
-                                }
+                                MovieGridCard(
+                                    item = gridItem,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { navController.navigateToDetail(gridItem) },
+                                )
                             }
                             if (rowItems.size == 1) {
                                 Spacer(modifier = Modifier.weight(1f))
@@ -330,7 +288,7 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ✅ MOVED: Banner Ad to the end of the page
+                // Banner Ad at the bottom of the page
                 if (AdManager.isAdPlacementEnabled("home_banner")) {
                     Column(
                         modifier = Modifier

@@ -21,42 +21,37 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * Wraps arbitrary user JS in a smart `waitAndRun` helper.
- *
- * The helper polls (every 300 ms, up to 20 times) until
- * `readySelector` is present in the DOM, then calls the user's [userScript].
- * If [readySelector] is null / blank the user script is executed immediately.
- */
 private fun buildInjectionScript(userScript: String, readySelector: String?): String {
-    return if (!readySelector.isNullOrBlank()) {
+    if (!readySelector.isNullOrBlank()) {
         val safeSelector = readySelector.replace("\\", "\\\\").replace("'", "\\'")
-        """
-(function() {
-  var _maxTries = 20;
-  var _tries    = 0;
-  function waitAndRun() {
-    var el = document.querySelector('$safeSelector');
-    if (el) {
-      try { (function(){ ${userScript} })(); }
-      catch(e){ console.error('NazaaraWebView script error: ' + e); }
-    } else if (_tries < _maxTries) {
-      _tries++;
-      setTimeout(waitAndRun, 300);
+        return """
+            (function() {
+              var _maxTries = 20;
+              var _tries    = 0;
+              function waitAndRun() {
+                var el = document.querySelector('$safeSelector');
+                if (el) {
+                  try { (function(){ ${userScript} })(); }
+                  catch(e){ console.error('NazaaraWebView script error: ' + e); }
+                } else if (_tries < _maxTries) {
+                  _tries++;
+                  setTimeout(waitAndRun, 300);
+                }
+              }
+              waitAndRun();
+            })();
+        """.trimIndent()
     }
-  }
-  waitAndRun();
-})();
-"""
-    } else {
-        """
-(function() {
-  try { (function(){ ${userScript} })(); }
-  catch(e){ console.error('NazaaraWebView script error: ' + e); }
-})();
-"""
-    }
+    return """
+        (function() {
+          try { (function(){ ${userScript} })(); }
+          catch(e){ console.error('NazaaraWebView script error: ' + e); }
+        })();
+    """.trimIndent()
 }
 
 private fun simulateTouchOnWebView(webView: WebView, yFraction: Float = 0.95f) {
@@ -86,7 +81,6 @@ fun DynamicWebView(
     height: Dp? = 490.dp,
     isScrollEnabled: Boolean = true,
     useWideViewPort: Boolean = true,
-    existingWebView: WebView? = null,
     scriptToInject: String? = null,
     readySelector: String? = null,
     onPageLoaded: (() -> Unit)? = null,
@@ -96,11 +90,13 @@ fun DynamicWebView(
     wrapInCard: Boolean = true,
     enableVideoNavigationGuard: Boolean = false,
     onTouch: (() -> Unit)? = null,
-    // Multi-tab specific parameters
     enableMultiTabs: Boolean = false,
     onNewTabCreated: ((WebView) -> Unit)? = null,
     onTabClosed: ((Int) -> Unit)? = null,
-    onTabSwitched: ((Int) -> Unit)? = null
+    onTabSwitched: ((Int) -> Unit)? = null,
+    onError: ((String) -> Unit)? = null,
+    onReady: (() -> Unit)? = null,
+    enableDebug: Boolean = false
 ) {
     if (url.isBlank()) return
 
@@ -108,93 +104,101 @@ fun DynamicWebView(
     var isLoading by remember { mutableStateOf(true) }
     var isPageLoaded by remember { mutableStateOf(false) }
     var scriptInjected by remember { mutableStateOf(false) }
-    var currentTabId by remember { mutableStateOf(0) }
+    var webViewError by remember { mutableStateOf<String?>(null) }
+    
+    // Single WebView reference - no existingWebView parameter to avoid conflicts
+    val webViewRef = remember { mutableStateOf<WebView?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    
+    var timeoutJob by remember { mutableStateOf<Job?>(null) }
+    var scriptInjectionJob by remember { mutableStateOf<Job?>(null) }
+    var autoClickJob by remember { mutableStateOf<Job?>(null) }
+    
+    // Track current URL to prevent reload loops
+    val currentUrl = remember(url) { url }
+    
+    // Use unique key only for initial creation
+    val webViewKey = remember(url) { url.hashCode() }
 
     val currentOnPageLoaded by rememberUpdatedState(onPageLoaded)
+    val currentOnReady by rememberUpdatedState(onReady)
+    val currentOnError by rememberUpdatedState(onError)
     val currentInjectionScript by rememberUpdatedState(
         if (!scriptToInject.isNullOrBlank()) buildInjectionScript(scriptToInject, readySelector)
         else null
     )
 
-    val webViewRef = remember { mutableStateOf<WebView?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Job references for cancellation
-    var timeoutJob by remember { mutableStateOf<Job?>(null) }
-    var scriptInjectionJob by remember { mutableStateOf<Job?>(null) }
-    var autoClickJob by remember { mutableStateOf<Job?>(null) }
+    // Clean up WebView on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            timeoutJob?.cancel()
+            scriptInjectionJob?.cancel()
+            autoClickJob?.cancel()
+            
+            webViewRef.value?.let { wv ->
+                wv.stopLoading()
+                wv.loadUrl("about:blank")
+                wv.clearHistory()
+                wv.clearCache(true)
+                wv.destroy()
+                webViewRef.value = null
+            }
+        }
+    }
 
-    // Track multiple WebViews for multi-tab support
-    val tabWebViews = remember { mutableStateMapOf<Int, WebView>() }
-    var nextTabId by remember { mutableStateOf(1) }
-
+    // Reset state when URL changes
     LaunchedEffect(url) {
         isPageLoaded = false
         scriptInjected = false
         isLoading = true
+        webViewError = null
         
-        // Cancel previous timeout job
         timeoutJob?.cancel()
-        
-        // Timeout fallback: hide loader after 10s even if page hasn't fully finished
         timeoutJob = coroutineScope.launch {
-            delay(10_000)
-            isLoading = false
+            delay(15_000)
+            if (isLoading) {
+                isLoading = false
+                webViewError = "Loading timeout"
+                currentOnError?.invoke("Loading timeout")
+            }
         }
     }
 
+    // Handle script injection after page loads
     LaunchedEffect(isPageLoaded, currentInjectionScript) {
-        // Cancel previous script injection job
         scriptInjectionJob?.cancel()
         
         val script = currentInjectionScript
         if (isPageLoaded && !script.isNullOrBlank() && !scriptInjected) {
             scriptInjectionJob = coroutineScope.launch {
                 scriptInjected = true
-                android.util.Log.d("DynamicWebView", "Late-injecting interaction script")
+                if (enableDebug) {
+                    android.util.Log.d("DynamicWebView", "Injecting script")
+                }
                 webViewRef.value?.evaluateJavascript(script) { result ->
-                    android.util.Log.d("DynamicWebView", "Script result: $result")
+                    if (enableDebug) {
+                        android.util.Log.d("DynamicWebView", "Script result: $result")
+                    }
                 }
             }
         }
     }
 
+    // Handle auto-click
     LaunchedEffect(isPageLoaded, autoClickDelayMs, autoClickIntervalMs) {
-        // Cancel previous auto-click job
         autoClickJob?.cancel()
         
         if (isPageLoaded && autoClickDelayMs != null && autoClickDelayMs > 0) {
             autoClickJob = coroutineScope.launch {
-                // Initial delay before the first click
-                android.util.Log.d("DynamicWebView", "Scheduling auto-click in ${autoClickDelayMs}ms, then every ${autoClickIntervalMs}ms")
-                kotlinx.coroutines.delay(autoClickDelayMs)
+                delay(autoClickDelayMs)
                 while (true) {
                     val wv = webViewRef.value
-                    if (wv != null) {
-                        android.util.Log.d("DynamicWebView", "Dispatching real touch event on WebView at y=${clickYFraction*100}%")
+                    if (wv != null && wv.width > 0 && wv.height > 0) {
                         wv.post { simulateTouchOnWebView(wv, clickYFraction) }
                     }
-                    kotlinx.coroutines.delay(autoClickIntervalMs)
+                    delay(autoClickIntervalMs)
                 }
             }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            // Cancel all jobs when composable is disposed
-            timeoutJob?.cancel()
-            scriptInjectionJob?.cancel()
-            autoClickJob?.cancel()
-            
-            // Clean up all WebViews
-            tabWebViews.values.forEach { wv ->
-                wv.stopLoading()
-                wv.loadUrl("about:blank")
-                wv.clearHistory()
-                wv.destroy()
-            }
-            tabWebViews.clear()
         }
     }
 
@@ -203,363 +207,338 @@ fun DynamicWebView(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    existingWebView ?: object : WebView(ctx) {
-                        override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
-                            if (isScrollEnabled) {
-                                requestDisallowInterceptTouchEvent(true)
-                            }
-                            return super.onTouchEvent(event)
-                        }
-                    }.also { wv ->
-                        wv.layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
+            androidx.compose.runtime.key(webViewKey) {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
 
-                        wv.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                        wv.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-                        wv.isVerticalScrollBarEnabled = isScrollEnabled
-                        wv.isHorizontalScrollBarEnabled = isScrollEnabled
+                            isVerticalScrollBarEnabled = isScrollEnabled
+                            isHorizontalScrollBarEnabled = isScrollEnabled
 
-                        wv.settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            this.useWideViewPort = useWideViewPort
-                            loadWithOverviewMode = true
-                            cacheMode = WebSettings.LOAD_DEFAULT
-                            setSupportZoom(false)
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            // Enable multi-tab support if requested
-                            setSupportMultipleWindows(enableMultiTabs)
-                            javaScriptCanOpenWindowsAutomatically = enableMultiTabs
-                            mediaPlaybackRequiresUserGesture = false
-                        }
-
-                        wv.webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, pageUrl: String?) {
-                                super.onPageFinished(view, pageUrl)
-                                view?.post {
-                                    isLoading = false
-                                    isPageLoaded = true
-                                    currentOnPageLoaded?.invoke()
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                databaseEnabled = true
+                                builtInZoomControls = false
+                                displayZoomControls = false
+                                this.useWideViewPort = useWideViewPort
+                                loadWithOverviewMode = true
+                                cacheMode = WebSettings.LOAD_DEFAULT
+                                setSupportZoom(false)
+                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                setSupportMultipleWindows(enableMultiTabs)
+                                javaScriptCanOpenWindowsAutomatically = enableMultiTabs
+                                mediaPlaybackRequiresUserGesture = false
+                                allowUniversalAccessFromFileURLs = true
+                                allowFileAccessFromFileURLs = true
+                                pluginState = WebSettings.PluginState.ON
+                                setRenderPriority(WebSettings.RenderPriority.HIGH)
+                                // Improved video playback
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                    setSafeBrowsingEnabled(false)
                                 }
                             }
 
-                            override fun onReceivedError(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                                error: WebResourceError?
-                            ) {
-                                super.onReceivedError(view, request, error)
-                                if (request?.isForMainFrame == true) {
-                                    view?.post { isLoading = false }
-                                    android.util.Log.e(
-                                        "DynamicWebView",
-                                        "Error: ${error?.description} (${error?.errorCode}) for ${request?.url}"
-                                    )
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                    super.onPageStarted(view, url, favicon)
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "Page started: $url")
+                                    }
+                                    isLoading = true
                                 }
-                            }
 
-                            override fun onReceivedSslError(
-                                view: WebView?,
-                                handler: SslErrorHandler?,
-                                error: android.net.http.SslError?
-                            ) {
-                                android.util.Log.e("DynamicWebView", "SSL Error: ${error?.toString()}")
-                                handler?.cancel()
-                            }
+                                override fun onPageFinished(view: WebView?, pageUrl: String?) {
+                                    super.onPageFinished(view, pageUrl)
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "Page finished: $pageUrl")
+                                    }
+                                    view?.post {
+                                        isLoading = false
+                                        isPageLoaded = true
+                                        webViewError = null
+                                        currentOnPageLoaded?.invoke()
+                                        currentOnReady?.invoke()
+                                    }
+                                }
 
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView?,
-                                request: WebResourceRequest?
-                            ): Boolean {
-                                val originalUrl = request?.url?.toString() ?: return false
-                                var clickedUrl = originalUrl
-
-                                if (enableVideoNavigationGuard) {
-                                    // Always allow the current video URL to load
-                                    if (clickedUrl == url) {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): Boolean {
+                                    val originalUrl = request?.url?.toString() ?: return false
+                                    
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "shouldOverrideUrlLoading: $originalUrl")
+                                    }
+                                    
+                                    // CRITICAL: Allow the main URL to load
+                                    if (originalUrl == currentUrl || originalUrl.startsWith(currentUrl)) {
+                                        if (enableDebug) {
+                                            android.util.Log.d("DynamicWebView", "✅ Allowing main URL: $originalUrl")
+                                        }
                                         return false
                                     }
 
-                                    // Block known ad/spam domains immediately
-                                    if (VideoNavigationGuard.shouldBlockNavigation(clickedUrl)) {
-                                        android.util.Log.d("DynamicWebView", "🚫 Blocked ad/spam: $clickedUrl")
-                                        return true
-                                    }
+                                    if (enableVideoNavigationGuard) {
+                                        // Block known ad/spam domains
+                                        if (VideoNavigationGuard.shouldBlockNavigation(originalUrl)) {
+                                            if (enableDebug) {
+                                                android.util.Log.d("DynamicWebView", "🚫 Blocked ad/spam: $originalUrl")
+                                            }
+                                            return true
+                                        }
 
-                                    // Block non-http schemas to prevent redirect to store apps
-                                    if (!clickedUrl.startsWith("http://") && !clickedUrl.startsWith("https://")) {
-                                        android.util.Log.d("DynamicWebView", "🚫 Blocked non-http navigation attempt: $clickedUrl")
-                                        return true
-                                    }
-
-                                    // For iframe/subframe resources, allow it
-                                    if (request != null && !request.isForMainFrame) {
-                                        return false
-                                    }
-
-                                    // For main frame navigation (user clicks/redirects), check if it's within the same service
-                                    if (request != null && request.isForMainFrame) {
-                                        val initialService = VideoNavigationGuard.getVideoHostingService(url)
-                                        val requestService = VideoNavigationGuard.getVideoHostingService(clickedUrl)
-
-                                        if (initialService != null && 
-                                            requestService != null && 
-                                            initialService == requestService
-                                        ) {
-                                            android.util.Log.d("DynamicWebView", "✅ Allowing same-service navigation: $clickedUrl")
+                                        // Allow video hosting services
+                                        if (VideoNavigationGuard.isAllowedVideoHosting(originalUrl)) {
+                                            if (enableDebug) {
+                                                android.util.Log.d("DynamicWebView", "✅ Allowing video hosting: $originalUrl")
+                                            }
                                             return false
                                         }
 
-                                        // Block all other main frame navigation (clicks on ads, etc.)
-                                        android.util.Log.d("DynamicWebView", "🚫 Blocked user navigation attempt: $clickedUrl")
-                                        return true
+                                        // Block non-http schemas
+                                        if (!originalUrl.startsWith("http://") && !originalUrl.startsWith("https://")) {
+                                            if (enableDebug) {
+                                                android.util.Log.d("DynamicWebView", "🚫 Blocked non-http: $originalUrl")
+                                            }
+                                            return true
+                                        }
+
+                                        // For iframes, always allow
+                                        if (request != null && !request.isForMainFrame) {
+                                            return false
+                                        }
+
+                                        // For main frame navigation, check if same service
+                                        if (request != null && request.isForMainFrame) {
+                                            val initialService = VideoNavigationGuard.getVideoHostingService(currentUrl)
+                                            val requestService = VideoNavigationGuard.getVideoHostingService(originalUrl)
+
+                                            if (initialService != null && 
+                                                requestService != null && 
+                                                initialService == requestService
+                                            ) {
+                                                if (enableDebug) {
+                                                    android.util.Log.d("DynamicWebView", "✅ Same service: $originalUrl")
+                                                }
+                                                return false
+                                            }
+
+                                            // Block other main frame navigation
+                                            if (enableDebug) {
+                                                android.util.Log.d("DynamicWebView", "🚫 Blocked navigation: $originalUrl")
+                                            }
+                                            return true
+                                        }
                                     }
-                                }
 
-                                if (com.job2day.nazaarabox.BuildConfig.DEBUG) {
-                                    val isLocalOrBlogUrl =
-                                        clickedUrl.contains("nazaaracircle.com", ignoreCase = true) ||
-                                        clickedUrl.contains("nazaarabox.com", ignoreCase = true) ||
-                                        clickedUrl.contains("127.0.0.1", ignoreCase = true) ||
-                                        clickedUrl.contains("localhost", ignoreCase = true)
-
-                                    if (isLocalOrBlogUrl) {
-                                        clickedUrl = clickedUrl
-                                            .replace(Regex("https?://(www\\.)?nazaaracircle\\.com"), "https://nazaarabox.com")
-                                            .replace(Regex("https?://(www\\.)?nazaarabox\\.com"), "https://nazaarabox.com")
-                                            .replace(Regex("https?://blog\\.nazaarabox\\.com"), "https://nazaarabox.com")
-                                            .replace(Regex("https?://127\\.0\\.0\\.1"), "http://10.0.2.2")
-                                            .replace(Regex("https?://localhost"), "http://10.0.2.2")
-                                    }
-                                }
-
-                                if (clickedUrl != originalUrl || !clickedUrl.startsWith("http")) {
-                                    if (!clickedUrl.startsWith("http")) {
+                                    // Handle special URLs
+                                    if (!originalUrl.startsWith("http")) {
                                         try {
-                                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(clickedUrl))
+                                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(originalUrl))
                                             ctx.startActivity(intent)
                                             return true
                                         } catch (e: Exception) {
                                             return false
                                         }
                                     }
-                                    view?.loadUrl(clickedUrl)
-                                    return true
-                                }
 
-                                return false
-                            }
-                        }
-
-                        wv.webChromeClient = object : WebChromeClient() {
-                            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                                if (newProgress == 100) {
-                                    view?.post { isLoading = false }
-                                }
-                            }
-
-                            override fun onCreateWindow(
-                                view: WebView?,
-                                isDialog: Boolean,
-                                isUserGesture: Boolean,
-                                resultMsg: android.os.Message?
-                            ): Boolean {
-                                if (!enableMultiTabs) {
+                                    // Default: allow loading
                                     return false
                                 }
 
-                                if (view == null) return false
-                                
-                                android.util.Log.d("DynamicWebView", "Creating new tab/window")
-                                
-                                try {
-                                    // Create a new WebView for the new window/tab
-                                    val newWebView = WebView(view.context).apply {
-                                        layoutParams = ViewGroup.LayoutParams(
-                                            ViewGroup.LayoutParams.MATCH_PARENT,
-                                            ViewGroup.LayoutParams.MATCH_PARENT
-                                        )
-
-                                        setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                                        isVerticalScrollBarEnabled = isScrollEnabled
-                                        isHorizontalScrollBarEnabled = isScrollEnabled
-
-                                        settings.apply {
-                                            javaScriptEnabled = true
-                                            domStorageEnabled = true
-                                            databaseEnabled = true
-                                            builtInZoomControls = false
-                                            displayZoomControls = false
-                                            this.useWideViewPort = useWideViewPort
-                                            loadWithOverviewMode = true
-                                            cacheMode = WebSettings.LOAD_DEFAULT
-                                            setSupportZoom(false)
-                                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                                            setSupportMultipleWindows(true)
-                                            javaScriptCanOpenWindowsAutomatically = true
-                                            mediaPlaybackRequiresUserGesture = false
+                                override fun onReceivedError(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                    error: WebResourceError?
+                                ) {
+                                    super.onReceivedError(view, request, error)
+                                    if (request?.isForMainFrame == true) {
+                                        val errorMsg = "${error?.description} (${error?.errorCode})"
+                                        if (enableDebug) {
+                                            android.util.Log.e("DynamicWebView", "Error: $errorMsg")
                                         }
-
-                                        // Copy WebViewClient from parent
-                                        webViewClient = object : WebViewClient() {
-                                            override fun onPageFinished(webView: WebView?, pageUrl: String?) {
-                                                super.onPageFinished(webView, pageUrl)
-                                                webView?.post {
-                                                    // Notify that new tab is loaded
-                                                    onNewTabCreated?.invoke(webView)
-                                                }
-                                            }
-
-                                            override fun onReceivedError(
-                                                webView: WebView?,
-                                                request: WebResourceRequest?,
-                                                error: WebResourceError?
-                                            ) {
-                                                super.onReceivedError(webView, request, error)
-                                                if (request?.isForMainFrame == true) {
-                                                    android.util.Log.e(
-                                                        "DynamicWebView",
-                                                        "New tab error: ${error?.description} (${error?.errorCode}) for ${request?.url}"
-                                                    )
-                                                }
-                                            }
-
-                                            override fun shouldOverrideUrlLoading(
-                                                webView: WebView?,
-                                                request: WebResourceRequest?
-                                            ): Boolean {
-                                                // Delegate to the main WebViewClient logic
-                                                val originalUrl = request?.url?.toString() ?: return false
-                                                
-                                                // Handle non-http URLs
-                                                if (!originalUrl.startsWith("http://") && !originalUrl.startsWith("https://")) {
-                                                    try {
-                                                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(originalUrl))
-                                                        context.startActivity(intent)
-                                                        return true
-                                                    } catch (e: Exception) {
-                                                        return false
-                                                    }
-                                                }
-                                                
-                                                // Allow loading in the new tab
-                                                return false
-                                            }
-                                        }
-
-                                        webChromeClient = object : WebChromeClient() {
-                                            override fun onCloseWindow(window: WebView?) {
-                                                super.onCloseWindow(window)
-                                                if (window != null) {
-                                                    // Find and remove the closed tab
-                                                    val tabId = tabWebViews.entries.find { it.value == window }?.key
-                                                    if (tabId != null) {
-                                                        tabWebViews.remove(tabId)
-                                                        window.stopLoading()
-                                                        window.loadUrl("about:blank")
-                                                        window.clearHistory()
-                                                        onTabClosed?.invoke(tabId)
-                                                        android.util.Log.d("DynamicWebView", "Tab closed: $tabId")
-                                                    }
-                                                }
-                                            }
-
-                                            override fun onCreateWindow(
-                                                webView: WebView?,
-                                                isDialog: Boolean,
-                                                isUserGesture: Boolean,
-                                                resultMsg: android.os.Message?
-                                            ): Boolean {
-                                                // Allow nested window creation
-                                                return webView?.webChromeClient?.onCreateWindow(webView, isDialog, isUserGesture, resultMsg) ?: false
-                                            }
-                                        }
-
-                                        // Set touch listener if provided
-                                        if (onTouch != null) {
-                                            setOnTouchListener { _, event ->
-                                                if (event.action == MotionEvent.ACTION_UP) {
-                                                    onTouch()
-                                                }
-                                                false
+                                        view?.post {
+                                            // Don't show error for frame load interruptions (common on video sites)
+                                            if (error?.errorCode != WebViewClient.ERROR_FAILED_SSL_HANDSHAKE &&
+                                                error?.errorCode != WebViewClient.ERROR_HOST_LOOKUP) {
+                                                isLoading = false
+                                                webViewError = errorMsg
+                                                currentOnError?.invoke(errorMsg)
                                             }
                                         }
                                     }
+                                }
 
-                                    // Assign a tab ID and store the WebView
-                                    val tabId = nextTabId++
-                                    tabWebViews[tabId] = newWebView
-                                    
-                                    // Notify about new tab
-                                    onNewTabCreated?.invoke(newWebView)
-                                    
-                                    // Transfer the WebView to the result message
-                                    val transport = resultMsg?.obj as? WebView.WebViewTransport
-                                    transport?.webView = newWebView
-                                    resultMsg?.sendToTarget()
-                                    
-                                    android.util.Log.d("DynamicWebView", "New tab created with ID: $tabId")
-                                    return true
-                                    
-                                } catch (e: Exception) {
-                                    android.util.Log.e("DynamicWebView", "Error creating new tab: ${e.message}")
-                                    return false
+                                override fun onReceivedHttpError(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                    errorResponse: WebResourceResponse?
+                                ) {
+                                    super.onReceivedHttpError(view, request, errorResponse)
+                                    if (enableDebug && request?.isForMainFrame == true) {
+                                        android.util.Log.e("DynamicWebView", "HTTP Error: ${errorResponse?.statusCode}")
+                                    }
+                                }
+
+                                override fun onReceivedSslError(
+                                    view: WebView?,
+                                    handler: SslErrorHandler?,
+                                    error: android.net.http.SslError?
+                                ) {
+                                    if (enableDebug) {
+                                        android.util.Log.e("DynamicWebView", "SSL Error: ${error?.toString()}")
+                                    }
+                                    // For video sites, proceed despite SSL errors
+                                    handler?.proceed()
                                 }
                             }
 
-                            override fun onCloseWindow(window: WebView?) {
-                                super.onCloseWindow(window)
-                                // Handle window close if needed
-                            }
-                        }
-
-                        val adHeaders = mapOf("Referer" to "https://nazaarabox.com")
-                        var finalUrl = url
-                        if (com.job2day.nazaarabox.BuildConfig.DEBUG) {
-                            finalUrl = finalUrl
-                                .replace(Regex("https?://(www\\.)?nazaaracircle\\.com"), "https://nazaarabox.com")
-                                .replace(Regex("https?://(www\\.)?nazaarabox\\.com"), "https://nazaarabox.com")
-                                .replace(Regex("https?://blog\\.nazaarabox\\.com"), "https://nazaarabox.com")
-                                .replace(Regex("https?://127\\.0\\.0\\.1"), "http://10.0.2.2")
-                                .replace(Regex("https?://localhost"), "http://10.0.2.2")
-                        }
-                        if (onTouch != null) {
-                            wv.setOnTouchListener { _, event ->
-                                if (event.action == android.view.MotionEvent.ACTION_UP) {
-                                    onTouch()
+                            webChromeClient = object : WebChromeClient() {
+                                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "Progress: $newProgress%")
+                                    }
+                                    if (newProgress >= 90) {
+                                        view?.post {
+                                            isLoading = false
+                                        }
+                                    }
                                 }
-                                false
+
+                                override fun onShowCustomView(view: android.view.View?, callback: CustomViewCallback?) {
+                                    super.onShowCustomView(view, callback)
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "Custom view shown (fullscreen video)")
+                                    }
+                                }
+
+                                override fun onHideCustomView() {
+                                    super.onHideCustomView()
+                                    if (enableDebug) {
+                                        android.util.Log.d("DynamicWebView", "Custom view hidden")
+                                    }
+                                }
+                            }
+
+                            // Prepare URL with headers
+                            val adHeaders = mapOf(
+                                "Referer" to "https://nazaarabox.com",
+                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            )
+                            
+                            // REMOVED: Debug URL replacements that were breaking video loading
+                            var finalUrl = currentUrl
+                            
+                            // Only apply debug replacements if explicitly enabled
+                            if (enableDebug) {
+                                finalUrl = finalUrl
+                                    .replace(Regex("https?://(www\\.)?nazaaracircle\\.com"), "https://nazaarabox.com")
+                            }
+
+                            if (enableDebug) {
+                                android.util.Log.d("DynamicWebView", "Loading URL: $finalUrl")
+                            }
+                            
+                            // Store reference before loading
+                            webViewRef.value = this
+                            
+                            // Load the URL
+                            loadUrl(finalUrl, adHeaders)
+
+                            if (onTouch != null) {
+                                setOnTouchListener { _, event ->
+                                    if (event.action == MotionEvent.ACTION_UP) {
+                                        onTouch()
+                                    }
+                                    false
+                                }
                             }
                         }
-                        wv.loadUrl(finalUrl, adHeaders)
-                        webViewRef.value = wv
-                    }
-                },
-                update = { wv ->
-                    webViewRef.value = wv
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = AppColors.Primary,
-                    modifier = Modifier.size(32.dp)
+                    },
+                    update = { wv ->
+                        // Only update if needed - prevent reload loops
+                        if (webViewRef.value != wv) {
+                            webViewRef.value = wv
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
+            }
+
+            // Loading indicator
+            if (isLoading && webViewError == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            color = AppColors.Primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Loading video...",
+                            color = Color.White,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                        )
+                    }
+                }
+            }
+
+            // Error state
+            if (webViewError != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "⚠️ Failed to load video",
+                            color = Color.White,
+                            fontSize = MaterialTheme.typography.titleMedium.fontSize
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = webViewError ?: "Unknown error",
+                            color = Color.Gray,
+                            fontSize = MaterialTheme.typography.bodySmall.fontSize
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                webViewError = null
+                                isLoading = true
+                                webViewRef.value?.reload()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                        ) {
+                            Text("Retry")
+                        }
+                    }
+                }
             }
         }
     }
 
+    // Wrap in card if needed
     if (wrapInCard) {
         Surface(
             modifier = modifier
@@ -587,81 +566,35 @@ fun DynamicWebView(
 object VideoNavigationGuard {
     fun getVideoHostingService(url: String): String? {
         val lowerUrl = url.lowercase()
+        val patterns = mapOf(
+            "onedrive" to listOf("1drv.ms", "onedrive.live.com", "sharepoint.com"),
+            "doodstream" to listOf("doodstream.com", "dsvplay.com", "dood.to", "ds2play.com", "ds2video.com"),
+            "vidsrc" to listOf("vidsrc.icu", "vidsrc.to", "vidsrc.me", "vidsrc.net", "vidsrc.xyz", "vidsrc.cc"),
+            "mixdrop" to listOf("mixdrop.co", "mixdrop.to", "mixdrop.sx", "mixdrop.bz"),
+            "streamtape" to listOf("streamtape.com", "streamtape.net", "streamtape.to"),
+            "embedsito" to listOf("embedsito.com"),
+            "embedsu" to listOf("embed.su"),
+            "upstream" to listOf("upstream.to"),
+            "youtube" to listOf("youtube.com", "youtu.be"),
+            "vimeo" to listOf("vimeo.com"),
+            "dailymotion" to listOf("dailymotion.com"),
+            "streamable" to listOf("streamable.com"),
+            "mdy48tn97" to listOf("mdy48tn97.com"),
+            "vidstream" to listOf("vidstream.pro"),
+            "gogostream" to listOf("gogo-stream.com"),
+            "mp4upload" to listOf("mp4upload.com"),
+            "streamlare" to listOf("streamlare.com"),
+            "filemoon" to listOf("filemoon.sx"),
+            "cdn" to listOf("cloudflare.com", "cloudfront.net", "googleapis.com", "gstatic.com", "jwpcdn.com", "jwplatform.com")
+        )
 
-        // OneDrive service (multiple domains)
-        if (lowerUrl.contains("1drv.ms") ||
-            lowerUrl.contains("onedrive.live.com") ||
-            lowerUrl.contains("sharepoint.com")
-        ) {
-            return "onedrive"
+        for ((service, domains) in patterns) {
+            for (domain in domains) {
+                if (lowerUrl.contains(domain)) {
+                    return service
+                }
+            }
         }
-
-        // Doodstream service
-        if (lowerUrl.contains("doodstream.com") ||
-            lowerUrl.contains("dsvplay.com") ||
-            lowerUrl.contains("dood.to") ||
-            lowerUrl.contains("ds2play.com") ||
-            lowerUrl.contains("ds2video.com")
-        ) {
-            return "doodstream"
-        }
-
-        // Vidsrc service (multiple domains)
-        if (lowerUrl.contains("vidsrc.icu") ||
-            lowerUrl.contains("vidsrc.to") ||
-            lowerUrl.contains("vidsrc.me") ||
-            lowerUrl.contains("vidsrc.net") ||
-            lowerUrl.contains("vidsrc.xyz") ||
-            lowerUrl.contains("vidsrc.cc")
-        ) {
-            return "vidsrc"
-        }
-
-        // Mixdrop service
-        if (lowerUrl.contains("mixdrop.co") ||
-            lowerUrl.contains("mixdrop.to") ||
-            lowerUrl.contains("mixdrop.sx") ||
-            lowerUrl.contains("mixdrop.bz")
-        ) {
-            return "mixdrop"
-        }
-
-        // Streamtape service
-        if (lowerUrl.contains("streamtape.com") ||
-            lowerUrl.contains("streamtape.net") ||
-            lowerUrl.contains("streamtape.to")
-        ) {
-            return "streamtape"
-        }
-
-        // Other single-domain services
-        if (lowerUrl.contains("embedsito.com")) return "embedsito"
-        if (lowerUrl.contains("embed.su")) return "embedsu"
-        if (lowerUrl.contains("upstream.to")) return "upstream"
-        if (lowerUrl.contains("youtube.com") || lowerUrl.contains("youtu.be")) return "youtube"
-        if (lowerUrl.contains("vimeo.com")) return "vimeo"
-        if (lowerUrl.contains("dailymotion.com")) return "dailymotion"
-        if (lowerUrl.contains("streamable.com")) return "streamable"
-
-        // Additional embed servers
-        if (lowerUrl.contains("mdy48tn97.com")) return "mdy48tn97"
-        if (lowerUrl.contains("vidstream.pro")) return "vidstream"
-        if (lowerUrl.contains("gogo-stream.com")) return "gogostream"
-        if (lowerUrl.contains("mp4upload.com")) return "mp4upload"
-        if (lowerUrl.contains("streamlare.com")) return "streamlare"
-        if (lowerUrl.contains("filemoon.sx")) return "filemoon"
-
-        // CDN services (always allow)
-        if (lowerUrl.contains("cloudflare.com") ||
-            lowerUrl.contains("cloudfront.net") ||
-            lowerUrl.contains("googleapis.com") ||
-            lowerUrl.contains("gstatic.com") ||
-            lowerUrl.contains("jwpcdn.com") ||
-            lowerUrl.contains("jwplatform.com")
-        ) {
-            return "cdn"
-        }
-
         return null
     }
 
@@ -670,56 +603,31 @@ object VideoNavigationGuard {
     }
 
     fun shouldBlockNavigation(url: String): Boolean {
-        // First check if it's an allowed video hosting domain
         if (isAllowedVideoHosting(url)) {
-            return false // Don't block video hosting domains
+            return false
         }
 
-        // List of known ad/spam domains to block
+        val lowerUrl = url.lowercase()
         val blockedPatterns = listOf(
-            "doubleclick.net",
-            "googlesyndication.com",
-            "google-analytics.com",
-            "adservice.google",
-            "advertising.com",
-            "adnxs.com",
-            "adsystem.com",
-            "adsrvr.org",
-            "adroll.com",
-            "serving-sys.com",
-            "adcolony.com",
-            "applovin.com",
-            "chartboost.com",
-            "unity3d.com",
-            "ironsrc.com",
-            "facebook.com",
-            "twitter.com",
-            "instagram.com",
-            "pinterest.com",
-            "linkedin.com",
-            "reddit.com",
-            "tiktok.com",
-            "snapchat.com",
-            "play.google.com",
-            "apps.apple.com",
-            "itunes.apple.com"
+            "doubleclick.net", "googlesyndication.com", "google-analytics.com",
+            "adservice.google", "advertising.com", "adnxs.com", "adsystem.com",
+            "adsrvr.org", "adroll.com", "serving-sys.com", "adcolony.com",
+            "applovin.com", "chartboost.com", "unity3d.com", "ironsrc.com",
+            "facebook.com", "twitter.com", "instagram.com", "pinterest.com",
+            "linkedin.com", "reddit.com", "tiktok.com", "snapchat.com",
+            "play.google.com", "apps.apple.com", "itunes.apple.com"
         )
 
-        val lowerUrl = url.lowercase()
-
-        // Block known ad/social domains
         for (pattern in blockedPatterns) {
             if (lowerUrl.contains(pattern)) {
                 return true
             }
         }
 
-        // Block obvious app store links
         if (lowerUrl.contains("/app/") || lowerUrl.contains("/apps/")) {
             return true
         }
 
-        // Allow everything else
         return false
     }
 }
