@@ -25,7 +25,6 @@ import com.job2day.nazaarabox.presentation.detail.DetailScreen
 import com.job2day.nazaarabox.presentation.home.HomeScreen
 import com.job2day.nazaarabox.presentation.language.LanguageBrowseScreen
 import com.job2day.nazaarabox.presentation.player.PlayerScreen
-import com.job2day.nazaarabox.presentation.player.FullscreenPlayerScreen
 import com.job2day.nazaarabox.presentation.search.SearchScreen
 import com.job2day.nazaarabox.presentation.season.SeasonScreen
 import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
@@ -145,17 +144,6 @@ fun NazaaraboxNavHost() {
                 }
                 composable(AppRoutes.PLAYER) {
                     PlayerScreen(navController = navController)
-                }
-                composable(AppRoutes.FULLSCREEN_PLAYER) {
-                    val url = navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>("url")
-                        .orEmpty()
-                    val title = navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>("title")
-                        .orEmpty()
-                    FullscreenPlayerScreen(url = url, title = title, navController = navController)
                 }
                 composable(
                     route = AppRoutes.ACTOR,
