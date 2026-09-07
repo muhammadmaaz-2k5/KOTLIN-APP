@@ -54,19 +54,17 @@ import com.job2day.nazaarabox.core.CastMember
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SeasonItem
-import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.widgets.CustomIconWidget
 import com.job2day.nazaarabox.widgets.CustomImage
 
 /**
  * Modern Cinematic Hero Header with full-bleed backdrop art,
- * gradient scrim, central Play Trailer trigger, and embedded poster badge.
+ * gradient scrim, and embedded poster badge.
  */
 @Composable
 fun DetailHeroHeader(
     item: MediaItem,
-    onPlayTrailer: (() -> Unit)? = null,
 ) {
     Box(
         modifier = Modifier
@@ -95,27 +93,6 @@ fun DetailHeroHeader(
                     ),
                 ),
         )
-
-        // Center Frosted Play Trailer Button
-        if (onPlayTrailer != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(62.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.60f))
-                    .border(1.5.dp, Color.White.copy(alpha = 0.45f), CircleShape)
-                    .clickable { onPlayTrailer() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Default.PlayArrow,
-                    contentDescription = "Play Trailer",
-                    tint = Color.White,
-                    modifier = Modifier.size(34.dp),
-                )
-            }
-        }
 
         // Bottom Hero Info Card: Poster + Badges
         Row(
@@ -294,14 +271,13 @@ fun DetailTitleHeader(item: MediaItem) {
 }
 
 /**
- * Primary In-Content CTA Action Row (Watch Now, Trailer, Watchlist, Download, Share)
+ * Primary In-Content CTA Action Row (Watch Now, Watchlist, Download, Share)
  */
 @Composable
 fun DetailHeroActions(
     item: MediaItem,
     isInWatchlist: Boolean,
     onPlay: () -> Unit,
-    onTrailer: () -> Unit,
     onWatchlistToggle: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
@@ -344,54 +320,39 @@ fun DetailHeroActions(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Secondary Action Pills Row
+        // Secondary Action Row (Watchlist, Download, Share)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Trailer Button
+            // Watchlist Button (Takes primary secondary space)
             OutlinedButton(
-                onClick = onTrailer,
+                onClick = onWatchlistToggle,
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
                 shape = RoundedCornerShape(22.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isInWatchlist) AppColors.Primary else Color.White,
+                    containerColor = if (isInWatchlist) AppColors.Primary.copy(alpha = 0.15f) else Color.Transparent,
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isInWatchlist) AppColors.Primary else Color.White.copy(alpha = 0.25f),
+                ),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Movie,
+                        if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                         contentDescription = null,
-                        modifier = Modifier.size(17.dp),
-                        tint = AppColors.Primary,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isInWatchlist) AppColors.Primary else Color.White,
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Trailer",
+                        text = if (isInWatchlist) "In Watchlist" else "Watchlist",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
-                    )
-                }
-            }
-
-            // Watchlist Button
-            Surface(
-                onClick = onWatchlistToggle,
-                modifier = Modifier.size(44.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = if (isInWatchlist) AppColors.Primary.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.08f),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isInWatchlist) AppColors.Primary else Color.White.copy(alpha = 0.15f),
-                ),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = "Watchlist",
-                        tint = if (isInWatchlist) AppColors.Primary else Color.White,
-                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -709,86 +670,6 @@ fun DetailSeasonCard(
     }
 }
 
-/**
- * 16:9 Widescreen Trailer Card
- */
-@Composable
-fun DetailTrailerCard(
-    trailer: TrailerItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val thumbUrl = "https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg"
-    Column(modifier = modifier.width(220.dp)) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(14.dp),
-            color = AppColors.CardDark,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(124.dp),
-        ) {
-            Box {
-                CustomImage(imageUrl = thumbUrl, modifier = Modifier.fillMaxSize())
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.60f)),
-                            ),
-                        ),
-                )
-                // Center Play Icon
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.60f))
-                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-
-                // Video Type Pill
-                if (trailer.type.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black.copy(alpha = 0.70f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    ) {
-                        Text(
-                            text = trailer.type,
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = trailer.name,
-            color = AppColors.TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 /**
  * Production Specifications & Technical Details

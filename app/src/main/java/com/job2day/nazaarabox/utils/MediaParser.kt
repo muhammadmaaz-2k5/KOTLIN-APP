@@ -6,7 +6,6 @@ import com.job2day.nazaarabox.core.AppConfig
 import com.job2day.nazaarabox.core.HomeCategory
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.CastMember
-import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SeasonItem
 import com.job2day.nazaarabox.core.EpisodeItem
@@ -151,17 +150,6 @@ object MediaParser {
                 photoUrl = imageUrl(obj.get("profile_path")?.takeIf { !it.isJsonNull }?.asString, "w185"),
             )
         }
-    }
-
-    fun parseTrailers(raw: List<JsonElement>?): List<TrailerItem> {
-        if (raw == null) return emptyList()
-        return raw.mapNotNull { element ->
-            val obj = element.asJsonObject
-            if (obj.stringOr("site") != "YouTube") return@mapNotNull null
-            val type = obj.stringOr("type")
-            if (type != "Trailer" && type != "Teaser") return@mapNotNull null
-            TrailerItem(key = obj.stringOr("key"), name = obj.stringOr("name", "Trailer"), type = type)
-        }.take(5)
     }
 
     fun parseReviews(raw: List<JsonElement>?): List<ReviewItem> {

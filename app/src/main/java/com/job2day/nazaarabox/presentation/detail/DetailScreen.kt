@@ -60,7 +60,6 @@ import com.job2day.nazaarabox.ui.components.DetailOverlayAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
-import com.job2day.nazaarabox.widgets.AllTrailersSheet
 import com.job2day.nazaarabox.widgets.DetailBottomActionBar
 import com.job2day.nazaarabox.widgets.DetailReviewCard
 import com.job2day.nazaarabox.widgets.DownloadLinksSheet
@@ -71,8 +70,6 @@ import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MoreMenuSheet
 import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
-import com.job2day.nazaarabox.widgets.TrailerPlayerSheet
-import kotlinx.coroutines.delay
 
 @Composable
 fun DetailScreen(
@@ -89,11 +86,8 @@ fun DetailScreen(
 
     var showDownloads by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
-    var showAllTrailers by remember { mutableStateOf(false) }
     var showAllCast by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
-    var trailerPlayerIndex by remember { mutableIntStateOf(-1) }
-    var pendingTrailerIndex by remember { mutableIntStateOf(-1) }
     var isInWatchlist by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -108,14 +102,6 @@ fun DetailScreen(
         initialItem?.let { viewModel.load(it) }
     }
 
-    LaunchedEffect(pendingTrailerIndex) {
-        if (pendingTrailerIndex >= 0) {
-            delay(200)
-            trailerPlayerIndex = pendingTrailerIndex
-            pendingTrailerIndex = -1
-        }
-    }
-
     if (initialItem == null || state.isLoading || state.item == null) {
         LoadingCenter()
         return
@@ -127,9 +113,9 @@ fun DetailScreen(
     // Scalable Segmented Tabs definition
     val tabs = remember(isTv) {
         if (isTv) {
-            listOf("Episodes", "More Like This", "Trailers", "Cast & Info")
+            listOf("Episodes", "More Like This", "Cast & Info")
         } else {
-            listOf("More Like This", "Trailers", "Cast & Crew", "Details & Reviews")
+            listOf("More Like This", "Cast & Crew", "Details & Reviews")
         }
     }
 
@@ -150,9 +136,6 @@ fun DetailScreen(
             item(key = "hero_header") {
                 DetailHeroHeader(
                     item = item,
-                    onPlayTrailer = if (state.trailers.isNotEmpty()) {
-                        { trailerPlayerIndex = 0 }
-                    } else null,
                 )
             }
 
@@ -161,7 +144,7 @@ fun DetailScreen(
                 DetailTitleHeader(item = item)
             }
 
-            // 3. Primary Hero CTA Action Row (Watch Now, Trailer, Watchlist, Download, Share)
+            // 3. Primary Hero CTA Action Row (Watch Now, Watchlist, Download, Share)
             item(key = "hero_actions") {
                 DetailHeroActions(
                     item = item,
@@ -171,11 +154,6 @@ fun DetailScreen(
                             showEpisodePicker = true
                         } else {
                             navController.navigateToPlayer(item)
-                        }
-                    },
-                    onTrailer = {
-                        if (state.trailers.isNotEmpty()) {
-                            trailerPlayerIndex = 0
                         }
                     },
                     onWatchlistToggle = { isInWatchlist = !isInWatchlist },
@@ -315,31 +293,7 @@ fun DetailScreen(
                             }
                         }
                     }
-                    2 -> { // TV Tab 2: Trailers
-                        item(key = "tv_trailers_content") {
-                            if (state.trailers.isNotEmpty()) {
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 20.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                    modifier = Modifier.padding(top = 4.dp),
-                                ) {
-                                    items(state.trailers.size) { index ->
-                                        DetailTrailerCard(
-                                            trailer = state.trailers[index],
-                                            onClick = { trailerPlayerIndex = index },
-                                        )
-                                    }
-                                }
-                            } else {
-                                EmptyState(
-                                    message = "No trailers available",
-                                    emoji = "🎬",
-                                    modifier = Modifier.padding(vertical = 24.dp),
-                                )
-                            }
-                        }
-                    }
-                    3 -> { // TV Tab 3: Cast & Info
+                    2 -> { // TV Tab 2: Cast & Info
                         if (state.cast.isNotEmpty()) {
                             item(key = "tv_cast_header") {
                                 SectionHeader(
@@ -410,31 +364,7 @@ fun DetailScreen(
                             }
                         }
                     }
-                    1 -> { // Movie Tab 1: Trailers
-                        item(key = "movie_trailers_content") {
-                            if (state.trailers.isNotEmpty()) {
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 20.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                    modifier = Modifier.padding(top = 4.dp),
-                                ) {
-                                    items(state.trailers.size) { index ->
-                                        DetailTrailerCard(
-                                            trailer = state.trailers[index],
-                                            onClick = { trailerPlayerIndex = index },
-                                        )
-                                    }
-                                }
-                            } else {
-                                EmptyState(
-                                    message = "No trailers available",
-                                    emoji = "🎬",
-                                    modifier = Modifier.padding(vertical = 24.dp),
-                                )
-                            }
-                        }
-                    }
-                    2 -> { // Movie Tab 2: Cast & Crew
+                    1 -> { // Movie Tab 1: Cast & Crew
                         if (state.cast.isNotEmpty()) {
                             item(key = "movie_cast_header") {
                                 SectionHeader(
@@ -461,7 +391,7 @@ fun DetailScreen(
                             }
                         }
                     }
-                    3 -> { // Movie Tab 3: Details & Reviews
+                    2 -> { // Movie Tab 2: Details & Reviews
                         item(key = "movie_specs") {
                             DetailSpecsSection(item = item)
                         }
@@ -576,24 +506,7 @@ fun DetailScreen(
         )
     }
 
-    if (trailerPlayerIndex >= 0) {
-        TrailerPlayerSheet(
-            trailers = state.trailers,
-            initialIndex = trailerPlayerIndex,
-            onDismiss = { trailerPlayerIndex = -1 },
-        )
-    }
 
-    if (showAllTrailers) {
-        AllTrailersSheet(
-            trailers = state.trailers,
-            onPlay = { index ->
-                showAllTrailers = false
-                pendingTrailerIndex = index
-            },
-            onDismiss = { showAllTrailers = false },
-        )
-    }
 
     if (showAllCast) {
         FullCastSheet(

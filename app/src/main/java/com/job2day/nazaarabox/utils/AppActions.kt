@@ -30,11 +30,6 @@ object AppActions {
         openInBrowser(context, "https://www.themoviedb.org/$type/${item.id}")
     }
 
-    fun openTrailer(context: Context, youtubeKey: String) {
-        val uri = Uri.parse("https://www.youtube.com/watch?v=$youtubeKey")
-        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-    }
-
     fun openInBrowser(context: Context, url: String) {
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))

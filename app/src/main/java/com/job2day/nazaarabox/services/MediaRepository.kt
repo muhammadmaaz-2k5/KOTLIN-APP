@@ -14,7 +14,6 @@ import com.job2day.nazaarabox.core.PersonItem
 import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.core.SeasonItem
-import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.core.VideoServer
 import com.job2day.nazaarabox.data.api.RetrofitClient
 import com.job2day.nazaarabox.utils.MediaParser
@@ -263,12 +262,6 @@ class MediaRepository {
         val endpoint = if (item.type == "tv") "tv" else "movie"
         val response = tmdb("$endpoint/${item.id}/credits", emptyMap())
         MediaParser.parseCast(response.getAsJsonArray("cast")?.asList())
-    }.getOrDefault(emptyList())
-
-    suspend fun getTrailers(item: MediaItem): List<TrailerItem> = runCatching {
-        val endpoint = if (item.type == "tv") "tv" else "movie"
-        val response = tmdb("$endpoint/${item.id}/videos", emptyMap())
-        MediaParser.parseTrailers(response.getAsJsonArray("results")?.asList())
     }.getOrDefault(emptyList())
 
     suspend fun getSimilar(item: MediaItem): List<MediaItem> = runCatching {

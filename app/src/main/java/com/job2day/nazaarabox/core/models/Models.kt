@@ -74,13 +74,6 @@ data class CastMember(
 )
 
 @Serializable
-data class TrailerItem(
-    val key: String = "",
-    val name: String = "Trailer",
-    val type: String = "Trailer",
-)
-
-@Serializable
 data class ReviewItem(
     val author: String = "Anonymous",
     val content: String = "",

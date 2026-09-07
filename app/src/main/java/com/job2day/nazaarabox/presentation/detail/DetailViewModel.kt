@@ -6,7 +6,6 @@ import com.job2day.nazaarabox.core.CastMember
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SeasonItem
-import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.services.MediaRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +19,6 @@ data class DetailUiState(
     val item: MediaItem? = null,
     val cast: List<CastMember> = emptyList(),
     val similar: List<MediaItem> = emptyList(),
-    val trailers: List<TrailerItem> = emptyList(),
     val reviews: List<ReviewItem> = emptyList(),
     val seasons: List<SeasonItem> = emptyList(),
     val isOverviewExpanded: Boolean = false,
@@ -38,7 +36,6 @@ class DetailViewModel(
             val detail = repository.loadDetail(initial)
             val castDeferred = async { repository.getCast(detail) }
             val similarDeferred = async { repository.getSimilar(detail) }
-            val trailersDeferred = async { repository.getTrailers(detail) }
             val reviewsDeferred = async { repository.getReviews(detail) }
             val seasonsDeferred = async { repository.getSeasons(detail) }
             _uiState.update {
@@ -47,7 +44,6 @@ class DetailViewModel(
                     item = detail,
                     cast = castDeferred.await(),
                     similar = similarDeferred.await(),
-                    trailers = trailersDeferred.await(),
                     reviews = reviewsDeferred.await(),
                     seasons = seasonsDeferred.await(),
                 )
