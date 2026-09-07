@@ -7,6 +7,8 @@ import com.job2day.nazaarabox.core.CastMember
 import com.job2day.nazaarabox.core.DownloadLink
 import com.job2day.nazaarabox.core.EpisodeItem
 import com.job2day.nazaarabox.core.HomeCategory
+import com.job2day.nazaarabox.core.HomeFeed
+import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.PersonItem
 import com.job2day.nazaarabox.core.ReviewItem
@@ -18,24 +20,74 @@ import com.job2day.nazaarabox.data.api.RetrofitClient
 import com.job2day.nazaarabox.utils.MediaParser
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.concurrent.ConcurrentHashMap
 
 class MediaRepository {
     private val api get() = RetrofitClient.api
 
-    suspend fun getCategories(): List<HomeCategory> = runCatching {
-        MediaParser.parseCategories(api.getCategories().asList())
-    }.getOrElse { MediaParser.defaultCategories() }
+    companion object {
+        private data class CacheEntry<T>(val data: T, val expiresAt: Long)
+        private var categoriesCache: CacheEntry<List<HomeCategory>>? = null
+        private var settingsCache: CacheEntry<Map<String, String>>? = null
+        private val detailsCache = ConcurrentHashMap<String, CacheEntry<MediaItem>>()
+        private val homeFeedCache = ConcurrentHashMap<Int, CacheEntry<HomeFeed>>()
+    }
 
-    suspend fun getGlobalSettings(): Map<String, String> = runCatching {
-        api.getGlobalSettings().asMap().mapValues { (_, value) ->
-            when {
-                value.isJsonNull -> ""
-                value.isJsonPrimitive && value.asJsonPrimitive.isBoolean -> value.asBoolean.toString()
-                value.isJsonPrimitive && value.asJsonPrimitive.isNumber -> value.asNumber.toString()
-                else -> value.asString
+    suspend fun getHomeFeed(categoryId: Int = 0, forceRefresh: Boolean = false): HomeFeed {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh) {
+            homeFeedCache[categoryId]?.let {
+                if (now < it.expiresAt) return it.data
             }
         }
-    }.getOrDefault(emptyMap())
+
+        val result = runCatching {
+            val response = api.getHomeFeed(categoryId)
+            MediaParser.parseHomeFeed(response)
+        }.getOrElse {
+            homeFeedCache[categoryId]?.data ?: HomeFeed()
+        }
+
+        if (result.categories.isNotEmpty() || result.trending.isNotEmpty()) {
+            homeFeedCache[categoryId] = CacheEntry(result, now + 1800_000L) // 30 minutes
+        }
+        return result
+    }
+
+    suspend fun getCategories(): List<HomeCategory> {
+        val now = System.currentTimeMillis()
+        categoriesCache?.let {
+            if (now < it.expiresAt) return it.data
+        }
+
+        val result = runCatching {
+            MediaParser.parseCategories(api.getCategories().asList())
+        }.getOrElse { MediaParser.defaultCategories() }
+
+        categoriesCache = CacheEntry(result, now + 3600_000L) // 1 Hour
+        return result
+    }
+
+    suspend fun getGlobalSettings(): Map<String, String> {
+        val now = System.currentTimeMillis()
+        settingsCache?.let {
+            if (now < it.expiresAt) return it.data
+        }
+
+        val result = runCatching {
+            api.getGlobalSettings().asMap().mapValues { (_, value) ->
+                when {
+                    value.isJsonNull -> ""
+                    value.isJsonPrimitive && value.asJsonPrimitive.isBoolean -> value.asBoolean.toString()
+                    value.isJsonPrimitive && value.asJsonPrimitive.isNumber -> value.asNumber.toString()
+                    else -> value.asString
+                }
+            }
+        }.getOrDefault(emptyMap())
+
+        settingsCache = CacheEntry(result, now + 900_000L) // 15 Min
+        return result
+    }
 
     suspend fun getCustomContent(params: Map<String, String>): List<MediaItem> = runCatching {
         MediaParser.parseCustomContent(api.getCustomContent(params).asList())
@@ -83,6 +135,22 @@ class MediaRepository {
         params: Map<String, String>,
         page: Int = 1,
     ): Pair<List<MediaItem>, Int> = discover("movie", params, page)
+
+    suspend fun fetchSectionPage(
+        endpoint: String,
+        params: Map<String, String> = emptyMap(),
+        page: Int = 1,
+        mediaType: String = "movie"
+    ): Pair<List<MediaItem>, Int> = runCatching {
+        val query = params.toMutableMap()
+        query["page"] = page.toString()
+        query["include_adult"] = "false"
+        val cleanEndpoint = endpoint.trim().trimStart('/')
+        val response = tmdb(cleanEndpoint, query)
+        val items = MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), mediaType)
+        val totalPages = response.get("total_pages")?.asInt ?: 1
+        items to totalPages
+    }.getOrDefault(emptyList<MediaItem>() to 1)
 
     suspend fun discoverByLanguage(
         languageCode: String,

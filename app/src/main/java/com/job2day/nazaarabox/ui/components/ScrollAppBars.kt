@@ -94,13 +94,23 @@ fun HomeGlassAppBar(
     modifier: Modifier = Modifier,
 ) {
     val isSafeMode = !com.job2day.nazaarabox.utils.AdManager.isLiveMode
+    val backgroundModifier = if (isBlurred) {
+        Modifier.background(AppColors.BackgroundDark.copy(alpha = 0.94f))
+    } else {
+        Modifier.background(
+            androidx.compose.ui.graphics.Brush.verticalGradient(
+                listOf(
+                    Color.Black.copy(alpha = 0.85f),
+                    Color.Black.copy(alpha = 0.40f),
+                    Color.Transparent,
+                )
+            )
+        )
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                if (isBlurred) AppColors.BackgroundDark.copy(alpha = 0.75f)
-                else Color.Transparent,
-            )
+            .then(backgroundModifier)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
@@ -109,7 +119,7 @@ fun HomeGlassAppBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Nazaarabox",
+                text = "ENGORA",
                 color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 22.sp,

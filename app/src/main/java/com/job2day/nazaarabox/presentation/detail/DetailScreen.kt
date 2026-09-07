@@ -1,7 +1,8 @@
 package com.job2day.nazaarabox.presentation.detail
 
-import com.job2day.nazaarabox.utils.AdManager
-
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,12 +16,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,17 +38,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.job2day.nazaarabox.core.MediaItem
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
+import com.job2day.nazaarabox.ads.InlineBannerAd
+import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToPlayer
@@ -48,23 +58,20 @@ import com.job2day.nazaarabox.navigation.navigateToSeason
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.DetailOverlayAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.AllTrailersSheet
 import com.job2day.nazaarabox.widgets.DetailBottomActionBar
 import com.job2day.nazaarabox.widgets.DetailReviewCard
-import com.job2day.nazaarabox.widgets.DetailSectionHeader
 import com.job2day.nazaarabox.widgets.DownloadLinksSheet
+import com.job2day.nazaarabox.widgets.EmptyState
+import com.job2day.nazaarabox.widgets.EpisodePickerSheet
 import com.job2day.nazaarabox.widgets.FullCastSheet
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MoreMenuSheet
 import com.job2day.nazaarabox.widgets.SectionHeader
 import com.job2day.nazaarabox.widgets.SimilarTitleCard
 import com.job2day.nazaarabox.widgets.TrailerPlayerSheet
-import com.job2day.nazaarabox.widgets.TrailerThumbnailCard
-import com.job2day.nazaarabox.ads.InlineBannerAd
-import com.job2day.nazaarabox.ads.InlineCardAd
-import com.job2day.nazaarabox.ads.FullWidthAdBanner
-import androidx.compose.material3.Text
 import kotlinx.coroutines.delay
 
 @Composable
@@ -79,18 +86,21 @@ fun DetailScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState()
+
     var showDownloads by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
     var showAllTrailers by remember { mutableStateOf(false) }
     var showAllCast by remember { mutableStateOf(false) }
+    var showEpisodePicker by remember { mutableStateOf(false) }
     var trailerPlayerIndex by remember { mutableIntStateOf(-1) }
     var pendingTrailerIndex by remember { mutableIntStateOf(-1) }
     var isInWatchlist by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     val showAppBarTitle by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 ||
-                listState.firstVisibleItemScrollOffset > 200
+                listState.firstVisibleItemScrollOffset > 240
         }
     }
 
@@ -106,26 +116,29 @@ fun DetailScreen(
         }
     }
 
-    if (initialItem == null) {
-        LoadingCenter()
-        return
-    }
-
-    if (state.isLoading || state.item == null) {
+    if (initialItem == null || state.isLoading || state.item == null) {
         LoadingCenter()
         return
     }
 
     val item = state.item!!
+    val isTv = item.type.equals("tv", ignoreCase = true)
+
+    // Scalable Segmented Tabs definition
+    val tabs = remember(isTv) {
+        if (isTv) {
+            listOf("Episodes", "More Like This", "Trailers", "Cast & Info")
+        } else {
+            listOf("More Like This", "Trailers", "Cast & Crew", "Details & Reviews")
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .then(
-                if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) 
-                    Modifier.navigationBarsPadding() 
-                else 
-                    Modifier
+                if (AdManager.isLiveMode) Modifier.navigationBarsPadding()
+                else Modifier
             )
             .background(AppColors.BackgroundDark),
     ) {
@@ -133,230 +146,357 @@ fun DetailScreen(
             state = listState,
             modifier = Modifier.fillMaxSize(),
         ) {
-            item { DetailHeroHeader(item = item) }
-            item { DetailTitleSection(item = item) }
+            // 1. Immersive Cinematic Hero Header
+            item(key = "hero_header") {
+                DetailHeroHeader(
+                    item = item,
+                    onPlayTrailer = if (state.trailers.isNotEmpty()) {
+                        { trailerPlayerIndex = 0 }
+                    } else null,
+                )
+            }
 
-            if (item.genres.isNotEmpty()) {
-                item {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(item.genres) { genre ->
-                            androidx.compose.material3.Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = AppColors.Primary.copy(alpha = 0.15f),
-                            ) {
-                                androidx.compose.material3.Text(
-                                    text = genre,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    color = AppColors.Primary,
-                                    fontSize = 12.sp,
-                                )
-                            }
+            // 2. Bold Title & Genre Chips
+            item(key = "title_section") {
+                DetailTitleHeader(item = item)
+            }
+
+            // 3. Primary Hero CTA Action Row (Watch Now, Trailer, Watchlist, Download, Share)
+            item(key = "hero_actions") {
+                DetailHeroActions(
+                    item = item,
+                    isInWatchlist = isInWatchlist,
+                    onPlay = {
+                        if (isTv) {
+                            showEpisodePicker = true
+                        } else {
+                            navController.navigateToPlayer(item)
                         }
-                    }
+                    },
+                    onTrailer = {
+                        if (state.trailers.isNotEmpty()) {
+                            trailerPlayerIndex = 0
+                        }
+                    },
+                    onWatchlistToggle = { isInWatchlist = !isInWatchlist },
+                    onDownload = { showDownloads = true },
+                    onShare = { AppActions.shareItem(context, item) },
+                )
+            }
+
+            // 4. Storyline Overview Card
+            if (item.overview.isNotBlank()) {
+                item(key = "overview_card") {
+                    DetailOverviewCard(
+                        overview = item.overview,
+                        isExpanded = state.isOverviewExpanded,
+                        onToggle = { viewModel.toggleOverview() },
+                    )
                 }
             }
 
+            // 5. Sponsored / Inline Ad
             if (AdManager.isAdPlacementEnabled("detail_banner")) {
-                item { InlineBannerAd("detail_banner") }
-            }
-
-            if (AdManager.isAdPlacementEnabled("detail_inline")) {
-                item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                    ) {
-                        items(4) {
-                            InlineCardAd(
-                                placement = "detail_inline",
-                                modifier = Modifier
-                                    .width(140.dp)
-                                    .height(200.dp),
-                            )
-                        }
-                    }
+                item(key = "detail_banner_ad") {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    InlineBannerAd("detail_banner")
                 }
             }
 
-            val overview = item.overview
-                if (overview.isNotBlank()) {
-                    item { SectionHeader(title = "Overview", emoji = "📖") }
-                    item {
-                        androidx.compose.material3.Text(
-                            text = overview,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = AppColors.TextPrimary,
-                            maxLines = if (state.isOverviewExpanded) Int.MAX_VALUE else 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        androidx.compose.material3.Text(
-                            text = if (state.isOverviewExpanded) "Show less" else "See More",
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .clickable { viewModel.toggleOverview() },
-                            color = AppColors.Primary,
-                        )
-                    }
-                }
-
-            if (state.seasons.isNotEmpty()) {
-                item {
-                    DetailSeasonsSection(
-                        seasons = state.seasons,
-                        onSeasonClick = { season ->
-                            navController.navigateToSeason(item, season.seasonNumber, season.name)
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+            // 6. Scalable Segmented Tabs Row
+            item(key = "tab_row") {
+                DetailTabRow(
+                    tabs = tabs,
+                    selectedIndex = selectedTab.coerceIn(0, tabs.lastIndex),
+                    onTabSelected = { selectedTab = it },
+                )
             }
 
-            if (state.trailers.isNotEmpty()) {
-                item {
-                    DetailSectionHeader(
-                        title = "Trailers & Videos",
-                        iconName = "play_circle_filled_rounded",
-                        trailing = if (state.trailers.size > 1) {
-                            {
-                                androidx.compose.material3.Text(
-                                    text = "See all ${state.trailers.size}",
-                                    color = AppColors.Primary,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.clickable { showAllTrailers = true },
+            // 7. Active Tab Content
+            if (isTv) {
+                when (selectedTab) {
+                    0 -> { // TV Tab 0: Episodes & Seasons
+                        item(key = "tv_seasons_content") {
+                            if (state.seasons.isNotEmpty()) {
+                                Column(modifier = Modifier.padding(top = 4.dp)) {
+                                    // Quick Season Selector Card
+                                    val firstSeason = state.seasons.firstOrNull()
+                                    if (firstSeason != null) {
+                                        Surface(
+                                            onClick = { showEpisodePicker = true },
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = AppColors.CardDark,
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                1.dp,
+                                                AppColors.Primary.copy(alpha = 0.35f),
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 20.dp, vertical = 6.dp),
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(16.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Tv,
+                                                    contentDescription = null,
+                                                    tint = AppColors.Primary,
+                                                    modifier = Modifier.size(26.dp),
+                                                )
+                                                Spacer(modifier = Modifier.width(14.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "Select Season & Episode",
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp,
+                                                    )
+                                                    Text(
+                                                        text = "${state.seasons.size} Seasons available • Tap to choose",
+                                                        color = AppColors.TextMuted,
+                                                        fontSize = 12.sp,
+                                                    )
+                                                }
+                                                Icon(
+                                                    Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = AppColors.Primary,
+                                                    modifier = Modifier.size(24.dp),
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                    }
+
+                                    // Horizontal Seasons Row
+                                    DetailSeasonsSection(
+                                        seasons = state.seasons,
+                                        onSeasonClick = { season ->
+                                            navController.navigateToSeason(item, season.seasonNumber, season.name)
+                                        },
+                                    )
+                                }
+                            } else {
+                                EmptyState(
+                                    message = "No season information available",
+                                    emoji = "📺",
+                                    modifier = Modifier.padding(vertical = 24.dp),
                                 )
                             }
-                        } else null,
-                    )
-                }
-                item {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(state.trailers.size) { index ->
-                            TrailerThumbnailCard(
-                                trailer = state.trailers[index],
-                                onClick = { trailerPlayerIndex = index },
-                            )
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    1 -> { // TV Tab 1: More Like This
+                        item(key = "tv_similar_content") {
+                            if (state.similar.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .height(265.dp)
+                                        .padding(top = 4.dp),
+                                ) {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 20.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    ) {
+                                        items(state.similar) { similarItem ->
+                                            SimilarTitleCard(
+                                                item = similarItem,
+                                                onClick = { navController.navigateToDetail(similarItem) },
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                EmptyState(
+                                    message = "No similar titles found",
+                                    emoji = "🎯",
+                                    modifier = Modifier.padding(vertical = 24.dp),
+                                )
+                            }
+                        }
+                    }
+                    2 -> { // TV Tab 2: Trailers
+                        item(key = "tv_trailers_content") {
+                            if (state.trailers.isNotEmpty()) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    modifier = Modifier.padding(top = 4.dp),
+                                ) {
+                                    items(state.trailers.size) { index ->
+                                        DetailTrailerCard(
+                                            trailer = state.trailers[index],
+                                            onClick = { trailerPlayerIndex = index },
+                                        )
+                                    }
+                                }
+                            } else {
+                                EmptyState(
+                                    message = "No trailers available",
+                                    emoji = "🎬",
+                                    modifier = Modifier.padding(vertical = 24.dp),
+                                )
+                            }
+                        }
+                    }
+                    3 -> { // TV Tab 3: Cast & Info
+                        if (state.cast.isNotEmpty()) {
+                            item(key = "tv_cast_header") {
+                                SectionHeader(
+                                    title = "Top Cast",
+                                    emoji = "👥",
+                                    onSeeAll = if (state.cast.size > 1) { { showAllCast = true } } else null,
+                                )
+                            }
+                            item(key = "tv_cast_row") {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(state.cast) { member ->
+                                        CastMemberCard(
+                                            photoUrl = member.photoUrl,
+                                            name = member.name,
+                                            character = member.character,
+                                            onClick = { navController.navigateToActor(member.id) },
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                            }
+                        }
+                        item(key = "tv_specs") {
+                            DetailSpecsSection(item = item)
+                        }
+                        if (state.reviews.isNotEmpty()) {
+                            item(key = "tv_reviews_header") {
+                                SectionHeader(title = "Reviews", emoji = "⭐")
+                            }
+                            items(state.reviews.take(2)) { review ->
+                                DetailReviewCard(review = review)
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Movie Tabs
+                when (selectedTab) {
+                    0 -> { // Movie Tab 0: More Like This
+                        item(key = "movie_similar_content") {
+                            if (state.similar.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .height(265.dp)
+                                        .padding(top = 4.dp),
+                                ) {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 20.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    ) {
+                                        items(state.similar) { similarItem ->
+                                            SimilarTitleCard(
+                                                item = similarItem,
+                                                onClick = { navController.navigateToDetail(similarItem) },
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                EmptyState(
+                                    message = "No similar movies found",
+                                    emoji = "🎯",
+                                    modifier = Modifier.padding(vertical = 24.dp),
+                                )
+                            }
+                        }
+                    }
+                    1 -> { // Movie Tab 1: Trailers
+                        item(key = "movie_trailers_content") {
+                            if (state.trailers.isNotEmpty()) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    modifier = Modifier.padding(top = 4.dp),
+                                ) {
+                                    items(state.trailers.size) { index ->
+                                        DetailTrailerCard(
+                                            trailer = state.trailers[index],
+                                            onClick = { trailerPlayerIndex = index },
+                                        )
+                                    }
+                                }
+                            } else {
+                                EmptyState(
+                                    message = "No trailers available",
+                                    emoji = "🎬",
+                                    modifier = Modifier.padding(vertical = 24.dp),
+                                )
+                            }
+                        }
+                    }
+                    2 -> { // Movie Tab 2: Cast & Crew
+                        if (state.cast.isNotEmpty()) {
+                            item(key = "movie_cast_header") {
+                                SectionHeader(
+                                    title = "Top Cast",
+                                    emoji = "👥",
+                                    onSeeAll = if (state.cast.size > 1) { { showAllCast = true } } else null,
+                                )
+                            }
+                            item(key = "movie_cast_row") {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(state.cast) { member ->
+                                        CastMemberCard(
+                                            photoUrl = member.photoUrl,
+                                            name = member.name,
+                                            character = member.character,
+                                            onClick = { navController.navigateToActor(member.id) },
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                            }
+                        }
+                    }
+                    3 -> { // Movie Tab 3: Details & Reviews
+                        item(key = "movie_specs") {
+                            DetailSpecsSection(item = item)
+                        }
+                        if (state.reviews.isNotEmpty()) {
+                            item(key = "movie_reviews_header") {
+                                SectionHeader(title = "Reviews", emoji = "⭐")
+                            }
+                            items(state.reviews.take(2)) { review ->
+                                DetailReviewCard(review = review)
+                            }
+                        }
+                    }
                 }
             }
 
-            if (state.cast.isNotEmpty()) {
-                item {
-                    DetailSectionHeader(
-                        title = "Cast",
-                        iconName = "people_rounded",
-                        trailing = {
-                            androidx.compose.material3.Text(
-                                text = "See all ${state.cast.size}",
-                                color = AppColors.Primary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.clickable { showAllCast = true },
-                            )
-                        },
-                    )
-                }
-                item {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        items(state.cast) { member ->
-                            CastMemberCard(
-                                photoUrl = member.photoUrl,
-                                name = member.name,
-                                character = member.character,
-                                onClick = { navController.navigateToActor(member.id) },
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-
-            // ===== INLINE BANNER AD ABOVE REVIEWS =====
+            // 8. Reviews Banner Ad
             if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
-                item {
+                item(key = "detail_banner_reviews_ad") {
+                    Spacer(modifier = Modifier.height(10.dp))
                     InlineBannerAd(
                         placement = "detail_banner_reviews",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
             }
 
-            if (state.reviews.isNotEmpty()) {
-                item {
-                    DetailSectionHeader(
-                        title = "Reviews",
-                        iconName = "rate_review_rounded",
-                        trailing = {
-                            androidx.compose.material3.Text(
-                                text = "${state.reviews.size} review${if (state.reviews.size != 1) "s" else ""}",
-                                color = Color(0xFF888899),
-                                fontSize = 12.sp,
-                            )
-                        },
-                    )
-                }
-                items(state.reviews.take(2)) { review ->
-                    DetailReviewCard(review = review)
-                }
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-            }
-
-            if (state.similar.isNotEmpty()) {
-                item { SectionHeader(title = "Similar Titles", emoji = "🎯") }
-                item {
-                    val similarWithAds = buildList<MediaItem?> {
-                        addAll(state.similar)
-                        state.similar.forEachIndexed { index, _ ->
-                            if ((index + 1) % 4 == 0 && index < state.similar.lastIndex) {
-                                add(null)
-                            }
-                        }
-                    }
-                    Box(modifier = Modifier.height(210.dp)) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(similarWithAds) { entry ->
-                                if (entry != null) {
-                                    SimilarTitleCard(
-                                        item = entry,
-                                        onClick = { navController.navigateToDetail(entry) },
-                                    )
-                                } else if (com.job2day.nazaarabox.utils.AdManager.isAdPlacementEnabled("detail_inline")) {
-                                    InlineCardAd(
-                                        placement = "detail_inline",
-                                        modifier = Modifier.width(140.dp),
-                                        label = "",
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) Modifier.height(100.dp) else Modifier)
-                }
-            }
-
-            // ===== FULL WIDTH BANNER AD AT THE BOTTOM =====
+            // 9. Bottom Banner Ad
             if (AdManager.isAdPlacementEnabled("detail_banner_bottom")) {
-                item {
+                item(key = "detail_banner_bottom_ad") {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                     ) {
                         Text(
                             text = "Advertisement",
@@ -364,17 +504,23 @@ fun DetailScreen(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                         FullWidthAdBanner(
                             placement = "detail_banner_bottom",
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
+
+            // Bottom Navigation Clearance
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(110.dp))
+            }
         }
 
+        // Overlay Floating App Bar
         DetailOverlayAppBar(
             title = item.title,
             showTitle = showAppBarTitle,
@@ -384,6 +530,7 @@ fun DetailScreen(
             modifier = Modifier.align(Alignment.TopCenter),
         )
 
+        // Floating Frosted Glass Bottom Action Bar
         DetailBottomActionBar(
             item = item,
             seasons = state.seasons,
@@ -395,6 +542,7 @@ fun DetailScreen(
         )
     }
 
+    // Modal Sheets
     if (showMore) {
         MoreMenuSheet(
             title = item.title,
@@ -407,6 +555,24 @@ fun DetailScreen(
         DownloadLinksSheet(
             item = item,
             onDismiss = { showDownloads = false },
+        )
+    }
+
+    if (showEpisodePicker) {
+        EpisodePickerSheet(
+            item = item,
+            seasons = state.seasons,
+            onPlay = { season, episode ->
+                showEpisodePicker = false
+                navController.navigateToPlayer(
+                    item.copy(
+                        season = season,
+                        episode = episode,
+                        title = "${item.title} · S${season}E$episode",
+                    ),
+                )
+            },
+            onDismiss = { showEpisodePicker = false },
         )
     }
 

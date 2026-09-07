@@ -8,20 +8,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -31,31 +32,43 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
+import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.navigation.navigateToSeeAll
+import com.job2day.nazaarabox.navigation.navigateToThemedSection
 import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.components.HomeGlassAppBar
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.FeaturedBanner
-import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.LoadingSkeleton
 import com.job2day.nazaarabox.widgets.MovieGridCard
 import com.job2day.nazaarabox.widgets.SectionHeader
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import com.job2day.nazaarabox.widgets.PopularMovieCard
 import com.job2day.nazaarabox.widgets.TrendingCard
 import com.job2day.nazaarabox.ads.CustomSmallCardAd
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.ads.InlineBannerAd
+import com.job2day.nazaarabox.ads.InlineCardAd
 import com.job2day.nazaarabox.utils.AdManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,256 +78,298 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val scrollState = rememberScrollState()
+    val lazyListState = rememberLazyListState()
     var homeFilters by remember { mutableStateOf(SearchFilters()) }
     var showFilters by remember { mutableStateOf(false) }
 
     val isAppBarBlurred by remember {
-        derivedStateOf { scrollState.value > 10 }
-    }
-
-    if (state.isLoadingCategories) {
-        LoadingCenter()
-        return
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 30
+        }
     }
 
     val selected = state.selectedCategoryIndex
-    val trending = state.trendingByCategory[selected].orEmpty()
-    val popular = state.popularByCategory[selected].orEmpty()
-    val featured = state.trendingByCategory[0].orEmpty().take(3)
     val category = state.categories.getOrNull(selected)
+    val trending = state.trending
+    val popular = state.popular
+    val featured = if (state.featured.isNotEmpty()) state.featured else trending.take(5)
+
     val trendingLabel = when (category?.label) {
-        "All" -> "Trending This Week"
+        "All", null -> "Trending This Week"
         "KDrama" -> "Trending KDramas"
-        null -> "Trending"
         else -> "Trending ${category.label}"
     }
+
     val popularLabel = when (category?.label) {
-        "All" -> "Popular This Month"
+        "All", null -> "Popular This Month"
         "KDrama" -> "Popular KDramas"
-        null -> "Popular"
         else -> "Popular ${category.label}"
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.BackgroundDark),
     ) {
         PullToRefreshBox(
-            isRefreshing = state.loadingTrending.contains(selected),
+            isRefreshing = state.isRefreshing,
             onRefresh = { viewModel.refresh() },
             modifier = Modifier.fillMaxSize(),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState),
-            ) {
-                Spacer(modifier = Modifier.height(72.dp))
-
-                if (featured.isNotEmpty()) {
-                    FeaturedBanner(
-                        items = featured,
-                        onItemClick = { navController.navigateToDetail(it) },
-                    )
-                } else if (state.loadingTrending.contains(0)) {
-                    LoadingSkeleton(modifier = Modifier.height(420.dp), height = 420)
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+            if (state.isLoading && state.categories.isEmpty()) {
+                HomeShimmerPlaceholder()
+            } else {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    state.categories.forEachIndexed { index, cat ->
-                        val isSelected = selected == index
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { viewModel.selectCategory(index) },
-                            label = {
+                    // 1. Hero Carousel Banner
+                    item(key = "hero_banner") {
+                        if (featured.isNotEmpty()) {
+                            FeaturedBanner(
+                                items = featured,
+                                onItemClick = { navController.navigateToDetail(it) },
+                            )
+                        } else {
+                            LoadingSkeleton(modifier = Modifier.height(440.dp), height = 440)
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
+
+                    // 2. Category Filter Chips
+                    if (state.categories.isNotEmpty()) {
+                        item(key = "categories_row") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                state.categories.forEachIndexed { index, cat ->
+                                    val isSelected = selected == index
+                                    Surface(
+                                        onClick = { viewModel.selectCategory(index) },
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = if (isSelected) AppColors.Primary else Color(0xFF1B1D28),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            1.dp,
+                                            if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.12f)
+                                        ),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(text = cat.emoji, fontSize = 14.sp)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = cat.label,
+                                                color = if (isSelected) Color.White else Color(0xFFC4C4D4),
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.sp,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+                    }
+
+                    // 3. Sponsored Ads Row (Native Small Cards)
+                    if (AdManager.isAdPlacementEnabled("home_inline")) {
+                        item(key = "sponsored_ads_row") {
+                            Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = "${cat.emoji} ${cat.label}",
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    text = "Sponsored",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                    color = Color(0xFF888899),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    letterSpacing = 0.5.sp,
                                 )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.Accent.copy(alpha = 0.86f),
-                                selectedLabelColor = Color.Black,
-                                containerColor = AppColors.SurfaceVariantDark,
-                                labelColor = Color(0xFF888899),
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = if (isSelected) AppColors.Accent else Color(0xFF444466),
-                                selectedBorderColor = AppColors.Accent,
-                            ),
-                            shape = RoundedCornerShape(20.dp),
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.height(210.dp),
+                                ) {
+                                    items(6) {
+                                        CustomSmallCardAd(
+                                            adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                                            modifier = Modifier
+                                                .width(140.dp)
+                                                .height(200.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+                    }
+
+                    // 4. Trending Section Header
+                    item(key = "trending_header") {
+                        SectionHeader(
+                            title = trendingLabel,
+                            emoji = "🔥",
+                            onSeeAll = if (trending.isNotEmpty()) {
+                                { navController.navigateToSeeAll(trendingLabel, trending) }
+                            } else null,
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    // 5. Trending Cards Horizontal Row
+                    item(key = "trending_content") {
+                        if (state.isCategoryLoading && trending.isEmpty()) {
+                            LoadingSkeleton(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .height(220.dp),
+                                height = 220,
+                            )
+                        } else if (trending.isEmpty()) {
+                            EmptyState("No trending titles found")
+                        } else {
+                            Box(modifier = Modifier.height(265.dp)) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(trending.size) { index ->
+                                        val entry = trending[index]
+                                        TrendingCard(
+                                            item = entry,
+                                            index = index,
+                                            onClick = { navController.navigateToDetail(entry) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
 
-                // Native Card Ads Row (6 cards) - above Trending section
-                if (AdManager.isAdPlacementEnabled("home_inline")) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = "Sponsored",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                        )
-                        
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.height(220.dp),
-                        ) {
-                            items(6) { index ->
-                                CustomSmallCardAd(
-                                    adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                    // 6. Inline Banner Ad between Trending & Popular
+                    if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
+                        item(key = "mid_banner_ad") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                            ) {
+                                Text(
+                                    text = "Advertisement",
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                    color = Color(0xFF888899),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    letterSpacing = 0.5.sp,
+                                )
+                                InlineBannerAd(
+                                    placement = "detail_banner_reviews",
                                     modifier = Modifier
-                                        .width(140.dp)
-                                        .height(200.dp),
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    )
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+                    }
+
+                    // 7. Popular Section Header
+                    item(key = "popular_header") {
+                        SectionHeader(
+                            title = popularLabel,
+                            emoji = "⭐",
+                            onSeeAll = if (popular.isNotEmpty()) {
+                                { navController.navigateToSeeAll(popularLabel, popular) }
+                            } else null,
+                        )
+                    }
+
+                    // 8. Popular Movies Horizontal Carousel
+                    item(key = "popular_content") {
+                        if (state.isCategoryLoading && popular.isEmpty()) {
+                            LoadingSkeleton(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .height(220.dp),
+                                height = 220,
+                            )
+                        } else if (popular.isEmpty()) {
+                            EmptyState("No popular titles found")
+                        } else {
+                            Box(modifier = Modifier.height(265.dp)) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(popular.size) { index ->
+                                        val entry = popular[index]
+                                        PopularMovieCard(
+                                            item = entry,
+                                            onClick = { navController.navigateToDetail(entry) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // 9. Dynamic Admin-Configured Sections (from backend home_sections table)
+                    if (state.sections.isNotEmpty()) {
+                        item(key = "sections_spacer") {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        items(
+                            count = state.sections.size,
+                            key = { "admin_section_${state.sections[it].id}" },
+                        ) { secIndex ->
+                            val section = state.sections[secIndex]
+                            DynamicSectionRow(
+                                section = section,
+                                onMore = { navController.navigateToThemedSection(section) },
+                                onItemClick = { navController.navigateToDetail(it) },
+                            )
+                        }
+                    }
+
+                    // 10. Bottom Banner Ad
+                    if (AdManager.isAdPlacementEnabled("home_banner")) {
+                        item(key = "bottom_banner_ad") {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                            ) {
+                                Text(
+                                    text = "Advertisement",
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                    color = Color(0xFF888899),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    letterSpacing = 0.5.sp,
+                                )
+                                FullWidthAdBanner(
+                                    placement = "home_banner",
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
 
-                SectionHeader(
-                    title = trendingLabel,
-                    emoji = "🔥",
-                    onSeeAll = if (trending.isNotEmpty()) {
-                        { navController.navigateToSeeAll(trendingLabel, trending) }
-                    } else null,
-                )
-                if (state.loadingTrending.contains(selected) && trending.isEmpty()) {
-                    LoadingSkeleton(modifier = Modifier.padding(horizontal = 16.dp))
-                } else if (trending.isEmpty()) {
-                    EmptyState("No trending titles found")
-                } else {
-                    Box(modifier = Modifier.height(220.dp)) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(trending) { entry ->
-                                TrendingCard(
-                                    item = entry,
-                                    onClick = { navController.navigateToDetail(entry) },
-                                )
-                            }
-                        }
+                    // Bottom Navigation Padding
+                    item(key = "bottom_padding") {
+                        Spacer(modifier = Modifier.height(110.dp))
                     }
                 }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // ===== INLINE BANNER AD BETWEEN TRENDING AND POPULAR =====
-                if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                    ) {
-                        Text(
-                            text = "Advertisement",
-                            modifier = Modifier.padding(bottom = 8.dp),
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                        )
-                        InlineBannerAd(
-                            placement = "detail_banner_reviews",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
-
-                SectionHeader(
-                    title = popularLabel,
-                    emoji = "⭐",
-                    onSeeAll = if (popular.isNotEmpty()) {
-                        { navController.navigateToSeeAll(popularLabel, popular) }
-                    } else null,
-                )
-                if (state.loadingPopular.contains(selected) && popular.isEmpty()) {
-                    LoadingSkeleton(modifier = Modifier.padding(horizontal = 16.dp), height = 240)
-                } else if (popular.isEmpty()) {
-                    EmptyState("No popular titles found")
-                } else {
-                    val popularList = popular.take(12)
-                    popularList.chunked(2).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            rowItems.forEach { gridItem ->
-                                MovieGridCard(
-                                    item = gridItem,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { navController.navigateToDetail(gridItem) },
-                                )
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HomeSectionsWidget(navController = navController)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Banner Ad at the bottom of the page
-                if (AdManager.isAdPlacementEnabled("home_banner")) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                    ) {
-                        Text(
-                            text = "Advertisement",
-                            modifier = Modifier.padding(bottom = 8.dp),
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                        )
-                        FullWidthAdBanner(
-                            placement = "home_banner",
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
+        // Floating Frosted Glass Top App Bar
         HomeGlassAppBar(
             isBlurred = isAppBarBlurred,
             filterActiveCount = homeFilters.activeCount,
@@ -322,7 +377,7 @@ fun HomeScreen(
             onSearch = { navController.navigate(AppRoutes.SEARCH) },
             onFilter = { showFilters = true },
             onNotifications = { },
-            modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
+            modifier = Modifier.align(Alignment.TopCenter),
         )
     }
 
@@ -334,6 +389,172 @@ fun HomeScreen(
                 homeFilters = it
                 showFilters = false
             },
+        )
+    }
+}
+
+@Composable
+private fun DynamicSectionRow(
+    section: ThemedSection,
+    onMore: () -> Unit,
+    onItemClick: (MediaItem) -> Unit,
+) {
+    if (section.items.isEmpty()) return
+
+    Column(modifier = Modifier.padding(bottom = 22.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = section.emoji.ifBlank { "🎬" }, fontSize = 20.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = section.title,
+                color = AppColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Surface(
+                onClick = onMore,
+                shape = RoundedCornerShape(20.dp),
+                color = AppColors.Primary.copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.35f)),
+            ) {
+                Text(
+                    text = "More",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    color = AppColors.Primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Box(modifier = Modifier.height(265.dp)) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                val rowItems = buildList<Any?> {
+                    addAll(section.items)
+                    section.items.forEachIndexed { index, _ ->
+                        if ((index + 1) % 4 == 0 && index < section.items.lastIndex) {
+                            add(null)
+                        }
+                    }
+                }
+                items(rowItems) { entry ->
+                    if (entry is MediaItem) {
+                        SectionMovieCard(item = entry, onClick = { onItemClick(entry) })
+                    } else if (AdManager.isAdPlacementEnabled("home_inline")) {
+                        InlineCardAd(
+                            placement = "home_inline",
+                            modifier = Modifier.width(140.dp),
+                            label = "",
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionMovieCard(item: MediaItem, onClick: () -> Unit) {
+    Column(modifier = Modifier.width(140.dp)) {
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(16.dp),
+            color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(195.dp),
+        ) {
+            Box {
+                CustomImage(
+                    imageUrl = item.posterUrl,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                if (item.rating > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = AppColors.Accent,
+                                modifier = Modifier.size(11.dp),
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 3.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item.title,
+            color = AppColors.TextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = if (item.year.isNotBlank()) item.year else "Featured",
+            color = AppColors.TextMuted,
+            fontSize = 11.sp,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun HomeShimmerPlaceholder() {
+    Column(modifier = Modifier.fillMaxSize()) {
+        LoadingSkeleton(modifier = Modifier.fillMaxWidth().height(440.dp), height = 440)
+        Spacer(modifier = Modifier.height(18.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            repeat(4) {
+                LoadingSkeleton(
+                    modifier = Modifier.width(84.dp).height(36.dp),
+                    height = 36,
+                    shape = RoundedCornerShape(20.dp),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        LoadingSkeleton(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .height(210.dp),
+            height = 210,
         )
     }
 }

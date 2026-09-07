@@ -69,7 +69,9 @@ fun CategorySectionScreen(navController: NavController) {
             put("include_adult", "false")
             if (!containsKey("sort_by")) put("sort_by", "popularity.desc")
         }
-        val (newItems, pages) = if (section.mediaType == "tv") {
+        val (newItems, pages) = if (section.endpoint.isNotBlank() && !section.endpoint.startsWith("discover/")) {
+            repository.fetchSectionPage(section.endpoint, params, 1, section.mediaType)
+        } else if (section.mediaType == "tv") {
             repository.discover("tv", params, 1)
         } else {
             repository.discoverMovies(params, 1)
@@ -95,7 +97,9 @@ fun CategorySectionScreen(navController: NavController) {
             if (!containsKey("sort_by")) put("sort_by", "popularity.desc")
         }
         val nextPage = page + 1
-        val (newItems, pages) = if (section.mediaType == "tv") {
+        val (newItems, pages) = if (section.endpoint.isNotBlank() && !section.endpoint.startsWith("discover/")) {
+            repository.fetchSectionPage(section.endpoint, params, nextPage, section.mediaType)
+        } else if (section.mediaType == "tv") {
             repository.discover("tv", params, nextPage)
         } else {
             repository.discoverMovies(params, nextPage)

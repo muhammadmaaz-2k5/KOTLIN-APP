@@ -30,6 +30,19 @@ data class ThemedSection(
     val title: String = "",
     val tmdbParams: Map<String, String> = emptyMap(),
     val mediaType: String = "movie",
+    val id: Int = 0,
+    val endpoint: String = "discover/movie",
+    val items: List<MediaItem> = emptyList(),
+)
+
+@Serializable
+data class HomeFeed(
+    val categories: List<HomeCategory> = emptyList(),
+    val featured: List<MediaItem> = emptyList(),
+    val trending: List<MediaItem> = emptyList(),
+    val popular: List<MediaItem> = emptyList(),
+    val customExclusives: List<MediaItem> = emptyList(),
+    val sections: List<ThemedSection> = emptyList(),
 )
 
 @Serializable

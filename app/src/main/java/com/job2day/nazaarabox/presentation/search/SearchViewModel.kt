@@ -19,6 +19,10 @@ data class SearchUiState(
     val isLoading: Boolean = false,
     val results: List<MediaItem> = emptyList(),
     val filters: SearchFilters = SearchFilters(),
+    val isGridView: Boolean = true,
+    val recentSearches: List<String> = emptyList(),
+    val trendingItems: List<MediaItem> = emptyList(),
+    val isLoadingTrending: Boolean = false,
 )
 
 class SearchViewModel(
@@ -33,6 +37,53 @@ class SearchViewModel(
         "🕷️ Spider-Man", "🦁 The Lion King", "🎭 Breaking Bad", "🤖 Transformers",
         "🧟 The Walking Dead", "🧊 Game of Thrones",
     )
+
+    init {
+        loadTrending()
+    }
+
+    fun loadTrending() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingTrending = true) }
+            val movies = repository.trending("movie").take(10)
+            val tv = repository.trending("tv").take(10)
+            val combined = (movies + tv).shuffled()
+            _uiState.update {
+                it.copy(
+                    trendingItems = combined,
+                    isLoadingTrending = false,
+                )
+            }
+        }
+    }
+
+    fun toggleViewMode() {
+        _uiState.update { it.copy(isGridView = !it.isGridView) }
+    }
+
+    fun clearQuery() {
+        _uiState.update { it.copy(query = "", results = emptyList(), isLoading = false) }
+        debounceJob?.cancel()
+    }
+
+    fun addRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        _uiState.update { current ->
+            val updated = (listOf(trimmed) + current.recentSearches.filterNot { it.equals(trimmed, ignoreCase = true) }).take(8)
+            current.copy(recentSearches = updated)
+        }
+    }
+
+    fun removeRecentSearch(query: String) {
+        _uiState.update { current ->
+            current.copy(recentSearches = current.recentSearches.filterNot { it.equals(query, ignoreCase = true) })
+        }
+    }
+
+    fun clearRecentSearches() {
+        _uiState.update { it.copy(recentSearches = emptyList()) }
+    }
 
     fun onQueryChanged(value: String) {
         _uiState.update { it.copy(query = value) }
@@ -59,6 +110,14 @@ class SearchViewModel(
         if (query.isNotBlank()) search(query)
     }
 
+    fun selectGenre(genre: String) {
+        val updatedFilters = _uiState.value.filters.copy(genre = genre)
+        _uiState.update { it.copy(filters = updatedFilters) }
+        val query = _uiState.value.query.ifBlank { genre }
+        _uiState.update { it.copy(query = query) }
+        search(query)
+    }
+
     fun onSuggestionTap(suggestion: String) {
         val clean = suggestion.replace(Regex("^[^\\p{L}\\p{N}]+"), "").trim().ifBlank { suggestion }
         _uiState.update { it.copy(query = clean) }
@@ -70,11 +129,15 @@ class SearchViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val state = _uiState.value
             val results = repository.search(query, state.selectedType, state.filters)
+            val sorted = sortResults(results, state.filters.sortBy)
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    results = sortResults(results, state.filters.sortBy),
+                    results = sorted,
                 )
+            }
+            if (sorted.isNotEmpty()) {
+                addRecentSearch(query)
             }
         }
     }

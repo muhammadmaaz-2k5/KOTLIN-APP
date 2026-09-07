@@ -10,29 +10,30 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.job2day.nazaarabox"
+        applicationId = "com.engora.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 26
         versionName = "1.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BACKEND_BASE_URL", "\"https://moviebox.nazaarabox.com\"")
-        buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://moviebox.nazaarabox.com\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8000\"")
+        buildConfigField("String", "BACKEND_DEBUG_URL", "\"http://10.0.2.2:8000\"")
         buildConfigField("String", "TMDB_API_KEY", "\"5bc4d03de6365a0eef7d0a4c4a7d002b\"")
     }
 
     signingConfigs {
         create("release") {
             storeFile = file("upload-keystore.jks")
-            storePassword = "coin123"
-            keyAlias = "coin123"
-            keyPassword = "coin123"
+            storePassword = "engora123"
+            keyAlias = "engora"
+            keyPassword = "engora123"
         }
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
         release {
             isMinifyEnabled = false

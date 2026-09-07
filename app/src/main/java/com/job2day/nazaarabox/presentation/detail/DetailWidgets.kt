@@ -1,23 +1,42 @@
 package com.job2day.nazaarabox.presentation.detail
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,96 +46,388 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.filled.Tv
 import com.job2day.nazaarabox.core.AppConfig
+import com.job2day.nazaarabox.core.CastMember
 import com.job2day.nazaarabox.core.MediaItem
+import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SeasonItem
+import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.widgets.CustomIconWidget
 import com.job2day.nazaarabox.widgets.CustomImage
 
+/**
+ * Modern Cinematic Hero Header with full-bleed backdrop art,
+ * gradient scrim, central Play Trailer trigger, and embedded poster badge.
+ */
 @Composable
-fun DetailHeroHeader(item: MediaItem) {
+fun DetailHeroHeader(
+    item: MediaItem,
+    onPlayTrailer: (() -> Unit)? = null,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(380.dp),
+            .height(390.dp),
     ) {
+        // High-res Backdrop Image
         CustomImage(
             imageUrl = item.backdropUrl.ifBlank { item.posterUrl },
             modifier = Modifier.fillMaxSize(),
         )
+
+        // Multi-stop Vertical Gradient Scrim
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
-                            0f to Color.Black.copy(alpha = 0.24f),
-                            0.4f to Color.Black.copy(alpha = 0.4f),
-                            0.75f to AppColors.BackgroundDark.copy(alpha = 0.86f),
-                            1f to AppColors.BackgroundDark,
+                            0.0f to Color.Black.copy(alpha = 0.65f),
+                            0.25f to Color.Transparent,
+                            0.60f to AppColors.BackgroundDark.copy(alpha = 0.70f),
+                            0.88f to AppColors.BackgroundDark.copy(alpha = 0.95f),
+                            1.0f to AppColors.BackgroundDark,
                         ),
                     ),
                 ),
         )
-        Box(
+
+        // Center Frosted Play Trailer Button
+        if (onPlayTrailer != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(62.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.60f))
+                    .border(1.5.dp, Color.White.copy(alpha = 0.45f), CircleShape)
+                    .clickable { onPlayTrailer() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = "Play Trailer",
+                    tint = Color.White,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+        }
+
+        // Bottom Hero Info Card: Poster + Badges
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 20.dp, bottom = 16.dp)
-                .width(110.dp)
-                .height(165.dp)
-                .shadow(20.dp, RoundedCornerShape(14.dp), spotColor = AppColors.Primary.copy(alpha = 0.2f))
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Bottom,
         ) {
-            CustomImage(
-                imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.End,
-        ) {
-            val isMovie = item.type == "movie"
-            val typeColor = if (isMovie) AppColors.Primary else AppColors.Secondary
-            Text(
-                text = if (isMovie) "🎬 Movie" else "📺 TV Show",
+            // Rounded Poster with Glassmorphic Border & Shadow
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = AppColors.CardDark,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+                shadowElevation = 14.dp,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(typeColor.copy(alpha = 0.16f))
-                    .border(1.dp, typeColor.copy(alpha = 0.47f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                color = typeColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            if (item.rating > 0) {
-                Spacer(modifier = Modifier.height(10.dp))
+                    .width(115.dp)
+                    .height(172.dp),
+            ) {
+                CustomImage(
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Metadata Badges Column
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Type Badge & Quality Tag
                 Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(alpha = 0.63f))
-                        .border(1.dp, AppColors.ratingColor(item.rating).copy(alpha = 0.47f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val isTv = item.type.equals("tv", ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                if (isTv) AppColors.Secondary.copy(alpha = 0.85f)
+                                else AppColors.Primary.copy(alpha = 0.85f)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = if (isTv) "TV SERIES" else "MOVIE",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .border(0.8.dp, AppColors.Accent.copy(alpha = 0.7f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = "4K ULTRA HD",
+                            color = AppColors.Accent,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                // Rating Pill
+                if (item.rating > 0) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.70f))
+                            .border(0.5.dp, AppColors.Accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = AppColors.Accent,
+                                modifier = Modifier.size(13.dp),
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                modifier = Modifier.padding(start = 4.dp),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = " / 10",
+                                color = AppColors.TextMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                }
+
+                // Year & Runtime / Status
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (item.year.isNotBlank()) {
+                        Text(
+                            text = item.year,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    if (item.runtime.isNotBlank()) {
+                        Text(text = "•", color = AppColors.TextMuted, fontSize = 12.sp)
+                        Text(
+                            text = item.runtime,
+                            color = AppColors.TextMuted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Title and Genre Chips Row
+ */
+@Composable
+fun DetailTitleHeader(item: MediaItem) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = item.title,
+            color = AppColors.TextPrimary,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = (-0.4).sp,
+            lineHeight = 32.sp,
+        )
+
+        if (item.genres.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(item.genres) { genre ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White.copy(alpha = 0.08f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                    ) {
+                        Text(
+                            text = genre,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                            color = Color(0xFFDDDDED),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Primary In-Content CTA Action Row (Watch Now, Trailer, Watchlist, Download, Share)
+ */
+@Composable
+fun DetailHeroActions(
+    item: MediaItem,
+    isInWatchlist: Boolean,
+    onPlay: () -> Unit,
+    onTrailer: () -> Unit,
+    onWatchlistToggle: () -> Unit,
+    onDownload: () -> Unit,
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        // Main Watch Button
+        Button(
+            onClick = onPlay,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(25.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AppColors.Primary,
+                contentColor = Color.White,
+            ),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Watch Now",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Secondary Action Pills Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Trailer Button
+            OutlinedButton(
+                onClick = onTrailer,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Star,
+                        Icons.Default.Movie,
                         contentDescription = null,
-                        tint = AppColors.ratingColor(item.rating),
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(17.dp),
+                        tint = AppColors.Primary,
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = String.format("%.1f", item.rating),
-                        modifier = Modifier.padding(start = 4.dp),
-                        color = Color.White,
+                        text = "Trailer",
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            // Watchlist Button
+            Surface(
+                onClick = onWatchlistToggle,
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = if (isInWatchlist) AppColors.Primary.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isInWatchlist) AppColors.Primary else Color.White.copy(alpha = 0.15f),
+                ),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        contentDescription = "Watchlist",
+                        tint = if (isInWatchlist) AppColors.Primary else Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            // Download Button
+            Surface(
+                onClick = onDownload,
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "Download",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            // Share Button
+            Surface(
+                onClick = onShare,
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
                     )
                 }
             }
@@ -124,35 +435,96 @@ fun DetailHeroHeader(item: MediaItem) {
     }
 }
 
+/**
+ * Expandable Storyline / Overview Card
+ */
 @Composable
-fun DetailTitleSection(item: MediaItem) {
-    Column(
+fun DetailOverviewCard(
+    overview: String,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    if (overview.isBlank()) return
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = AppColors.CardDark,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 20.dp, vertical = 6.dp),
     ) {
-        Text(
-            text = item.title,
-            color = AppColors.TextPrimary,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.ExtraBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-            if (item.year.isNotBlank()) {
-                Text(item.year, color = AppColors.TextMuted, fontSize = 13.sp)
-            }
-            if (item.runtime.isNotBlank()) {
-                Text(item.runtime, color = AppColors.TextMuted, fontSize = 13.sp)
-            }
-            if (item.status.isNotBlank()) {
-                Text(item.status, color = AppColors.TextMuted, fontSize = 13.sp)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Storyline",
+                color = AppColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = overview,
+                color = Color(0xFFC8C8D8),
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = if (isExpanded) "Show Less ▲" else "Read More ▼",
+                color = AppColors.Primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .clickable { onToggle() },
+            )
+        }
+    }
+}
+
+/**
+ * Segmented Tab Selector Row
+ */
+@Composable
+fun DetailTabRow(
+    tabs: List<String>,
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(tabs.size) { index ->
+            val isSelected = selectedIndex == index
+            Surface(
+                onClick = { onTabSelected(index) },
+                shape = RoundedCornerShape(20.dp),
+                color = if (isSelected) AppColors.Primary else Color(0xFF181B26),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.10f),
+                ),
+            ) {
+                Text(
+                    text = tabs[index],
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = if (isSelected) Color.White else Color(0xFFA5A5BC),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 13.sp,
+                )
             }
         }
     }
 }
 
+/**
+ * Modern Cast Member Card with Rounded Framing
+ */
 @Composable
 fun CastMemberCard(
     photoUrl: String,
@@ -162,37 +534,43 @@ fun CastMemberCard(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(80.dp),
+        modifier = Modifier.width(88.dp),
     ) {
-        androidx.compose.material3.Surface(
+        Surface(
             onClick = onClick,
             shape = CircleShape,
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White.copy(alpha = 0.15f)),
+            color = AppColors.CardDark,
         ) {
             CustomImage(
                 imageUrl = photoUrl,
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(76.dp)
                     .clip(CircleShape),
             )
         }
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = name,
             color = AppColors.TextPrimary,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = character,
             color = AppColors.TextMuted,
             fontSize = 10.sp,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
+/**
+ * TV Show Seasons Section
+ */
 @Composable
 fun DetailSeasonsSection(
     seasons: List<SeasonItem>,
@@ -208,7 +586,7 @@ fun DetailSeasonsSection(
         ) {
             Icon(Icons.Default.Tv, contentDescription = null, tint = AppColors.Primary, modifier = Modifier.size(20.dp))
             Text(
-                text = "Seasons",
+                text = "Seasons & Episodes",
                 modifier = Modifier.padding(start = 8.dp),
                 color = AppColors.TextPrimary,
                 fontWeight = FontWeight.Bold,
@@ -222,10 +600,10 @@ fun DetailSeasonsSection(
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.height(200.dp)) {
-            androidx.compose.foundation.lazy.LazyRow(
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+        Box(modifier = Modifier.height(235.dp)) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 items(seasons.size) { index ->
                     DetailSeasonCard(season = seasons[index], onClick = { onSeasonClick(seasons[index]) })
@@ -235,6 +613,9 @@ fun DetailSeasonsSection(
     }
 }
 
+/**
+ * TV Show Season Card
+ */
 @Composable
 fun DetailSeasonCard(
     season: SeasonItem,
@@ -247,16 +628,17 @@ fun DetailSeasonCard(
         ""
     }
     val year = if (season.airDate.length >= 4) season.airDate.substring(0, 4) else ""
-    Column(modifier = Modifier.width(110.dp)) {
-        androidx.compose.material3.Surface(
+    Column(modifier = Modifier.width(125.dp)) {
+        Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(10.dp),
-            color = AppColors.SurfaceVariantDark,
+            shape = RoundedCornerShape(14.dp),
+            color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
         ) {
             Box(
                 modifier = Modifier
-                    .width(110.dp)
-                    .height(140.dp),
+                    .width(125.dp)
+                    .height(170.dp),
             ) {
                 if (posterUrl.isNotBlank()) {
                     CustomImage(imageUrl = posterUrl, modifier = Modifier.fillMaxSize())
@@ -267,7 +649,12 @@ fun DetailSeasonCard(
                             .background(AppColors.SurfaceVariantDark),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Default.Tv, contentDescription = null, tint = Color.White.copy(alpha = 0.24f), modifier = Modifier.size(32.dp))
+                        Icon(
+                            Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.24f),
+                            modifier = Modifier.size(36.dp),
+                        )
                     }
                 }
                 Box(
@@ -277,7 +664,7 @@ fun DetailSeasonCard(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
                                     0.5f to Color.Transparent,
-                                    1f to Color.Black.copy(alpha = 0.55f),
+                                    1f to Color.Black.copy(alpha = 0.70f),
                                 ),
                             ),
                         ),
@@ -285,39 +672,173 @@ fun DetailSeasonCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(6.dp)
-                        .size(28.dp)
+                        .padding(8.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(AppColors.Primary.copy(alpha = 0.86f)),
+                        .background(AppColors.Primary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Default.PlayArrow,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
         }
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = season.name,
-            modifier = Modifier.padding(top = 6.dp),
             color = AppColors.TextPrimary,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = buildString {
-                append("${season.episodeCount} ep")
-                if (year.isNotBlank()) append(" · $year")
+                append("${season.episodeCount} episodes")
+                if (year.isNotBlank()) append(" • $year")
             },
             color = AppColors.TextMuted,
             fontSize = 11.sp,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * 16:9 Widescreen Trailer Card
+ */
+@Composable
+fun DetailTrailerCard(
+    trailer: TrailerItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val thumbUrl = "https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg"
+    Column(modifier = modifier.width(220.dp)) {
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(14.dp),
+            color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(124.dp),
+        ) {
+            Box {
+                CustomImage(imageUrl = thumbUrl, modifier = Modifier.fillMaxSize())
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.60f)),
+                            ),
+                        ),
+                )
+                // Center Play Icon
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.60f))
+                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                // Video Type Pill
+                if (trailer.type.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.70f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = trailer.type,
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = trailer.name,
+            color = AppColors.TextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * Production Specifications & Technical Details
+ */
+@Composable
+fun DetailSpecsSection(item: MediaItem) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = AppColors.CardDark,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Information & Specs",
+                color = AppColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SpecItem(label = "Format", value = if (item.type == "tv") "TV Series" else "Feature Film")
+            if (item.year.isNotBlank()) SpecItem(label = "Release Year", value = item.year)
+            if (item.runtime.isNotBlank()) SpecItem(label = "Runtime", value = item.runtime)
+            if (item.status.isNotBlank()) SpecItem(label = "Status", value = item.status)
+            if (item.genres.isNotEmpty()) SpecItem(label = "Genres", value = item.genres.joinToString(", "))
+            SpecItem(label = "Resolution", value = "4K Ultra HD • HDR10")
+            SpecItem(label = "Audio", value = "Dolby Atmos • 5.1 Surround")
+        }
+    }
+}
+
+@Composable
+private fun SpecItem(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = label, color = AppColors.TextMuted, fontSize = 12.sp)
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

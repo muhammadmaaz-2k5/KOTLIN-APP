@@ -20,6 +20,14 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
@@ -97,25 +105,42 @@ fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = if (emoji.isNotBlank()) "$emoji  $title" else title,
-            style = MaterialTheme.typography.titleMedium,
-            color = AppColors.TextPrimary,
-            fontWeight = FontWeight.Bold,
-        )
-        if (onSeeAll != null) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            if (emoji.isNotBlank()) {
+                Text(text = emoji, fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Text(
-                text = "See all →",
-                color = AppColors.Primary,
-                fontSize = 13.sp,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .clickable { onSeeAll() },
+                text = title,
+                color = AppColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+        }
+        if (onSeeAll != null) {
+            androidx.compose.material3.Surface(
+                onClick = onSeeAll,
+                shape = RoundedCornerShape(20.dp),
+                color = AppColors.Primary.copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.35f)),
+            ) {
+                Text(
+                    text = "See all →",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    color = AppColors.Primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }
@@ -138,13 +163,48 @@ fun EmptyState(
 }
 
 @Composable
-fun LoadingSkeleton(modifier: Modifier = Modifier, height: Int = 180) {
+fun shimmerBrush(
+    targetValue: Float = 1000f,
+    showShimmer: Boolean = true,
+): Brush {
+    return if (showShimmer) {
+        val shimmerColors = listOf(
+            Color(0xFF1E212B),
+            Color(0xFF2C3242),
+            Color(0xFF1E212B),
+        )
+        val transition = rememberInfiniteTransition(label = "shimmerTransition")
+        val translateAnimation = transition.animateFloat(
+            initialValue = 0f,
+            targetValue = targetValue,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "shimmerTranslate",
+        )
+        Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset.Zero,
+            end = Offset(x = translateAnimation.value, y = translateAnimation.value),
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(Color.Transparent, Color.Transparent),
+            start = Offset.Zero,
+            end = Offset.Zero,
+        )
+    }
+}
+
+@Composable
+fun LoadingSkeleton(modifier: Modifier = Modifier, height: Int = 180, shape: RoundedCornerShape = RoundedCornerShape(16.dp)) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.SurfaceVariantDark),
+            .clip(shape)
+            .background(shimmerBrush()),
     )
 }
 
@@ -300,53 +360,92 @@ fun TrendingCard(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = modifier.width(140.dp),
+        modifier = modifier.width(145.dp),
     ) {
         androidx.compose.material3.Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(205.dp),
         ) {
             Box {
                 CustomImage(
                     imageUrl = item.posterUrl,
                     modifier = Modifier.fillMaxSize(),
                 )
+
+                // Top-Left Netflix-Style Rank Badge
                 Box(
                     modifier = Modifier
                         .padding(8.dp)
-                        .size(28.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(AppColors.Primary)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFFFF3366), Color(0xFFFF5E3A))
+                            )
+                        )
+                        .border(0.5.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 9.dp, vertical = 4.dp)
                         .align(Alignment.TopStart),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "${index + 1}",
+                        text = "#${index + 1}",
                         color = Color.White,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp,
                     )
                 }
-                StatusBadge(
-                    rating = item.rating,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp),
-                )
+
+                // Top-Right Star Rating Badge
+                if (item.rating > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = AppColors.Accent,
+                                modifier = Modifier.size(11.dp),
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 3.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = item.title,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = AppColors.TextPrimary,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = if (item.year.isNotBlank()) item.year else "Trending",
+            color = AppColors.TextMuted,
+            fontSize = 11.sp,
+            maxLines = 1,
         )
     }
 }
@@ -357,10 +456,10 @@ fun TrendingRow(
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
     onItemClick: (MediaItem) -> Unit,
 ) {
-    Box(modifier = Modifier.height(220.dp)) {
+    Box(modifier = Modifier.height(265.dp)) {
         androidx.compose.foundation.lazy.LazyRow(
             contentPadding = contentPadding,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             items(items.size) { index ->
                 TrendingCard(
@@ -374,22 +473,165 @@ fun TrendingRow(
 }
 
 @Composable
+fun PopularMovieCard(
+    item: MediaItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = modifier.width(145.dp),
+    ) {
+        androidx.compose.material3.Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(16.dp),
+            color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        AppColors.Accent.copy(alpha = 0.40f),
+                        Color.White.copy(alpha = 0.08f),
+                    )
+                )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(205.dp),
+        ) {
+            Box {
+                CustomImage(
+                    imageUrl = item.posterUrl,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                // Top-Left Gold Rating Badge
+                if (item.rating > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .border(0.5.dp, AppColors.Accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = AppColors.Accent,
+                                modifier = Modifier.size(11.dp),
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 3.dp),
+                            )
+                        }
+                    }
+                }
+
+                // Top-Right Type Pill (Movie / TV)
+                val isTv = item.type.equals("tv", ignoreCase = true)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (isTv) AppColors.Secondary.copy(alpha = 0.85f) else AppColors.Primary.copy(alpha = 0.85f)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        text = if (isTv) "TV" else "MOVIE",
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                    )
+                }
+
+                // Bottom subtle gradient scrim
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+                            )
+                        )
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item.title,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = AppColors.TextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (item.year.isNotBlank()) {
+                Text(
+                    text = item.year,
+                    color = AppColors.TextMuted,
+                    fontSize = 11.sp,
+                )
+            }
+            if (item.type.isNotBlank()) {
+                Text(
+                    text = "•",
+                    color = AppColors.TextMuted.copy(alpha = 0.6f),
+                    fontSize = 10.sp,
+                )
+                Text(
+                    text = if (item.type.equals("tv", ignoreCase = true)) "Series" else "Movie",
+                    color = AppColors.TextMuted,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun FeaturedBanner(
     items: List<MediaItem>,
     modifier: Modifier = Modifier,
     onItemClick: (MediaItem) -> Unit,
 ) {
     if (items.isEmpty()) {
-        LoadingSkeleton(modifier = modifier.height(420.dp), height = 420)
+        LoadingSkeleton(modifier = modifier.height(470.dp), height = 470)
         return
     }
     val pagerState = rememberPagerState(pageCount = { items.size })
-    Column(modifier = modifier) {
+
+    // Auto-advance every 5 seconds
+    androidx.compose.runtime.LaunchedEffect(pagerState.currentPage, items.size) {
+        if (items.size > 1) {
+            kotlinx.coroutines.delay(5000L)
+            val nextPage = (pagerState.currentPage + 1) % items.size
+            pagerState.animateScrollToPage(nextPage)
+        }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(420.dp),
+                .height(470.dp),
         ) { page ->
             val item = items[page]
             Box(
@@ -400,92 +642,192 @@ fun FeaturedBanner(
                 CustomImage(
                     imageUrl = item.backdropUrl.ifBlank { item.posterUrl },
                     modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
+
+                // Cinematic Multi-Stop Gradient Scrim
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
-                                    0f to Color.Transparent,
-                                    0.4f to AppColors.BackgroundDark.copy(alpha = 0.78f),
-                                    0.75f to AppColors.BackgroundDark.copy(alpha = 0.92f),
-                                    1f to AppColors.BackgroundDark,
+                                    0.0f to Color.Black.copy(alpha = 0.70f),
+                                    0.20f to Color.Black.copy(alpha = 0.15f),
+                                    0.45f to Color.Transparent,
+                                    0.65f to AppColors.BackgroundDark.copy(alpha = 0.75f),
+                                    0.88f to AppColors.BackgroundDark.copy(alpha = 0.96f),
+                                    1.0f to AppColors.BackgroundDark,
                                 ),
                             ),
                         ),
                 )
+
+                // Bottom Content Details (Rank, Title, Badges, Buttons all move together)
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Top 10 Rank Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(AppColors.Primary, Color(0xFFFF5252))
+                                )
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = "🔥 # ${page + 1} TRENDING NOW",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 26.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        letterSpacing = (-0.3).sp,
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Text(
                             text = item.type.uppercase(),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(AppColors.Primary.copy(alpha = 0.78f))
+                                .background(Color.White.copy(alpha = 0.18f))
                                 .padding(horizontal = 8.dp, vertical = 3.dp),
                             color = Color.White,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                         )
+
+                        Text(
+                            text = "4K ULTRA HD",
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .border(1.dp, AppColors.Accent.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                            color = AppColors.Accent,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+
                         if (item.rating > 0) {
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = null,
-                                tint = AppColors.Accent,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .padding(start = 8.dp)
-                                    .size(14.dp),
-                            )
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.Black.copy(alpha = 0.5f))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = AppColors.Accent,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Text(
+                                    text = String.format("%.1f", item.rating),
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+
+                        if (item.year.isNotBlank()) {
                             Text(
-                                text = String.format("%.1f", item.rating),
-                                modifier = Modifier.padding(start = 4.dp),
-                                color = AppColors.Accent,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                text = item.year,
+                                color = Color(0xFFDDDDDD),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
-                    Text(
-                        text = item.title,
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (item.genres.isNotEmpty()) {
+
+                    if (item.genres.isNotEmpty() || item.overview.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = item.genres.joinToString(" • "),
-                            modifier = Modifier.padding(top = 6.dp),
-                            color = Color(0xFFAAAAAA),
-                            fontSize = 13.sp,
+                            text = if (item.genres.isNotEmpty()) item.genres.take(3).joinToString("  •  ") else item.overview,
+                            color = Color(0xFFB0B0C0),
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Action Buttons Row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.Button(
+                            onClick = { onItemClick(item) },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = AppColors.Primary,
+                                contentColor = Color.White,
+                            ),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),
+                        ) {
+                            Text(text = "▶  Watch Now", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { onItemClick(item) },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                        ) {
+                            Text(text = "ℹ  Details", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        }
                     }
                 }
             }
         }
+
         if (items.size > 1) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
+                    .padding(top = 10.dp),
                 horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 repeat(items.size) { index ->
-                    val selected = pagerState.currentPage == index
+                    val isSelected = pagerState.currentPage == index
                     Box(
                         modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .height(6.dp)
-                            .width(if (selected) 20.dp else 6.dp)
+                            .padding(horizontal = 4.dp)
+                            .height(5.dp)
+                            .width(if (isSelected) 24.dp else 6.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(
-                                if (selected) AppColors.Primary else Color(0xFF444466),
+                                if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.25f),
                             ),
                     )
                 }
@@ -593,41 +935,66 @@ fun SimilarTitleCard(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = modifier.width(120.dp),
+        modifier = modifier.width(135.dp),
     ) {
         androidx.compose.material3.Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             color = AppColors.CardDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(190.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp),
-            ) {
+            Box {
                 CustomImage(
                     imageUrl = item.posterUrl,
                     modifier = Modifier.fillMaxSize(),
                 )
-                StatusBadge(
-                    rating = item.rating,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                )
+                if (item.rating > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(7.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = AppColors.Accent,
+                                modifier = Modifier.size(10.dp),
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 3.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(7.dp))
         Text(
             text = item.title,
             color = AppColors.TextPrimary,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (item.year.isNotBlank()) {
-            Text(text = item.year, color = AppColors.TextMuted, fontSize = 11.sp)
-        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = if (item.year.isNotBlank()) item.year else "Featured",
+            color = AppColors.TextMuted,
+            fontSize = 11.sp,
+            maxLines = 1,
+        )
     }
 }

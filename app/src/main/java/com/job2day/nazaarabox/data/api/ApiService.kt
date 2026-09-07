@@ -18,6 +18,9 @@ interface ApiService {
     @GET("api/config/categories")
     suspend fun getCategories(): JsonArray
 
+    @GET("api/home/feed")
+    suspend fun getHomeFeed(@Query("category_id") categoryId: Int = 0): JsonObject
+
     @GET("api/config/settings")
     suspend fun getGlobalSettings(): JsonObject
 

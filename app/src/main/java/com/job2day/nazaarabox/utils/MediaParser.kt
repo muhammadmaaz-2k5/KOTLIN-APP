@@ -13,6 +13,8 @@ import com.job2day.nazaarabox.core.EpisodeItem
 import com.job2day.nazaarabox.core.VideoServer
 import com.job2day.nazaarabox.core.DownloadLink
 import com.job2day.nazaarabox.core.PersonItem
+import com.job2day.nazaarabox.core.ThemedSection
+import com.job2day.nazaarabox.core.HomeFeed
 
 object MediaParser {
     fun imageUrl(path: String?, size: String = "w342"): String {
@@ -86,6 +88,42 @@ object MediaParser {
                 popularParams = parseParamMap(obj.get("popular_params") ?: obj.get("popularParams")),
             )
         }
+    }
+
+    fun parseThemedSections(raw: List<JsonElement>?): List<ThemedSection> {
+        if (raw == null) return emptyList()
+        return raw.mapNotNull { element ->
+            if (!element.isJsonObject) return@mapNotNull null
+            val obj = element.asJsonObject
+            val mediaType = obj.stringOr("media_type", obj.stringOr("mediaType", "movie"))
+            ThemedSection(
+                id = obj.intOr("id"),
+                emoji = obj.stringOr("emoji", "🎬"),
+                title = obj.stringOr("title", "Section"),
+                endpoint = obj.stringOr("endpoint", "discover/movie"),
+                tmdbParams = parseParamMap(obj.get("params") ?: obj.get("tmdb_params")),
+                mediaType = mediaType,
+                items = parseItems(obj.getAsJsonArray("items")?.asList(), mediaType)
+            )
+        }
+    }
+
+    fun parseHomeFeed(obj: JsonObject): HomeFeed {
+        val categories = parseCategories(obj.getAsJsonArray("categories")?.asList())
+        val featured = parseItems(obj.getAsJsonArray("featured")?.asList(), "movie")
+        val trending = parseItems(obj.getAsJsonArray("trending")?.asList(), "movie")
+        val popular = parseItems(obj.getAsJsonArray("popular")?.asList(), "movie")
+        val customExclusives = parseItems(obj.getAsJsonArray("custom_exclusives")?.asList(), "movie")
+        val sections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
+
+        return HomeFeed(
+            categories = categories,
+            featured = featured,
+            trending = trending,
+            popular = popular,
+            customExclusives = customExclusives,
+            sections = sections
+        )
     }
 
     fun defaultCategories(): List<HomeCategory> = listOf(

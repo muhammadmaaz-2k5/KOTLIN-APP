@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "48670063883",
-    "project_id": "nazaaraboxapp",
-    "storage_bucket": "nazaaraboxapp.firebasestorage.app"
+    "project_number": "464167360959",
+    "project_id": "engora-7acda",
+    "storage_bucket": "engora-7acda.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:48670063883:android:9219a3d40ea93b9de1f60e",
+        "mobilesdk_app_id": "1:464167360959:android:a5735f9f1794e07226e90a",
         "android_client_info": {
-          "package_name": "com.job2day.nazaarabox"
+          "package_name": "com.engora.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB_VkPBaHOhOIWyEP7CVMr2kmcZwLFzNts"
+          "current_key": "AIzaSyD8r6l28e7fbq4fQIGxZIAN4MDe01EArAM"
         }
       ],
       "services": {
