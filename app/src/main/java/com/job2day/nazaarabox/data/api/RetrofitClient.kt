@@ -70,8 +70,17 @@ object RetrofitClient {
             }
         }
 
+        val appSecurityInterceptor = Interceptor { chain ->
+            val request = chain.request().newBuilder()
+                .addHeader("X-App-Client", "engora-android")
+                .addHeader("X-App-Signature", "nzbox-sec-token-2026")
+                .build()
+            chain.proceed(request)
+        }
+
         val client = OkHttpClient.Builder()
             .cache(cache)
+            .addInterceptor(appSecurityInterceptor)
             .addInterceptor(offlineInterceptor)
             .addNetworkInterceptor(networkInterceptor)
             .addInterceptor(logging)

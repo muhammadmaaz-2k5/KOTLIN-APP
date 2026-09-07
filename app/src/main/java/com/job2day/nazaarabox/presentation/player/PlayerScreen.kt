@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -105,6 +106,7 @@ import com.job2day.nazaarabox.ads.CustomInterstitialAd
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SeasonItem
+import com.job2day.nazaarabox.core.TrailerItem
 import com.job2day.nazaarabox.core.VideoServer
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.services.MediaRepository
@@ -116,6 +118,7 @@ import com.job2day.nazaarabox.widgets.EpisodePickerSheet
 import com.job2day.nazaarabox.widgets.LoadingCenter
 import com.job2day.nazaarabox.widgets.MoreMenuSheet
 import com.job2day.nazaarabox.widgets.ServerBottomSheet
+import com.job2day.nazaarabox.widgets.YouTubePlayerWebView
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,6 +144,8 @@ fun PlayerScreen(navController: NavController) {
     var currentItem by remember { mutableStateOf(initialItem) }
     var servers by remember { mutableStateOf<List<VideoServer>>(emptyList()) }
     var seasons by remember { mutableStateOf<List<SeasonItem>>(emptyList()) }
+    var trailers by remember { mutableStateOf<List<TrailerItem>>(emptyList()) }
+    var isReviewTrailerMode by remember { mutableStateOf(false) }
     var serverIndex by remember { mutableIntStateOf(0) }
     var isLoadingServers by remember { mutableStateOf(true) }
     var isPageLoading by remember { mutableStateOf(true) }
@@ -184,7 +189,7 @@ fun PlayerScreen(navController: NavController) {
         }
     }
 
-    val isOverlayVisible = showTransitionOverlay || isPageLoading
+    val isOverlayVisible = (showTransitionOverlay || isPageLoading) && !isReviewTrailerMode
 
     val repository = remember { MediaRepository() }
     val isFullscreen = isLandscape || forceLandscape
@@ -192,7 +197,16 @@ fun PlayerScreen(navController: NavController) {
 
     // Load servers & seasons
     LaunchedEffect(currentItem.id, currentItem.season, currentItem.episode) {
-        servers = repository.getVideoServers(currentItem, currentItem.season, currentItem.episode)
+        val loadedServers = repository.getVideoServers(currentItem, currentItem.season, currentItem.episode)
+        servers = loadedServers
+        if (loadedServers.isEmpty()) {
+            isReviewTrailerMode = true
+            trailers = repository.getTrailers(currentItem)
+            showTransitionOverlay = false
+            isPageLoading = false
+        } else {
+            isReviewTrailerMode = false
+        }
         if (isTv && seasons.isEmpty()) {
             seasons = repository.getSeasons(currentItem)
         }
@@ -202,6 +216,8 @@ fun PlayerScreen(navController: NavController) {
         delay(4000)
         showRotateNudge = false
     }
+
+    val activeTrailerKey = remember(trailers) { trailers.firstOrNull()?.key }
 
     // Auto-hide controls in fullscreen after 4.5 seconds
     LaunchedEffect(controlsVisible, isControlsLocked, isFullscreen) {
@@ -277,11 +293,13 @@ fun PlayerScreen(navController: NavController) {
         switchServer(nextIdx)
     }
 
-    LaunchedEffect(currentUrl) {
-        isPageLoading = true
-        delay(20_000)
-        if (isPageLoading && !PlayerWebHelper.detectVidsrc(currentUrl)) {
-            autoSwitchServer()
+    LaunchedEffect(currentUrl, isReviewTrailerMode) {
+        if (!isReviewTrailerMode && currentUrl.isNotBlank()) {
+            isPageLoading = true
+            delay(20_000)
+            if (isPageLoading && !PlayerWebHelper.detectEmbedPlayer(currentUrl)) {
+                autoSwitchServer()
+            }
         }
     }
 
@@ -338,14 +356,34 @@ fun PlayerScreen(navController: NavController) {
                     }
                 },
         ) {
-            // Player Web View
-            key(currentUrl, refreshKey) {
-                PlayerWebView(
-                    url = currentUrl,
-                    onPageLoaded = { isPageLoading = false },
-                    onUrlChanged = { isPageLoading = true },
-                    modifier = Modifier.fillMaxSize(),
-                )
+            // Player Web View or Official Trailer Player
+            if (isReviewTrailerMode && activeTrailerKey != null) {
+                key(activeTrailerKey) {
+                    YouTubePlayerWebView(
+                        videoKey = activeTrailerKey,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else if (currentUrl.isNotBlank()) {
+                key(currentUrl, refreshKey) {
+                    PlayerWebView(
+                        url = currentUrl,
+                        onPageLoaded = { isPageLoading = false },
+                        onUrlChanged = { isPageLoading = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Movie, contentDescription = null, tint = AppColors.Primary, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Trailer & Stream preview unavailable", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
             // Cinematic Stream Loading / Episode Transition Overlay
@@ -479,10 +517,9 @@ fun PlayerScreen(navController: NavController) {
 
                                 Spacer(modifier = Modifier.width(12.dp))
 
-                                // Server Selector Pill
-                                currentServer?.let { server ->
+                                // Server Selector Pill / Trailer Badge
+                                if (isReviewTrailerMode) {
                                     Surface(
-                                        onClick = { showServerSheet = true },
                                         shape = RoundedCornerShape(18.dp),
                                         color = Color.Black.copy(alpha = 0.60f),
                                         border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.40f)),
@@ -491,20 +528,43 @@ fun PlayerScreen(navController: NavController) {
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            Text(server.icon, fontSize = 12.sp)
+                                            Text("🎬", fontSize = 12.sp)
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = server.label,
+                                                text = "Official Trailer",
                                                 color = AppColors.Primary,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                             )
-                                            Icon(
-                                                Icons.Default.ArrowDropDown,
-                                                contentDescription = null,
-                                                tint = AppColors.Primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
+                                        }
+                                    }
+                                } else {
+                                    currentServer?.let { server ->
+                                        Surface(
+                                            onClick = { showServerSheet = true },
+                                            shape = RoundedCornerShape(18.dp),
+                                            color = Color.Black.copy(alpha = 0.60f),
+                                            border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.40f)),
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(server.icon, fontSize = 12.sp)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = server.label,
+                                                    color = AppColors.Primary,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                )
+                                                Icon(
+                                                    Icons.Default.ArrowDropDown,
+                                                    contentDescription = null,
+                                                    tint = AppColors.Primary,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -823,13 +883,22 @@ fun PlayerScreen(navController: NavController) {
                                 color = Color.White,
                                 fontSize = 16.sp,
                             )
-                            currentServer?.let {
+                            if (isReviewTrailerMode) {
                                 Text(
-                                    text = "${it.icon} ${it.label} • Active",
+                                    text = "🎬 Official Trailer • HD",
                                     color = AppColors.Primary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                 )
+                            } else {
+                                currentServer?.let {
+                                    Text(
+                                        text = "${it.icon} ${it.label} • Active",
+                                        color = AppColors.Primary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
                             }
                         }
                     },
@@ -870,13 +939,33 @@ fun PlayerScreen(navController: NavController) {
                             .aspectRatio(16f / 9f)
                             .background(Color.Black),
                     ) {
-                        key(currentUrl, refreshKey) {
-                            PlayerWebView(
-                                url = currentUrl,
-                                onPageLoaded = { isPageLoading = false },
-                                onUrlChanged = { isPageLoading = true },
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                        if (isReviewTrailerMode && activeTrailerKey != null) {
+                            key(activeTrailerKey) {
+                                YouTubePlayerWebView(
+                                    videoKey = activeTrailerKey,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        } else if (currentUrl.isNotBlank()) {
+                            key(currentUrl, refreshKey) {
+                                PlayerWebView(
+                                    url = currentUrl,
+                                    onPageLoaded = { isPageLoading = false },
+                                    onUrlChanged = { isPageLoading = true },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(Color.Black),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Movie, contentDescription = null, tint = AppColors.Primary, modifier = Modifier.size(36.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Preview unavailable", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
 
                         // Cinematic Stream Loading / Episode Transition Overlay (Portrait)
@@ -1035,63 +1124,117 @@ fun PlayerScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(18.dp))
                         }
 
-                        // Server Selection Header
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("⚡", fontSize = 14.sp)
-                            Text(
-                                text = "Select Server",
-                                modifier = Modifier.padding(start = 6.dp),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        if (servers.isNotEmpty()) {
+                            // Server Selection Header
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("⚡", fontSize = 14.sp)
+                                Text(
+                                    text = "Select Server",
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                        // Modern Server Selection Grid
-                        servers.chunked(3).forEach { row ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                row.forEach { server ->
-                                    val index = servers.indexOf(server)
-                                    val selected = index == serverIndex
-                                    Surface(
-                                        onClick = { switchServer(index) },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(44.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (selected) AppColors.Primary.copy(alpha = 0.15f) else AppColors.CardDark,
-                                        border = BorderStroke(
-                                            1.dp,
-                                            if (selected) AppColors.Primary else Color.White.copy(alpha = 0.10f),
-                                        ),
-                                    ) {
-                                        Row(
+                            // Modern Server Selection Grid
+                            servers.chunked(3).forEach { row ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    row.forEach { server ->
+                                        val index = servers.indexOf(server)
+                                        val selected = index == serverIndex
+                                        Surface(
+                                            onClick = { switchServer(index) },
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 6.dp),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically,
+                                                .weight(1f)
+                                                .height(44.dp),
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (selected) AppColors.Primary.copy(alpha = 0.15f) else AppColors.CardDark,
+                                            border = BorderStroke(
+                                                1.dp,
+                                                if (selected) AppColors.Primary else Color.White.copy(alpha = 0.10f),
+                                            ),
                                         ) {
-                                            Text(server.icon, fontSize = 13.sp)
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 6.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(server.icon, fontSize = 13.sp)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = server.label,
+                                                    color = if (selected) AppColors.Primary else Color.White,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        } else if (isReviewTrailerMode && trailers.isNotEmpty()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🎬", fontSize = 14.sp)
+                                Text(
+                                    text = "Official Trailers & Clips",
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            trailers.forEach { trailer ->
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = AppColors.CardDark,
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = AppColors.Primary,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = server.label,
-                                                color = if (selected) AppColors.Primary else Color.White,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                                text = trailer.name,
+                                                color = Color.White,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
+                                            )
+                                            Text(
+                                                text = trailer.type,
+                                                color = AppColors.TextMuted,
+                                                fontSize = 11.sp,
                                             )
                                         }
                                     }
                                 }
-                                repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
@@ -1189,7 +1332,7 @@ private fun PlayerWebView(
     modifier: Modifier = Modifier,
 ) {
     if (url.isBlank()) return
-    val isVidsrc = PlayerWebHelper.detectVidsrc(url)
+    val isEmbed = PlayerWebHelper.detectEmbedPlayer(url)
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -1213,7 +1356,7 @@ private fun PlayerWebView(
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val target = request?.url?.toString().orEmpty()
                         if (target.isBlank()) return false
-                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isVidsrc)) {
+                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
                             return true
                         }
                         if (request?.isForMainFrame == true && target != url && !PlayerWebHelper.isAllowedVideoHosting(target)) {
@@ -1226,7 +1369,7 @@ private fun PlayerWebView(
                     override fun shouldOverrideUrlLoading(view: WebView?, targetUrl: String?): Boolean {
                         val target = targetUrl.orEmpty()
                         if (target.isBlank()) return false
-                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isVidsrc)) {
+                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
                             return true
                         }
                         return false

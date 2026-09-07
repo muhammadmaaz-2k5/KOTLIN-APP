@@ -568,23 +568,10 @@ object VideoNavigationGuard {
         val lowerUrl = url.lowercase()
         val patterns = mapOf(
             "onedrive" to listOf("1drv.ms", "onedrive.live.com", "sharepoint.com"),
-            "doodstream" to listOf("doodstream.com", "dsvplay.com", "dood.to", "ds2play.com", "ds2video.com"),
-            "vidsrc" to listOf("vidsrc.icu", "vidsrc.to", "vidsrc.me", "vidsrc.net", "vidsrc.xyz", "vidsrc.cc"),
-            "mixdrop" to listOf("mixdrop.co", "mixdrop.to", "mixdrop.sx", "mixdrop.bz"),
-            "streamtape" to listOf("streamtape.com", "streamtape.net", "streamtape.to"),
-            "embedsito" to listOf("embedsito.com"),
-            "embedsu" to listOf("embed.su"),
-            "upstream" to listOf("upstream.to"),
             "youtube" to listOf("youtube.com", "youtu.be"),
             "vimeo" to listOf("vimeo.com"),
             "dailymotion" to listOf("dailymotion.com"),
             "streamable" to listOf("streamable.com"),
-            "mdy48tn97" to listOf("mdy48tn97.com"),
-            "vidstream" to listOf("vidstream.pro"),
-            "gogostream" to listOf("gogo-stream.com"),
-            "mp4upload" to listOf("mp4upload.com"),
-            "streamlare" to listOf("streamlare.com"),
-            "filemoon" to listOf("filemoon.sx"),
             "cdn" to listOf("cloudflare.com", "cloudfront.net", "googleapis.com", "gstatic.com", "jwpcdn.com", "jwplatform.com")
         )
 

@@ -413,7 +413,7 @@ fun AllTrailersSheet(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun YouTubePlayerWebView(
+fun YouTubePlayerWebView(
     videoKey: String,
     modifier: Modifier = Modifier,
 ) {

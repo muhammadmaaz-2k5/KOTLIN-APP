@@ -315,7 +315,7 @@ class MediaRepository {
                     episode = episode?.toString().orEmpty(),
                 ).asList(),
             )
-        }.getOrElse { MediaParser.defaultVideoServers() }
+        }.getOrElse { emptyList() }
 
     suspend fun getDownloadLinks(
         mediaType: String,

@@ -215,7 +215,7 @@ object MediaParser {
     }
 
     fun parseVideoServers(raw: List<JsonElement>?): List<VideoServer> {
-        if (raw == null) return defaultVideoServers()
+        if (raw == null) return emptyList()
         return raw.map { element ->
             val obj = element.asJsonObject
             VideoServer(
@@ -228,23 +228,7 @@ object MediaParser {
         }
     }
 
-    fun defaultVideoServers(): List<VideoServer> = listOf(
-        VideoServer(
-            name = "vidsrc", label = "VidSrc", icon = "▶",
-            movieUrlTemplate = "https://vidsrc.to/embed/movie/{id}",
-            tvUrlTemplate = "https://vidsrc.to/embed/tv/{id}/{season}/{episode}",
-        ),
-        VideoServer(
-            name = "vidlink", label = "VidLink", icon = "⚡",
-            movieUrlTemplate = "https://vidlink.pro/movie/{id}?primaryColor=B20710&secondaryColor=170000&icons=vid&iconColor=B20710&title=false&poster=true&autoplay=false&nextbutton=true",
-            tvUrlTemplate = "https://vidlink.pro/tv/{id}/{season}/{episode}?primaryColor=B20710&secondaryColor=170000&icons=vid&iconColor=B20710&title=false&poster=true&autoplay=false&nextbutton=true",
-        ),
-        VideoServer(
-            name = "vidfast", label = "VidFast", icon = "⚡",
-            movieUrlTemplate = "https://vidfast.pro/movie/{id}?autoPlay=true&theme=6C5CE7",
-            tvUrlTemplate = "https://vidfast.pro/tv/{id}/{season}/{episode}?autoPlay=true&theme=6C5CE7&nextButton=true&autoNext=true",
-        ),
-    )
+    fun defaultVideoServers(): List<VideoServer> = emptyList()
 
     fun parseDownloadLinks(raw: List<JsonElement>?): List<DownloadLink> {
         if (raw == null) return emptyList()
