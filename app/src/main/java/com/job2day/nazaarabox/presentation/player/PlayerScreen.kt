@@ -424,7 +424,7 @@ fun PlayerScreen(navController: NavController) {
                 }
             }
 
-            // --- FULLSCREEN CONTROLS (FADES IN/OUT) ---
+            // --- FULLSCREEN FADING CONTROLS (FADES IN/OUT) ---
             if (!isControlsLocked) {
                 AnimatedVisibility(
                     visible = controlsVisible,
@@ -433,216 +433,101 @@ fun PlayerScreen(navController: NavController) {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        // Top Scrim & Top Bar
+                        // Top Scrim
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .fillMaxWidth()
-                                .height(90.dp)
+                                .height(95.dp)
                                 .background(
                                     Brush.verticalGradient(
                                         listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent),
                                     ),
-                                )
-                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                                ),
+                        )
+
+                        // Top-Left Header: Back Button + Title & Episode details
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 20.dp, top = 14.dp)
+                                .fillMaxWidth(0.48f),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
+                            Surface(
+                                onClick = { exitFullscreen() },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.55f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                                modifier = Modifier.size(38.dp),
                             ) {
-                                // Back Button
-                                Surface(
-                                    onClick = { exitFullscreen() },
-                                    shape = CircleShape,
-                                    color = Color.Black.copy(alpha = 0.5f),
-                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                                    modifier = Modifier.size(40.dp),
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Exit Fullscreen",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(14.dp))
-
-                                // Title & Episode Details
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = currentItem.title,
-                                        color = Color.White,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    val subtitle = if (isTv && currentItem.season != null && currentItem.episode != null) {
-                                        "Season ${currentItem.season} • Episode ${currentItem.episode}"
-                                    } else {
-                                        "${currentItem.year.ifBlank { "Movie" }} • 4K Ultra HD"
-                                    }
-                                    Text(
-                                        text = subtitle,
-                                        color = AppColors.TextMuted,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Exit Fullscreen",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp),
                                     )
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
-                                // Server Selector Pill
-                                currentServer?.let { server ->
-                                    Surface(
-                                        onClick = { showServerSheet = true },
-                                        shape = RoundedCornerShape(18.dp),
-                                        color = Color.Black.copy(alpha = 0.60f),
-                                        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.40f)),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(server.icon, fontSize = 12.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = server.label,
-                                                color = AppColors.Primary,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                            )
-                                            Icon(
-                                                Icons.Default.ArrowDropDown,
-                                                contentDescription = null,
-                                                tint = AppColors.Primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
+                            Column {
+                                Text(
+                                    text = currentItem.title,
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                val subtitle = if (isTv && currentItem.season != null && currentItem.episode != null) {
+                                    "Season ${currentItem.season} • Episode ${currentItem.episode}"
+                                } else {
+                                    "${currentItem.year.ifBlank { "Movie" }} • 4K Ultra HD"
                                 }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                // Reload Stream Button
-                                Surface(
-                                    onClick = {
-                                        refreshKey++
-                                        isPageLoading = true
-                                        Toast.makeText(context, "Reloading stream...", Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = CircleShape,
-                                    color = Color.Black.copy(alpha = 0.5f),
-                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                                    modifier = Modifier.size(38.dp),
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.Default.Refresh,
-                                            contentDescription = "Reload",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                // Lock Screen Button
-                                Surface(
-                                    onClick = {
-                                        isControlsLocked = true
-                                        controlsVisible = true
-                                        Toast.makeText(context, "Screen controls locked", Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = CircleShape,
-                                    color = Color.Black.copy(alpha = 0.5f),
-                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                                    modifier = Modifier.size(38.dp),
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.Default.Lock,
-                                            contentDescription = "Lock Controls",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = subtitle,
+                                    color = AppColors.TextMuted,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
 
-                        // Center Quick Episode Jump (for TV Series)
-                        if (isTv && currentItem.episode != null) {
+                        // Center Quick Previous Episode Jump (if previous ep exists)
+                        if (isTv && currentItem.episode != null && (currentItem.episode ?: 1) > 1) {
                             val ep = currentItem.episode!!
                             val season = currentItem.season ?: 1
-                            Row(
+                            Surface(
+                                onClick = {
+                                    val newEp = ep - 1
+                                    val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
+                                    currentItem = currentItem.copy(
+                                        episode = newEp,
+                                        title = "$baseTitle · S${season}E$newEp",
+                                    )
+                                    refreshKey++
+                                    isPageLoading = true
+                                    Toast.makeText(context, "Playing Season $season Episode $newEp", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color.Black.copy(alpha = 0.65f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                                 modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 30.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 24.dp),
                             ) {
-                                // Previous Episode
-                                if (ep > 1) {
-                                    Surface(
-                                        onClick = {
-                                            val newEp = ep - 1
-                                            val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                                            currentItem = currentItem.copy(
-                                                episode = newEp,
-                                                title = "$baseTitle · S${season}E$newEp",
-                                            )
-                                            refreshKey++
-                                            isPageLoading = true
-                                            Toast.makeText(context, "Playing Season $season Episode $newEp", Toast.LENGTH_SHORT).show()
-                                        },
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = Color.Black.copy(alpha = 0.65f),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Icon(Icons.Default.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(text = "Ep ${ep - 1}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                        }
-                                    }
-                                } else {
-                                    Spacer(modifier = Modifier.size(10.dp))
-                                }
-
-                                // Next Episode
-                                Surface(
-                                    onClick = {
-                                        val newEp = ep + 1
-                                        val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                                        currentItem = currentItem.copy(
-                                            episode = newEp,
-                                            title = "$baseTitle · S${season}E$newEp",
-                                        )
-                                        refreshKey++
-                                        isPageLoading = true
-                                        Toast.makeText(context, "Playing Season $season Episode $newEp", Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = Color.Black.copy(alpha = 0.65f),
-                                    border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.4f)),
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(text = "Ep ${ep + 1}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Icon(Icons.Default.SkipNext, contentDescription = null, tint = AppColors.Primary, modifier = Modifier.size(18.dp))
-                                    }
+                                    Icon(Icons.Default.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "Ep ${ep - 1}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -744,77 +629,176 @@ fun PlayerScreen(navController: NavController) {
                 }
             }
 
-            // --- PERMANENT NEXT EPISODE FLOATING BUTTON (FULLSCREEN TV SERIES) ---
-            if (isTv && !isControlsLocked && !isOverlayVisible) {
+            // --- PERMANENT TOP-RIGHT HUD: SERVERS & NEXT EPISODE (FULLSCREEN) ---
+            if (!isControlsLocked && !isOverlayVisible) {
                 val currentEp = currentItem.episode ?: 1
                 val currentSeasonNum = currentItem.season ?: 1
                 val activeSeason = seasons.firstOrNull { it.seasonNumber == currentSeasonNum }
                 val totalEpsInSeason = activeSeason?.episodeCount ?: 999
                 val nextSeason = seasons.firstOrNull { it.seasonNumber == currentSeasonNum + 1 }
 
-                val nextTarget: Pair<Int, Int>? = when {
+                val nextTarget: Pair<Int, Int>? = if (!isTv) null else when {
                     currentEp < totalEpsInSeason -> Pair(currentSeasonNum, currentEp + 1)
                     nextSeason != null -> Pair(currentSeasonNum + 1, 1)
                     seasons.isEmpty() -> Pair(currentSeasonNum, currentEp + 1)
                     else -> null
                 }
 
-                if (nextTarget != null) {
-                    val (nextSeasonNum, nextEpNum) = nextTarget
-                    val bottomPadding by animateDpAsState(
-                        targetValue = if (controlsVisible) 80.dp else 24.dp,
-                        animationSpec = spring(stiffness = Spring.StiffnessLow),
-                        label = "permanentNextEpBottom",
-                    )
-                    val pillAlpha by animateFloatAsState(
-                        targetValue = if (controlsVisible) 0.88f else 0.60f,
-                        label = "permanentNextEpAlpha",
-                    )
+                val pillAlpha by animateFloatAsState(
+                    targetValue = if (controlsVisible) 0.95f else 0.68f,
+                    label = "topRightPillAlpha",
+                )
 
-                    Surface(
-                        onClick = {
-                            val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                            currentItem = currentItem.copy(
-                                season = nextSeasonNum,
-                                episode = nextEpNum,
-                                title = "$baseTitle · S${nextSeasonNum}E$nextEpNum",
-                            )
-                            refreshKey++
-                            isPageLoading = true
-                            Toast.makeText(
-                                context,
-                                "Playing Season $nextSeasonNum Episode $nextEpNum",
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        },
-                        shape = RoundedCornerShape(22.dp),
-                        color = Color.Black.copy(alpha = pillAlpha),
-                        border = BorderStroke(
-                            1.dp,
-                            if (controlsVisible) AppColors.Primary.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.30f),
-                        ),
-                        shadowElevation = 8.dp,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 24.dp, bottom = bottomPadding),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 14.dp, end = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // All Available Video Servers
+                    if (servers.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = if (nextSeasonNum != currentSeasonNum) "Next: S${nextSeasonNum}E${nextEpNum}" else "Next Ep $nextEpNum",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                Icons.Default.SkipNext,
-                                contentDescription = "Next Episode",
-                                tint = AppColors.Primary,
-                                modifier = Modifier.size(18.dp),
-                            )
+                            items(servers.size) { index ->
+                                val server = servers[index]
+                                val isSelected = index == serverIndex
+                                Surface(
+                                    onClick = {
+                                        if (serverIndex != index) {
+                                            switchServer(index)
+                                            Toast.makeText(context, "Switched to ${server.label}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = if (isSelected) AppColors.Primary.copy(alpha = if (controlsVisible) 0.35f else 0.25f)
+                                            else Color.Black.copy(alpha = pillAlpha * 0.70f),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isSelected) AppColors.Primary
+                                        else Color.White.copy(alpha = if (controlsVisible) 0.25f else 0.15f),
+                                    ),
+                                    shadowElevation = if (isSelected) 4.dp else 0.dp,
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(text = server.icon, fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = server.label,
+                                            color = if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.90f),
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Next Episode Button (Top Right)
+                    if (nextTarget != null) {
+                        val (nextSeasonNum, nextEpNum) = nextTarget
+                        val nextLabel = if (nextSeasonNum != currentSeasonNum) "Next: S${nextSeasonNum}E${nextEpNum}" else "Next Ep $nextEpNum"
+                        Surface(
+                            onClick = {
+                                val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
+                                currentItem = currentItem.copy(
+                                    season = nextSeasonNum,
+                                    episode = nextEpNum,
+                                    title = "$baseTitle · S${nextSeasonNum}E$nextEpNum",
+                                )
+                                refreshKey++
+                                isPageLoading = true
+                                Toast.makeText(
+                                    context,
+                                    "Playing Season $nextSeasonNum Episode $nextEpNum",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppColors.Primary.copy(alpha = if (controlsVisible) 0.92f else 0.75f),
+                            border = BorderStroke(1.dp, AppColors.Primary),
+                            shadowElevation = 6.dp,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = nextLabel,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    Icons.Default.SkipNext,
+                                    contentDescription = "Next Episode",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    // Reload & Lock Buttons (visible when controls are active)
+                    AnimatedVisibility(
+                        visible = controlsVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Reload Stream Button
+                            Surface(
+                                onClick = {
+                                    refreshKey++
+                                    isPageLoading = true
+                                    Toast.makeText(context, "Reloading stream...", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Reload",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(17.dp),
+                                    )
+                                }
+                            }
+
+                            // Lock Screen Button
+                            Surface(
+                                onClick = {
+                                    isControlsLocked = true
+                                    controlsVisible = true
+                                    Toast.makeText(context, "Screen controls locked", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Lock,
+                                        contentDescription = "Lock Controls",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(17.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
