@@ -216,8 +216,9 @@ fun DynamicWebView(
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
 
-                            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            // Use LAYER_TYPE_NONE with window hardware acceleration to prevent black surface bug
+                            setLayerType(android.view.View.LAYER_TYPE_NONE, null)
+                            setBackgroundColor(android.graphics.Color.parseColor("#13131F"))
 
                             isVerticalScrollBarEnabled = isScrollEnabled
                             isHorizontalScrollBarEnabled = isScrollEnabled
@@ -238,6 +239,8 @@ fun DynamicWebView(
                                 mediaPlaybackRequiresUserGesture = false
                                 allowUniversalAccessFromFileURLs = true
                                 allowFileAccessFromFileURLs = true
+                                allowFileAccess = true
+                                allowContentAccess = true
                                 pluginState = WebSettings.PluginState.ON
                                 setRenderPriority(WebSettings.RenderPriority.HIGH)
                                 // Improved video playback
@@ -399,6 +402,13 @@ fun DynamicWebView(
                                     }
                                     // For video sites, proceed despite SSL errors
                                     handler?.proceed()
+                                }
+
+                                override fun onRenderProcessGone(
+                                    view: WebView?,
+                                    detail: RenderProcessGoneDetail?
+                                ): Boolean {
+                                    return true
                                 }
                             }
 
@@ -567,6 +577,14 @@ object VideoNavigationGuard {
     fun getVideoHostingService(url: String): String? {
         val lowerUrl = url.lowercase()
         val patterns = mapOf(
+            "vidfast" to listOf("vidfast.pro"),
+            "vidsrc" to listOf("vidsrc.to", "vidsrc.me", "vidsrc.cc", "vidsrc.xyz"),
+            "vidlink" to listOf("vidlink.pro"),
+            "embed" to listOf("superembed.stream", "2embed.cc", "autoembed.to", "multiembed.mov"),
+            "videasy" to listOf("videasy.net", "vidzee.wtf", "vidnest.fun"),
+            "doodstream" to listOf("dood.", "ds2play.com", "dsvplay.com"),
+            "mixdrop" to listOf("mixdrop.co", "mixdrop.to", "mixdrop.sx"),
+            "streamtape" to listOf("streamtape.com"),
             "onedrive" to listOf("1drv.ms", "onedrive.live.com", "sharepoint.com"),
             "youtube" to listOf("youtube.com", "youtu.be"),
             "vimeo" to listOf("vimeo.com"),

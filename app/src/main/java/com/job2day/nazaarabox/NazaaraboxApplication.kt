@@ -21,22 +21,22 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory {
         RetrofitClient.init(this)
         AdSettingsLoader.load(this)
 
-        // Initialize Google Mobile Ads SDK with test devices enabled
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val testDeviceIds = listOf(
-                    com.google.android.gms.ads.AdRequest.DEVICE_ID_EMULATOR,
-                )
-                val config = com.google.android.gms.ads.RequestConfiguration.Builder()
-                    .setTestDeviceIds(testDeviceIds)
-                    .build()
-                com.google.android.gms.ads.MobileAds.setRequestConfiguration(config)
-                com.google.android.gms.ads.MobileAds.initialize(this@NazaaraboxApplication) { status ->
-                    android.util.Log.d("AdMob", "Google Mobile Ads initialized: ${status.adapterStatusMap.keys}")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)
+        // Initialize Google Mobile Ads SDK synchronously on Main Thread
+        try {
+            val testDeviceIds = listOf(
+                com.google.android.gms.ads.AdRequest.DEVICE_ID_EMULATOR,
+            )
+            val config = com.google.android.gms.ads.RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build()
+            com.google.android.gms.ads.MobileAds.setRequestConfiguration(config)
+            com.google.android.gms.ads.MobileAds.initialize(this) { status ->
+                android.util.Log.d("AdMob", "Google Mobile Ads initialized: ${status.adapterStatusMap.keys}")
             }
+            // Prime ads immediately
+            com.job2day.nazaarabox.utils.AdManager.initialize(this)
+        } catch (e: Exception) {
+            android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)
         }
 
         OneSignal.initWithContext(this, "9afbbec9-7155-4766-a78b-4e22e6f926d4")

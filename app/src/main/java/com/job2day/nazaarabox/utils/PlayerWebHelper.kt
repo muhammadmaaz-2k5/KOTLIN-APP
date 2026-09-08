@@ -50,7 +50,10 @@ object PlayerWebHelper {
 
     fun detectEmbedPlayer(url: String): Boolean {
         val lower = url.lowercase()
-        return lower.contains("embed") || lower.contains("player")
+        return lower.contains("embed") || lower.contains("player") ||
+            lower.contains("vidfast") || lower.contains("vidsrc") ||
+            lower.contains("vidlink") || lower.contains("stream") ||
+            lower.contains("movie") || lower.contains("tv")
     }
 
     fun isAllowedVideoHosting(url: String): Boolean = getVideoHostingService(url) != null
@@ -58,6 +61,14 @@ object PlayerWebHelper {
     private fun getVideoHostingService(url: String): String? {
         val lower = url.lowercase()
         return when {
+            lower.contains("vidfast") -> "vidfast"
+            lower.contains("vidsrc") -> "vidsrc"
+            lower.contains("vidlink") -> "vidlink"
+            lower.contains("superembed") || lower.contains("2embed") || lower.contains("autoembed") || lower.contains("multiembed") -> "embed"
+            lower.contains("videasy") || lower.contains("vidzee") || lower.contains("vidnest") -> "videasy"
+            lower.contains("dood") || lower.contains("doodstream") || lower.contains("ds2play") || lower.contains("dsvplay") -> "doodstream"
+            lower.contains("mixdrop") -> "mixdrop"
+            lower.contains("streamtape") -> "streamtape"
             lower.contains("1drv.ms") || lower.contains("onedrive.live.com") || lower.contains("sharepoint.com") -> "onedrive"
             lower.contains("youtube.com") || lower.contains("youtu.be") -> "youtube"
             lower.contains("vimeo.com") -> "vimeo"
@@ -65,7 +76,8 @@ object PlayerWebHelper {
             lower.contains("streamable.com") -> "streamable"
             lower.contains("cloudflare.com") || lower.contains("cloudfront.net") ||
                 lower.contains("googleapis.com") || lower.contains("gstatic.com") ||
-                lower.contains("jwpcdn.com") || lower.contains("jwplatform.com") -> "cdn"
+                lower.contains("jwpcdn.com") || lower.contains("jwplatform.com") ||
+                lower.contains(".m3u8") || lower.contains(".mp4") -> "cdn"
             else -> null
         }
     }
@@ -118,9 +130,14 @@ object PlayerWebHelper {
     fun shouldUseHtmlWrapper(url: String): Boolean {
         if (url.isBlank()) return false
         val lower = url.lowercase()
-        if (lower.contains("youtube.com") && lower.contains("/embed/")) {
+        // Web streaming servers (VidFast, VidSrc, VidLink, etc.) must load directly with loadUrl
+        // to prevent X-Frame-Options: SAMEORIGIN from blocking the iframe and displaying a black screen.
+        if (lower.startsWith("http://") || lower.startsWith("https://")) {
+            if (lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".webm")) {
+                return true
+            }
             return false
         }
-        return true
+        return false
     }
 }

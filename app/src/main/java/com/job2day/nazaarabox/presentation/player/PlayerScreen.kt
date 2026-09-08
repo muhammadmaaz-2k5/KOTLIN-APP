@@ -263,8 +263,10 @@ fun PlayerScreen(navController: NavController) {
     LaunchedEffect(currentUrl, refreshKey) {
         showTransitionOverlay = true
         isPageLoading = true
-        delay(4200L)
+        delay(3500L)
         showTransitionOverlay = false
+        delay(2500L)
+        isPageLoading = false
     }
 
     fun switchServer(index: Int) {
@@ -1279,18 +1281,35 @@ private fun PlayerWebView(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
-                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                // Use LAYER_TYPE_NONE so hardware acceleration uses window compositor without blacking out
+                setLayerType(android.view.View.LAYER_TYPE_NONE, null)
                 setBackgroundColor(android.graphics.Color.BLACK)
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
+                    databaseEnabled = true
                     mediaPlaybackRequiresUserGesture = false
                     javaScriptCanOpenWindowsAutomatically = false
                     setSupportMultipleWindows(false)
                     mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    loadWithOverviewMode = true
+                    useWideViewPort = true
+                    allowFileAccess = true
+                    allowContentAccess = true
+                    cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        safeBrowsingEnabled = false
+                    }
                     userAgentString = userAgentString.replace("; wv", "")
                 }
-                webChromeClient = WebChromeClient()
+                webChromeClient = object : WebChromeClient() {
+                    override fun getDefaultVideoPoster(): android.graphics.Bitmap? {
+                        return android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.ARGB_8888)
+                    }
+                    override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
+                        request?.grant(request.resources)
+                    }
+                }
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val target = request?.url?.toString().orEmpty()
@@ -1298,7 +1317,10 @@ private fun PlayerWebView(
                         if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
                             return true
                         }
-                        if (request?.isForMainFrame == true && target != url && !PlayerWebHelper.isAllowedVideoHosting(target)) {
+                        if (PlayerWebHelper.isAllowedVideoHosting(target)) {
+                            return false
+                        }
+                        if (!target.startsWith("http://") && !target.startsWith("https://")) {
                             return true
                         }
                         return false
@@ -1311,7 +1333,28 @@ private fun PlayerWebView(
                         if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
                             return true
                         }
+                        if (PlayerWebHelper.isAllowedVideoHosting(target)) {
+                            return false
+                        }
+                        if (!target.startsWith("http://") && !target.startsWith("https://")) {
+                            return true
+                        }
                         return false
+                    }
+
+                    override fun onReceivedSslError(
+                        view: WebView?,
+                        handler: android.webkit.SslErrorHandler?,
+                        error: android.net.http.SslError?
+                    ) {
+                        handler?.proceed()
+                    }
+
+                    override fun onRenderProcessGone(
+                        view: WebView?,
+                        detail: android.webkit.RenderProcessGoneDetail?
+                    ): Boolean {
+                        return true
                     }
 
                     override fun onPageFinished(view: WebView?, finishedUrl: String?) {
@@ -1333,7 +1376,9 @@ private fun PlayerWebView(
 }
 
 private fun loadPlayerContent(webView: WebView, url: String) {
-    val headers = mapOf("Referer" to "https://nazaarabox.com")
+    val headers = mapOf(
+        "Referer" to "https://nazaarabox.com",
+    )
     if (PlayerWebHelper.shouldUseHtmlWrapper(url)) {
         webView.loadDataWithBaseURL(
             "https://nazaarabox.com",

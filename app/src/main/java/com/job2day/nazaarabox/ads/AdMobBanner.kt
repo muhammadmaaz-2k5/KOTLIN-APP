@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -65,24 +67,42 @@ fun AdMobBanner(
 
     var isLoaded by remember { mutableStateOf(false) }
     var hasFailed by remember { mutableStateOf(false) }
+    var adViewInstance by remember { mutableStateOf<AdView?>(null) }
 
-    // Adaptive banner size calculation to ensure exact non-zero dimensions that fit within padded containers
+    // Clean up AdView on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                adViewInstance?.destroy()
+                adViewInstance = null
+            } catch (_: Exception) {}
+        }
+    }
+
+    // Adaptive banner size calculation with fallback to standard AdSize.BANNER
     val effectiveAdSize = remember(adSize, screenWidthDp) {
         if (adSize != null) {
             adSize
         } else {
-            // Subtract 32dp container padding to guarantee AdMob fits on all screen sizes
-            val availableWidth = (if (screenWidthDp > 32) screenWidthDp - 32 else 320).coerceAtLeast(320)
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, availableWidth)
+            try {
+                val availableWidth = (if (screenWidthDp > 32) screenWidthDp - 32 else 320).coerceAtLeast(320)
+                AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, availableWidth)
+            } catch (_: Exception) {
+                AdSize.BANNER
+            }
         }
     }
 
     val bannerHeightDp: Dp = remember(effectiveAdSize) {
-        val h = effectiveAdSize.getHeightInPixels(context)
-        val density = context.resources.displayMetrics.density
-        if (density > 0 && h > 0) {
-            maxOf(56.dp, (h / density).dp)
-        } else {
+        try {
+            val h = effectiveAdSize.getHeightInPixels(context)
+            val density = context.resources.displayMetrics.density
+            if (density > 0 && h > 0) {
+                maxOf(56.dp, (h / density).dp)
+            } else {
+                56.dp
+            }
+        } catch (_: Exception) {
             56.dp
         }
     }
@@ -95,7 +115,7 @@ fun AdMobBanner(
             .background(Color(0xFF13131F)),
         contentAlignment = Alignment.Center,
     ) {
-        // 1. Guaranteed Visible AdMob Test Banner Placeholder (Shown while loading or on error)
+        // 1. Guaranteed Visible AdMob Test Banner Placeholder (Always visible while loading or on error)
         if (!isLoaded) {
             AdMobTestAdPlaceholder(
                 bannerHeightDp = bannerHeightDp,
@@ -105,7 +125,9 @@ fun AdMobBanner(
 
         // 2. Real Google Mobile Ads AdView
         AndroidView(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier
+                .wrapContentSize(Alignment.Center)
+                .alpha(if (isLoaded) 1f else 0.001f),
             factory = { ctx ->
                 AdView(ctx).apply {
                     layoutParams = FrameLayout.LayoutParams(
@@ -126,11 +148,13 @@ fun AdMobBanner(
 
                         override fun onAdFailedToLoad(error: LoadAdError) {
                             super.onAdFailedToLoad(error)
+                            isLoaded = false
                             hasFailed = true
                             onAdFailed?.invoke(error)
                             Log.w(TAG, "AdMob banner failed to load: ${error.message} (code ${error.code})")
                         }
                     }
+                    adViewInstance = this
                     loadAd(AdRequest.Builder().build())
                 }
             },
