@@ -20,6 +20,18 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         RetrofitClient.init(this)
         AdSettingsLoader.load(this)
+
+        // Initialize Google Mobile Ads SDK on a background thread
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                com.google.android.gms.ads.MobileAds.initialize(this@NazaaraboxApplication) { status ->
+                    android.util.Log.d("AdMob", "Google Mobile Ads initialized: ${status.adapterStatusMap.keys}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)
+            }
+        }
+
         OneSignal.initWithContext(this, "9afbbec9-7155-4766-a78b-4e22e6f926d4")
         applicationScope.launch {
             OneSignal.Notifications.requestPermission(true)

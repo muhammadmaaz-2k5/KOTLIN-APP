@@ -3,24 +3,61 @@ package com.job2day.nazaarabox.utils
 import android.app.Activity
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object AdManager {
     private const val TAG = "AdManager"
-    private const val INTERSTITIAL_COOLDOWN_MS = 45_000L
-    private const val MAX_INTERSTITIALS_PER_SESSION = 6
+    private const val INTERSTITIAL_COOLDOWN_MS = 30_000L
+    private const val MAX_INTERSTITIALS_PER_SESSION = 10
+
+    // Google Official Sample Test Ad Unit IDs (Safe for testing on productions & release APKs)
+    const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
+    const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
+    const val TEST_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
+    const val TEST_APP_OPEN_ID = "ca-app-pub-3940256099942544/9257395921"
+    const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
 
     const val DEFAULT_WEBVIEW_AD_URL = "https://nazaarabox.com"
 
-    var isAdsEnabled: Boolean = false
+    var isAdsEnabled: Boolean = true
+        private set
+
+    var isAdMobEnabled: Boolean = true
         private set
 
     var isWebviewAdsEnabled: Boolean = false
+        private set
+
+    var admobBannerId: String = TEST_BANNER_ID
+        private set
+
+    var admobInterstitialId: String = TEST_INTERSTITIAL_ID
+        private set
+
+    var admobRewardedId: String = TEST_REWARDED_ID
+        private set
+
+    var admobRewardedInterstitialId: String = TEST_REWARDED_INTERSTITIAL_ID
+        private set
+
+    var admobAppOpenId: String = TEST_APP_OPEN_ID
+        private set
+
+    var admobNativeId: String = TEST_NATIVE_ID
         private set
 
     var webviewAdUrl: String = DEFAULT_WEBVIEW_AD_URL
@@ -29,7 +66,7 @@ object AdManager {
     val popupWebviewUrl: String
         get() = webviewAdUrl
 
-    var isSafeMode: Boolean = true
+    var isSafeMode: Boolean = false
         private set
 
     var appMode: String = "live"
@@ -54,13 +91,34 @@ object AdManager {
     val showInterstitial: StateFlow<Boolean> = _showInterstitial.asStateFlow()
 
     private var pendingDismissCallback: (() -> Unit)? = null
-
     private var rawSettings: Map<String, String> = emptyMap()
+
+    // AdMob Instances
+    private var interstitialAd: InterstitialAd? = null
+    private var isInterstitialLoading = false
+
+    private var rewardedAd: RewardedAd? = null
+    private var isRewardedLoading = false
+
+    private var appOpenAd: AppOpenAd? = null
+    private var isAppOpenAdLoading = false
+
+    private var rewardedInterstitialAd: RewardedInterstitialAd? = null
+    private var isRewardedInterstitialLoading = false
 
     fun applySettings(settings: Map<String, String>) {
         rawSettings = settings
-        isAdsEnabled = parseBoolean(settings["ads_enabled"])
+        isAdsEnabled = if (settings.containsKey("ads_enabled")) parseBoolean(settings["ads_enabled"]) else true
+        isAdMobEnabled = if (settings.containsKey("admob_enabled")) parseBoolean(settings["admob_enabled"]) else true
         isWebviewAdsEnabled = parseBoolean(settings["enable_webview_ads"])
+
+        admobBannerId = settings["admob_banner_id"]?.takeIf { it.isNotBlank() } ?: TEST_BANNER_ID
+        admobInterstitialId = settings["admob_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_INTERSTITIAL_ID
+        admobRewardedId = settings["admob_rewarded_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_ID
+        admobRewardedInterstitialId = settings["admob_rewarded_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_INTERSTITIAL_ID
+        admobAppOpenId = settings["admob_app_open_id"]?.takeIf { it.isNotBlank() } ?: TEST_APP_OPEN_ID
+        admobNativeId = settings["admob_native_id"]?.takeIf { it.isNotBlank() } ?: TEST_NATIVE_ID
+
         webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
             ?: DEFAULT_WEBVIEW_AD_URL
         val modeValue = settings["app_mode"]?.trim()?.lowercase()
@@ -69,12 +127,12 @@ object AdManager {
 
         Log.d(
             TAG,
-            "Settings applied: ads=$isAdsEnabled, webview=$isWebviewAdsEnabled, url=$webviewAdUrl, appMode=$appMode, safeMode=$isSafeMode",
+            "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode",
         )
     }
 
     fun isAdPlacementEnabled(placement: String): Boolean {
-        if (!isAdsEnabled || !isWebviewAdsEnabled) return false
+        if (!isAdsEnabled) return false
         val specificToggle = rawSettings["enable_ad_$placement"]
         return if (specificToggle != null) {
             parseBoolean(specificToggle)
@@ -107,14 +165,17 @@ object AdManager {
 
     fun initialize(context: Context) {
         if (!isAdsEnabled) return
-    }
-
-    fun loadInterstitial(context: Context) {
+        if (isAdMobEnabled) {
+            loadInterstitial(context)
+            loadRewarded(context)
+            loadAppOpenAd(context)
+            loadRewardedInterstitial(context)
+        }
     }
 
     @Synchronized
     fun canShowInterstitial(): Boolean {
-        if (!isAdsEnabled || !isWebviewAdsEnabled) return false
+        if (!isAdsEnabled) return false
         if (interstitialCount >= MAX_INTERSTITIALS_PER_SESSION) return false
         val now = System.currentTimeMillis()
         return (now - lastInterstitialAt > INTERSTITIAL_COOLDOWN_MS)
@@ -127,14 +188,76 @@ object AdManager {
     }
 
     fun isInterstitialAdReady(): Boolean =
-        isAdsEnabled && isWebviewAdsEnabled && webviewAdUrl.isNotBlank()
+        (isAdMobEnabled && interstitialAd != null) || (isWebviewAdsEnabled && webviewAdUrl.isNotBlank())
 
-    fun showInterstitial(activity: Activity, onAdDismissed: () -> Unit) {
-        showWebviewAd(activity, onAdDismissed)
+    fun isAdMobInterstitialReady(): Boolean = isAdMobEnabled && interstitialAd != null
+
+    // --- AdMob Interstitial ---
+
+    fun loadInterstitial(context: Context) {
+        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (interstitialAd != null || isInterstitialLoading) return
+
+        isInterstitialLoading = true
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(
+            context,
+            admobInterstitialId,
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    isInterstitialLoading = false
+                    Log.d(TAG, "AdMob Test Interstitial loaded")
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    interstitialAd = null
+                    isInterstitialLoading = false
+                    Log.d(TAG, "AdMob Test Interstitial failed: ${loadAdError.message}")
+                }
+            }
+        )
     }
 
-    fun showWebviewAd(activity: Activity, onAdDismissed: () -> Unit) {
-        if (!isInterstitialAdReady()) {
+    fun showAdMobInterstitialOnly(activity: Activity, onAdDismissed: () -> Unit) {
+        if (!isAdsEnabled || !isAdMobEnabled) {
+            onAdDismissed()
+            return
+        }
+
+        val ad = interstitialAd
+        if (ad != null) {
+            isShowingAd = true
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    interstitialAd = null
+                    isShowingAd = false
+                    loadInterstitial(activity)
+                    onAdDismissed()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    interstitialAd = null
+                    isShowingAd = false
+                    loadInterstitial(activity)
+                    onAdDismissed()
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    interstitialAd = null
+                    recordInterstitial()
+                }
+            }
+            ad.show(activity)
+        } else {
+            loadInterstitial(activity)
+            onAdDismissed()
+        }
+    }
+
+    fun showInterstitial(activity: Activity, onAdDismissed: () -> Unit) {
+        if (!isAdsEnabled) {
             onAdDismissed()
             return
         }
@@ -146,6 +269,32 @@ object AdManager {
             onAdDismissed()
             return
         }
+
+        if (isAdMobEnabled && interstitialAd != null) {
+            showAdMobInterstitialOnly(activity, onAdDismissed)
+            return
+        }
+
+        // Preload next AdMob interstitial
+        loadInterstitial(activity)
+
+        if (isWebviewAdsEnabled && webviewAdUrl.isNotBlank()) {
+            showWebviewAd(activity, onAdDismissed)
+        } else {
+            onAdDismissed()
+        }
+    }
+
+    fun showWebviewAd(activity: Activity, onAdDismissed: () -> Unit) {
+        if (!isAdsEnabled || !isWebviewAdsEnabled || webviewAdUrl.isBlank()) {
+            onAdDismissed()
+            return
+        }
+        if (isShowingAd || !canShowInterstitial()) {
+            onAdDismissed()
+            return
+        }
+
         pendingDismissCallback = onAdDismissed
         isShowingAd = true
         recordInterstitial()
@@ -159,38 +308,195 @@ object AdManager {
         pendingDismissCallback = null
     }
 
-    fun showAdMobInterstitialOnly(activity: Activity, onAdDismissed: () -> Unit) {
-        showWebviewAd(activity, onAdDismissed)
-    }
-
-    fun showTmdbAd(activity: Activity, onAdDismissed: () -> Unit) {
-        showWebviewAd(activity, onAdDismissed)
-    }
-
-    fun showOwnDramaAd(activity: Activity, requiredAdType: String, onAdDismissed: () -> Unit) {
-        showWebviewAd(activity, onAdDismissed)
-    }
+    // --- AdMob Rewarded ---
 
     fun loadRewarded(context: Context) {
+        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (rewardedAd != null || isRewardedLoading) return
+
+        isRewardedLoading = true
+        val adRequest = AdRequest.Builder().build()
+        RewardedAd.load(
+            context,
+            admobRewardedId,
+            adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd = ad
+                    isRewardedLoading = false
+                    Log.d(TAG, "AdMob Test Rewarded Ad loaded")
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    rewardedAd = null
+                    isRewardedLoading = false
+                    Log.d(TAG, "AdMob Test Rewarded Ad failed: ${loadAdError.message}")
+                }
+            }
+        )
     }
 
     fun showRewarded(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
-        onUserEarnedReward()
-        onAdDismissed()
+        if (!isAdsEnabled) {
+            onUserEarnedReward()
+            onAdDismissed()
+            return
+        }
+
+        val ad = rewardedAd
+        if (isAdMobEnabled && ad != null) {
+            var earned = false
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    rewardedAd = null
+                    loadRewarded(activity)
+                    if (earned) onUserEarnedReward()
+                    onAdDismissed()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    rewardedAd = null
+                    loadRewarded(activity)
+                    onUserEarnedReward()
+                    onAdDismissed()
+                }
+            }
+            ad.show(activity) { rewardItem ->
+                earned = true
+                Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
+            }
+        } else {
+            loadRewarded(activity)
+            onUserEarnedReward()
+            onAdDismissed()
+        }
     }
 
+    // --- AdMob App Open ---
+
     fun loadAppOpenAd(context: Context) {
+        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (appOpenAd != null || isAppOpenAdLoading) return
+
+        isAppOpenAdLoading = true
+        val adRequest = AdRequest.Builder().build()
+        AppOpenAd.load(
+            context,
+            admobAppOpenId,
+            adRequest,
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    appOpenAd = ad
+                    isAppOpenAdLoading = false
+                    Log.d(TAG, "AdMob Test App Open Ad loaded")
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    appOpenAd = null
+                    isAppOpenAdLoading = false
+                    Log.d(TAG, "AdMob Test App Open Ad failed: ${loadAdError.message}")
+                }
+            }
+        )
     }
 
     fun showAppOpenAd(activity: Activity, onAdDismissed: () -> Unit = {}) {
-        showWebviewAd(activity, onAdDismissed)
+        if (!isAdsEnabled || !isAdMobEnabled) {
+            onAdDismissed()
+            return
+        }
+
+        val ad = appOpenAd
+        if (ad != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    appOpenAd = null
+                    loadAppOpenAd(activity)
+                    onAdDismissed()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    appOpenAd = null
+                    loadAppOpenAd(activity)
+                    onAdDismissed()
+                }
+            }
+            ad.show(activity)
+        } else {
+            loadAppOpenAd(activity)
+            onAdDismissed()
+        }
     }
 
+    // --- AdMob Rewarded Interstitial ---
+
     fun loadRewardedInterstitial(context: Context) {
+        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (rewardedInterstitialAd != null || isRewardedInterstitialLoading) return
+
+        isRewardedInterstitialLoading = true
+        val adRequest = AdRequest.Builder().build()
+        RewardedInterstitialAd.load(
+            context,
+            admobRewardedInterstitialId,
+            adRequest,
+            object : RewardedInterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedInterstitialAd) {
+                    rewardedInterstitialAd = ad
+                    isRewardedInterstitialLoading = false
+                    Log.d(TAG, "AdMob Test Rewarded Interstitial loaded")
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    rewardedInterstitialAd = null
+                    isRewardedInterstitialLoading = false
+                    Log.d(TAG, "AdMob Test Rewarded Interstitial failed: ${loadAdError.message}")
+                }
+            }
+        )
     }
 
     fun showRewardedInterstitial(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
-        onUserEarnedReward()
-        onAdDismissed()
+        if (!isAdsEnabled || !isAdMobEnabled) {
+            onUserEarnedReward()
+            onAdDismissed()
+            return
+        }
+
+        val ad = rewardedInterstitialAd
+        if (ad != null) {
+            var earned = false
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    rewardedInterstitialAd = null
+                    loadRewardedInterstitial(activity)
+                    if (earned) onUserEarnedReward()
+                    onAdDismissed()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    rewardedInterstitialAd = null
+                    loadRewardedInterstitial(activity)
+                    onUserEarnedReward()
+                    onAdDismissed()
+                }
+            }
+            ad.show(activity) { rewardItem ->
+                earned = true
+                Log.d(TAG, "User earned rewarded interstitial: ${rewardItem.amount} ${rewardItem.type}")
+            }
+        } else {
+            loadRewardedInterstitial(activity)
+            onUserEarnedReward()
+            onAdDismissed()
+        }
+    }
+
+    fun showTmdbAd(activity: Activity, onAdDismissed: () -> Unit) {
+        showInterstitial(activity, onAdDismissed)
+    }
+
+    fun showOwnDramaAd(activity: Activity, requiredAdType: String, onAdDismissed: () -> Unit) {
+        showInterstitial(activity, onAdDismissed)
     }
 }

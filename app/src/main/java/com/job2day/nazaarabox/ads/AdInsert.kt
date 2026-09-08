@@ -57,18 +57,25 @@ fun InlineBannerAd(
 ) {
     if (!AdManager.isAdPlacementEnabled(placement)) return
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .background(AppColors.SurfaceVariantDark, RoundedCornerShape(12.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        CustomBannerAd(
-            adUrl = AdManager.getAdPlacementUrl(placement),
-            modifier = Modifier.fillMaxWidth(),
-            alwaysExpanded = true,
+    if (AdManager.isAdMobEnabled) {
+        AdMobBanner(
+            adUnitId = AdManager.admobBannerId,
+            modifier = modifier.padding(vertical = 4.dp),
         )
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .background(AppColors.SurfaceVariantDark, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            CustomBannerAd(
+                adUrl = AdManager.getAdPlacementUrl(placement),
+                modifier = Modifier.fillMaxWidth(),
+                alwaysExpanded = true,
+            )
+        }
     }
 }
 
@@ -79,9 +86,16 @@ fun FullWidthAdBanner(
 ) {
     if (!AdManager.isAdPlacementEnabled(placement)) return
 
-    CustomBannerAd(
-        adUrl = AdManager.getAdPlacementUrl(placement),
-        modifier = modifier.fillMaxWidth(),
-        alwaysExpanded = true,
-    )
+    if (AdManager.isAdMobEnabled) {
+        AdMobBanner(
+            adUnitId = AdManager.admobBannerId,
+            modifier = modifier.padding(vertical = 4.dp),
+        )
+    } else {
+        CustomBannerAd(
+            adUrl = AdManager.getAdPlacementUrl(placement),
+            modifier = modifier.fillMaxWidth(),
+            alwaysExpanded = true,
+        )
+    }
 }

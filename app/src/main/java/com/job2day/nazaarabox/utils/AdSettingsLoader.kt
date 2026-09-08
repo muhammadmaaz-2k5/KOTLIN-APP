@@ -21,6 +21,7 @@ object AdSettingsLoader {
                 val settings = MediaRepository().getGlobalSettings()
                 withContext(Dispatchers.Main) {
                     AdManager.applySettings(settings)
+                    AdManager.initialize(application)
                 }
                 Log.d(TAG, "Remote ad settings loaded successfully")
             } catch (e: Exception) {

@@ -307,13 +307,21 @@ fun PlayerScreen(navController: NavController) {
     }
 
     if (showInterstitial && AdManager.isAdPlacementEnabled("player_banner")) {
-        CustomInterstitialAd(
-            adUrl = AdManager.getAdPlacementUrl("player_banner"),
-            onDismiss = {
-                showInterstitial = false
-                AdManager.recordInterstitial()
-            },
-        )
+        if (activity != null && AdManager.isAdMobEnabled && AdManager.isAdMobInterstitialReady()) {
+            LaunchedEffect(showInterstitial) {
+                AdManager.showAdMobInterstitialOnly(activity) {
+                    showInterstitial = false
+                }
+            }
+        } else {
+            CustomInterstitialAd(
+                adUrl = AdManager.getAdPlacementUrl("player_banner"),
+                onDismiss = {
+                    showInterstitial = false
+                    AdManager.recordInterstitial()
+                },
+            )
+        }
     }
 
     if (isLoadingServers) {
