@@ -68,7 +68,6 @@ fun DetailBottomActionBar(
     isInWatchlist: Boolean,
     onWatchlistToggle: () -> Unit,
     onPlay: (MediaItem) -> Unit,
-    onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (AdManager.isLiveMode) {
@@ -85,13 +84,7 @@ fun DetailBottomActionBar(
                 isActive = isInWatchlist,
                 onClick = onWatchlistToggle,
             )
-            Spacer(modifier = Modifier.width(10.dp))
-            IconActionButton(
-                icon = Icons.Default.Download,
-                isActive = false,
-                onClick = onDownload,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             WatchButton(
                 item = item,
                 seasons = seasons,

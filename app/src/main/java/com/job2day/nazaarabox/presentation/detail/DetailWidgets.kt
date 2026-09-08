@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -271,7 +270,7 @@ fun DetailTitleHeader(item: MediaItem) {
 }
 
 /**
- * Primary In-Content CTA Action Row (Watch Now, Watchlist, Download, Share)
+ * Primary In-Content CTA Action Row (Watch Now, Watchlist, Share)
  */
 @Composable
 fun DetailHeroActions(
@@ -279,7 +278,6 @@ fun DetailHeroActions(
     isInWatchlist: Boolean,
     onPlay: () -> Unit,
     onWatchlistToggle: () -> Unit,
-    onDownload: () -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -320,12 +318,12 @@ fun DetailHeroActions(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Secondary Action Row (Watchlist, Download, Share)
+        // Secondary Action Row (Watchlist, Share)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Watchlist Button (Takes primary secondary space)
+            // Watchlist Button
             OutlinedButton(
                 onClick = onWatchlistToggle,
                 modifier = Modifier
@@ -357,38 +355,34 @@ fun DetailHeroActions(
                 }
             }
 
-            // Download Button
-            Surface(
-                onClick = onDownload,
-                modifier = Modifier.size(44.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = Color.White.copy(alpha = 0.08f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Download,
-                        contentDescription = "Download",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
             // Share Button
-            Surface(
+            OutlinedButton(
                 onClick = onShare,
-                modifier = Modifier.size(44.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = Color.White.copy(alpha = 0.08f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                    containerColor = Color.White.copy(alpha = 0.06f),
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Color.White.copy(alpha = 0.22f),
+                ),
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Share,
                         contentDescription = "Share",
+                        modifier = Modifier.size(18.dp),
                         tint = Color.White,
-                        modifier = Modifier.size(19.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Share",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
                     )
                 }
             }

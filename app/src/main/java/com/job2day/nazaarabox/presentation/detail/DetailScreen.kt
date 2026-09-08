@@ -62,7 +62,6 @@ import com.job2day.nazaarabox.utils.AdManager
 import com.job2day.nazaarabox.utils.AppActions
 import com.job2day.nazaarabox.widgets.DetailBottomActionBar
 import com.job2day.nazaarabox.widgets.DetailReviewCard
-import com.job2day.nazaarabox.widgets.DownloadLinksSheet
 import com.job2day.nazaarabox.widgets.EmptyState
 import com.job2day.nazaarabox.widgets.EpisodePickerSheet
 import com.job2day.nazaarabox.widgets.FullCastSheet
@@ -84,7 +83,6 @@ fun DetailScreen(
     val context = LocalContext.current
     val listState = rememberLazyListState()
 
-    var showDownloads by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
     var showAllCast by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
@@ -157,7 +155,6 @@ fun DetailScreen(
                         }
                     },
                     onWatchlistToggle = { isInWatchlist = !isInWatchlist },
-                    onDownload = { showDownloads = true },
                     onShare = { AppActions.shareItem(context, item) },
                 )
             }
@@ -467,7 +464,6 @@ fun DetailScreen(
             isInWatchlist = isInWatchlist,
             onWatchlistToggle = { isInWatchlist = !isInWatchlist },
             onPlay = { playItem -> navController.navigateToPlayer(playItem) },
-            onDownload = { showDownloads = true },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
@@ -478,13 +474,6 @@ fun DetailScreen(
             title = item.title,
             onShare = { AppActions.shareItem(context, item) },
             onDismiss = { showMore = false },
-        )
-    }
-
-    if (showDownloads) {
-        DownloadLinksSheet(
-            item = item,
-            onDismiss = { showDownloads = false },
         )
     }
 
