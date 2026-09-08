@@ -142,6 +142,7 @@ object AdManager {
     }
 
     fun isAdPlacementEnabled(placement: String): Boolean {
+        if (FORCE_TEST_ADS) return true
         if (!isAdsEnabled) return false
         val specificToggle = rawSettings["enable_ad_$placement"]
         if (specificToggle != null) {

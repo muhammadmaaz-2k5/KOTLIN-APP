@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -65,13 +66,14 @@ fun AdMobBanner(
     var isLoaded by remember { mutableStateOf(false) }
     var hasFailed by remember { mutableStateOf(false) }
 
-    // Adaptive banner size calculation to ensure exact non-zero dimensions
+    // Adaptive banner size calculation to ensure exact non-zero dimensions that fit within padded containers
     val effectiveAdSize = remember(adSize, screenWidthDp) {
         if (adSize != null) {
             adSize
         } else {
-            val width = if (screenWidthDp > 0) screenWidthDp else 360
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, width)
+            // Subtract 32dp container padding to guarantee AdMob fits on all screen sizes
+            val availableWidth = (if (screenWidthDp > 32) screenWidthDp - 32 else 320).coerceAtLeast(320)
+            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, availableWidth)
         }
     }
 
@@ -103,14 +105,13 @@ fun AdMobBanner(
 
         // 2. Real Google Mobile Ads AdView
         AndroidView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(bannerHeightDp),
+            modifier = Modifier.wrapContentSize(),
             factory = { ctx ->
                 AdView(ctx).apply {
                     layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        android.view.Gravity.CENTER,
                     )
                     setAdSize(effectiveAdSize)
                     setAdUnitId(adUnitId.ifBlank { AdManager.TEST_BANNER_ID })
