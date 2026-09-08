@@ -617,18 +617,29 @@ fun FeaturedBanner(
     }
     val pagerState = rememberPagerState(pageCount = { items.size })
 
-    // Auto-advance every 5 seconds
-    androidx.compose.runtime.LaunchedEffect(pagerState.currentPage, items.size) {
+    // Auto-advance every 5 seconds safely without cancelling mid-scroll
+    androidx.compose.runtime.LaunchedEffect(items.size) {
         if (items.size > 1) {
-            kotlinx.coroutines.delay(5000L)
-            val nextPage = (pagerState.currentPage + 1) % items.size
-            pagerState.animateScrollToPage(nextPage)
+            while (true) {
+                kotlinx.coroutines.delay(5000L)
+                if (!pagerState.isScrollInProgress) {
+                    val nextPage = (pagerState.currentPage + 1) % items.size
+                    pagerState.animateScrollToPage(
+                        page = nextPage,
+                        animationSpec = androidx.compose.animation.core.tween(
+                            durationMillis = 700,
+                            easing = androidx.compose.animation.core.FastOutSlowInEasing,
+                        ),
+                    )
+                }
+            }
         }
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
+            key = { index -> items.getOrNull(index)?.id ?: index },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(470.dp),
