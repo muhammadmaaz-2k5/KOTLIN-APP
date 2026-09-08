@@ -233,17 +233,21 @@ class MediaRepository {
 
     suspend fun loadDetail(item: MediaItem): MediaItem = runCatching {
         if (item.isCustom || item.id >= 1000000000) {
-            val customId = if (item.id >= 1000000000) item.id - 1000000000 else item.id
+            val customId = item.customId ?: if (item.id >= 1000000000) item.id - 1000000000 else item.id
             val response = api.getJson("api/custom-movie/$customId")
             
             val tmdbId = response.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: 0
             val title = response.get("title")?.takeIf { !it.isJsonNull }?.asString ?: item.title
             val mediaType = response.get("type")?.takeIf { !it.isJsonNull }?.asString ?: item.type
-            val posterPath = response.get("poster_path")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
-            val backdropPath = response.get("backdrop_path")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
+            val posterPath = response.get("poster_path")?.takeIf { !it.isJsonNull }?.asString
+                ?: response.get("poster_url")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
+            val backdropPath = response.get("backdrop_path")?.takeIf { !it.isJsonNull }?.asString
+                ?: response.get("backdrop_url")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
             val rating = response.get("rating")?.takeIf { !it.isJsonNull }?.asDouble ?: item.rating
-            val year = response.get("year")?.takeIf { !it.isJsonNull }?.asString ?: item.year
-            val overview = response.get("overview")?.takeIf { !it.isJsonNull }?.asString ?: item.overview
+            val year = response.get("year")?.takeIf { !it.isJsonNull }?.asString
+                ?: response.get("release_date")?.takeIf { !it.isJsonNull }?.asString?.take(4) ?: item.year
+            val overview = response.get("overview")?.takeIf { !it.isJsonNull }?.asString
+                ?: response.get("description")?.takeIf { !it.isJsonNull }?.asString ?: item.overview
             
             var enriched = item.copy(
                 id = if (tmdbId > 0) tmdbId else item.id,

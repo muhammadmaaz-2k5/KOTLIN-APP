@@ -38,21 +38,32 @@ object MediaParser {
         val dateRaw = obj.stringOr("release_date", obj.stringOr("first_air_date", ""))
         val year = if (dateRaw.length >= 4) dateRaw.substring(0, 4) else ""
         val posterPath = obj.get("poster_path")?.takeIf { !it.isJsonNull }?.asString
+            ?: obj.get("poster_url")?.takeIf { !it.isJsonNull }?.asString
+            ?: obj.get("posterUrl")?.takeIf { !it.isJsonNull }?.asString
             ?: obj.get("profile_path")?.takeIf { !it.isJsonNull }?.asString
         val backdropPath = obj.get("backdrop_path")?.takeIf { !it.isJsonNull }?.asString
+            ?: obj.get("backdrop_url")?.takeIf { !it.isJsonNull }?.asString
+            ?: obj.get("backdropUrl")?.takeIf { !it.isJsonNull }?.asString
+        val id = obj.intOr("id")
+        val customId = obj.get("custom_id")?.takeIf { !it.isJsonNull }?.asInt
+            ?: if (id >= 1000000000) id - 1000000000 else null
+        val isCustom = obj.get("is_custom")?.asBoolean == true || customId != null || id >= 1000000000
+        val overview = obj.stringOr("overview", obj.stringOr("description", ""))
+
         return MediaItem(
-            id = obj.intOr("id"),
+            id = id,
+            customId = customId,
             title = title,
             type = type,
             posterUrl = imageUrl(posterPath),
             backdropUrl = imageUrl(backdropPath, "w780"),
             rating = obj.doubleOr("vote_average"),
             year = year,
-            overview = obj.stringOr("overview"),
+            overview = overview,
             voteCount = obj.intOr("vote_count"),
             popularity = obj.doubleOr("popularity"),
-            isCustom = obj.get("is_custom")?.asBoolean == true,
-            tmdbId = obj.intOr("tmdb_id", obj.intOr("id")),
+            isCustom = isCustom,
+            tmdbId = obj.intOr("tmdb_id", id),
         )
     }
 

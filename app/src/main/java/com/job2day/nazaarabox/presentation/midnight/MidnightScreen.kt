@@ -1,6 +1,8 @@
 package com.job2day.nazaarabox.presentation.midnight
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -9,6 +11,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import com.job2day.nazaarabox.widgets.MidnightMediaCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -167,23 +174,90 @@ fun MidnightScreen(
                 }
             }
 
-            // D. Themed Nightclub Sections
-            val filteredSections = if (state.selectedCategoryId == 0) {
-                state.feed.sections
+            // D. Themed Nightclub Sections or 2-Column Category Grid
+            if (state.selectedCategoryId == 0) {
+                // All Midnight: Show All Category Sections in Horizontal Shelves
+                items(
+                    items = state.feed.sections,
+                    key = { "midnight_sec_${it.id}" },
+                ) { section ->
+                    MidnightSectionRow(
+                        section = section,
+                        onItemClick = { navController.navigateToDetail(it) },
+                    )
+                }
             } else {
-                state.feed.sections.filterIndexed { index, _ ->
-                    (index + 1) == state.selectedCategoryId
-                }.ifEmpty { state.feed.sections }
-            }
+                // Specific Category Selected: Render as Responsive 2-Column Grid
+                val selectedSection = state.feed.sections.getOrNull(state.selectedCategoryId - 1)
+                    ?: state.feed.sections.find { it.id == state.selectedCategoryId }
 
-            items(
-                items = filteredSections,
-                key = { "midnight_sec_${it.id}" },
-            ) { section ->
-                MidnightSectionRow(
-                    section = section,
-                    onItemClick = { navController.navigateToDetail(it) },
-                )
+                if (selectedSection != null) {
+                    item(key = "selected_cat_header") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(text = selectedSection.emoji, fontSize = 20.sp)
+                                Text(
+                                    text = selectedSection.title,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 18.sp,
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = NeonMagenta.copy(alpha = 0.15f),
+                                border = BorderStroke(0.5.dp, NeonMagenta.copy(alpha = 0.4f)),
+                            ) {
+                                Text(
+                                    text = "${selectedSection.items.size} VIP STREAMS",
+                                    color = NeonMagenta,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    val chunkedItems = selectedSection.items.chunked(2)
+                    items(chunkedItems.size, key = { "cat_grid_row_$it" }) { rowIndex ->
+                        val pair = chunkedItems[rowIndex]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                MidnightMediaCard(
+                                    item = pair[0],
+                                    isGrid = true,
+                                    onClick = { navController.navigateToDetail(pair[0]) },
+                                )
+                            }
+                            if (pair.size > 1) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    MidnightMediaCard(
+                                        item = pair[1],
+                                        isGrid = true,
+                                        onClick = { navController.navigateToDetail(pair[1]) },
+                                    )
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -286,118 +360,191 @@ private fun MidnightHeroSpotlight(
     items: List<MediaItem>,
     onItemClick: (MediaItem) -> Unit,
 ) {
-    val item = items.firstOrNull() ?: return
-    val context = LocalContext.current
-    val backdropUrl = MediaParser.imageUrl(item.backdropUrl.ifBlank { item.posterUrl }, "w780")
+    if (items.isEmpty()) return
+    val pagerState = rememberPagerState(initialPage = 0) { items.size }
 
-    Box(
+    // Auto-advance loop every 5.5s
+    LaunchedEffect(pagerState.pageCount) {
+        if (items.size > 1) {
+            while (true) {
+                delay(5500)
+                if (!pagerState.isScrollInProgress) {
+                    val nextPage = (pagerState.currentPage + 1) % items.size
+                    pagerState.animateScrollToPage(
+                        page = nextPage,
+                        animationSpec = tween(700, easing = FastOutSlowInEasing)
+                    )
+                }
+            }
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .aspectRatio(16f / 9.5f)
-            .clip(RoundedCornerShape(22.dp))
-            .border(
-                BorderStroke(
-                    1.dp,
-                    Brush.linearGradient(
-                        listOf(NeonMagenta.copy(alpha = 0.5f), NeonPurple.copy(alpha = 0.3f), Color.Transparent),
-                    ),
-                ),
-                RoundedCornerShape(22.dp),
-            )
-            .clickable { onItemClick(item) },
+            .padding(top = 4.dp, bottom = 12.dp)
     ) {
-        CustomImage(
-            imageUrl = backdropUrl,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-
-        // Cinema Gradient Vignette
-        Box(
+        HorizontalPager(
+            state = pagerState,
+            key = { items.getOrNull(it)?.id ?: it },
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.Transparent,
-                            Color(0x99000000),
-                            Color(0xF007070B),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .aspectRatio(16f / 9.5f)
+                .clip(RoundedCornerShape(22.dp))
+                .border(
+                    BorderStroke(
+                        1.dp,
+                        Brush.linearGradient(
+                            listOf(
+                                NeonMagenta.copy(alpha = 0.55f),
+                                NeonPurple.copy(alpha = 0.35f),
+                                Color.Transparent
+                            )
                         ),
                     ),
+                    RoundedCornerShape(22.dp),
                 ),
-        )
+        ) { page ->
+            val item = items[page]
+            val backdropUrl = MediaParser.imageUrl(item.backdropUrl.ifBlank { item.posterUrl }, "w780")
 
-        // In-Content Overlay Text & Actions
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onItemClick(item) },
             ) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = NeonMagenta,
-                ) {
-                    Text(
-                        text = "MIDNIGHT SPOTLIGHT",
-                        color = Color.White,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 9.sp,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-
-                if (item.rating > 0.0) {
-                    Text(
-                        text = "★ ${String.format("%.1f", item.rating)}",
-                        color = Color(0xFFFFD166),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = item.title,
-                color = Color.White,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            if (item.overview.isNotBlank()) {
-                Text(
-                    text = item.overview,
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 15.sp,
+                CustomImage(
+                    imageUrl = backdropUrl,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
+
+                // Cinema Gradient Vignette
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0x99000000),
+                                    Color(0xF007070B),
+                                ),
+                            ),
+                        ),
+                )
+
+                // In-Content Overlay Text & Actions
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = NeonMagenta,
+                        ) {
+                            Text(
+                                text = "MIDNIGHT SPOTLIGHT",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 9.sp,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color.Black.copy(alpha = 0.60f),
+                            border = BorderStroke(0.5.dp, NeonMagenta.copy(alpha = 0.6f)),
+                        ) {
+                            Text(
+                                text = "18+ VIP",
+                                color = NeonMagenta,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            )
+                        }
+
+                        if (item.rating > 0.0) {
+                            Text(
+                                text = "★ ${String.format("%.1f", item.rating)}",
+                                color = Color(0xFFFFD166),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    if (item.overview.isNotBlank()) {
+                        Text(
+                            text = item.overview,
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 15.sp,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { onItemClick(item) },
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(17.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NeonMagenta,
+                            contentColor = Color.White,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Watch Stream", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
             }
+        }
 
+        // Pagination Dots Indicator
+        if (items.size > 1) {
             Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = { onItemClick(item) },
-                modifier = Modifier.height(34.dp),
-                shape = RoundedCornerShape(17.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = NeonMagenta,
-                    contentColor = Color.White,
-                ),
-                contentPadding = PaddingValues(horizontal = 14.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Watch Stream", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                items.indices.forEach { index ->
+                    val isSelected = pagerState.currentPage == index
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .height(4.dp)
+                            .width(if (isSelected) 18.dp else 6.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (isSelected) NeonMagenta else Color.White.copy(alpha = 0.20f)
+                            )
+                    )
+                }
             }
         }
     }
@@ -490,7 +637,7 @@ private fun MidnightSectionRow(
                 border = BorderStroke(0.5.dp, NeonMagenta.copy(alpha = 0.35f)),
             ) {
                 Text(
-                    text = "18+",
+                    text = "${section.items.size} VIP",
                     color = NeonMagenta,
                     fontWeight = FontWeight.Black,
                     fontSize = 10.sp,
@@ -499,18 +646,18 @@ private fun MidnightSectionRow(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Horizontal Row of Media Items
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             items(section.items, key = { it.id }) { item ->
-                EngoraMediaCard(
+                MidnightMediaCard(
                     item = item,
-                    mode = EngoraCardMode.EXPANSIVE_CINEMA,
+                    isGrid = false,
                     onClick = { onItemClick(item) },
                 )
             }

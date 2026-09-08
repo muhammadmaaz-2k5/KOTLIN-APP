@@ -473,6 +473,7 @@ enum class EngoraCardMode {
     COMPACT_GRID,      // 3-column dense grid
     EXPANSIVE_CINEMA,  // 2-column showcase with backdrop accents and synopsis
     CAROUSEL_ITEM,     // Horizontal slider item
+    MIDNIGHT_VIP,      // 18+ VIP Nightclub card for Midnight cinema
 }
 
 /**
@@ -770,6 +771,187 @@ fun EngoraMediaCard(
                     maxLines = 1,
                 )
             }
+        }
+
+        // --- 4. MIDNIGHT 18+ VIP NIGHTCLUB CARD ---
+        EngoraCardMode.MIDNIGHT_VIP -> {
+            MidnightMediaCard(
+                item = item,
+                onClick = onClick,
+                modifier = modifier,
+                isGrid = false,
+            )
+        }
+    }
+}
+
+/**
+ * Signature 18+ VIP Nightclub Media Card for ENGORA Midnight
+ */
+@Composable
+fun MidnightMediaCard(
+    item: MediaItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isGrid: Boolean = false,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(100),
+        label = "midnightCardScale",
+    )
+
+    Column(
+        modifier = modifier
+            .then(if (!isGrid) Modifier.width(152.dp) else Modifier.fillMaxWidth())
+            .scale(scale),
+    ) {
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0xFF101018),
+            border = BorderStroke(
+                1.dp,
+                Brush.linearGradient(
+                    listOf(
+                        Color(0xFFFF1A75).copy(alpha = 0.60f),
+                        Color(0xFF9D4EDD).copy(alpha = 0.35f),
+                        Color.White.copy(alpha = 0.08f),
+                    )
+                )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isGrid) 220.dp else 215.dp),
+            interactionSource = interactionSource,
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                CustomImage(
+                    imageUrl = item.posterUrl,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                // Nightclub Scrim (subtle bottom vignette)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Transparent,
+                                    0.55f to Color.Transparent,
+                                    0.82f to Color(0xAA101018),
+                                    1.0f to Color(0xFF101018),
+                                )
+                            )
+                        )
+                )
+
+                // Top Badges Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Glowing 18+ VIP Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFFF1A75), Color(0xFFD90429))
+                                )
+                            )
+                            .border(
+                                0.5.dp,
+                                Color.White.copy(alpha = 0.5f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = "18+ VIP",
+                            color = Color.White,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+
+                    // Gold Rating Pill
+                    if (item.rating > 0) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.78f))
+                                .border(
+                                    0.5.dp,
+                                    Color(0xFFFFD166).copy(alpha = 0.6f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD166),
+                                    modifier = Modifier.size(11.dp),
+                                )
+                                Text(
+                                    text = String.format("%.1f", item.rating),
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(start = 3.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(7.dp))
+
+        Text(
+            text = item.title,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = if (item.year.isNotBlank()) item.year else "18+",
+                color = Color.White.copy(alpha = 0.60f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "•",
+                color = Color(0xFFFF1A75),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "VIP STREAM",
+                color = Color(0xFFC084FC),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.2.sp,
+            )
         }
     }
 }
