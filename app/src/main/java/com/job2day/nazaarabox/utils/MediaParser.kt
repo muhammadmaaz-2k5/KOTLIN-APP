@@ -63,7 +63,7 @@ object MediaParser {
             voteCount = obj.intOr("vote_count"),
             popularity = obj.doubleOr("popularity"),
             isCustom = isCustom,
-            tmdbId = obj.intOr("tmdb_id", id),
+            tmdbId = obj.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: 0,
         )
     }
 
