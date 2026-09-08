@@ -52,6 +52,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Lock
@@ -65,6 +67,8 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -148,6 +152,7 @@ fun PlayerScreen(navController: NavController) {
     var showMore by remember { mutableStateOf(false) }
     var showServerSheet by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
+    var showServerDropdown by remember { mutableStateOf(false) }
     var showRotateNudge by remember { mutableStateOf(false) }
     var forceLandscape by remember { mutableStateOf(false) }
     var showInterstitial by remember { mutableStateOf(false) }
@@ -205,8 +210,8 @@ fun PlayerScreen(navController: NavController) {
     }
 
     // Auto-hide controls in fullscreen after 4.5 seconds
-    LaunchedEffect(controlsVisible, isControlsLocked, isFullscreen) {
-        if (isFullscreen && controlsVisible && !isControlsLocked) {
+    LaunchedEffect(controlsVisible, isControlsLocked, isFullscreen, showServerDropdown) {
+        if (isFullscreen && controlsVisible && !isControlsLocked && !showServerDropdown) {
             delay(4500L)
             controlsVisible = false
         }
@@ -246,6 +251,7 @@ fun PlayerScreen(navController: NavController) {
     fun exitFullscreen() {
         forceLandscape = false
         isControlsLocked = false
+        showServerDropdown = false
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
 
@@ -334,7 +340,9 @@ fun PlayerScreen(navController: NavController) {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {
-                    if (isControlsLocked) {
+                    if (showServerDropdown) {
+                        showServerDropdown = false
+                    } else if (isControlsLocked) {
                         controlsVisible = !controlsVisible
                     } else {
                         controlsVisible = !controlsVisible
@@ -656,45 +664,94 @@ fun PlayerScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // All Available Video Servers
+                    // Video Server Dropdown Selector (Top Right)
                     if (servers.isNotEmpty()) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            items(servers.size) { index ->
-                                val server = servers[index]
-                                val isSelected = index == serverIndex
-                                Surface(
-                                    onClick = {
-                                        if (serverIndex != index) {
-                                            switchServer(index)
-                                            Toast.makeText(context, "Switched to ${server.label}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = if (isSelected) AppColors.Primary.copy(alpha = if (controlsVisible) 0.35f else 0.25f)
-                                            else Color.Black.copy(alpha = pillAlpha * 0.70f),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        if (isSelected) AppColors.Primary
-                                        else Color.White.copy(alpha = if (controlsVisible) 0.25f else 0.15f),
-                                    ),
-                                    shadowElevation = if (isSelected) 4.dp else 0.dp,
+                        val activeServer = servers.getOrNull(serverIndex) ?: servers.first()
+                        Box {
+                            Surface(
+                                onClick = { showServerDropdown = !showServerDropdown },
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (showServerDropdown) AppColors.Primary.copy(alpha = 0.35f)
+                                        else Color.Black.copy(alpha = pillAlpha * 0.75f),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (showServerDropdown) AppColors.Primary
+                                    else Color.White.copy(alpha = if (controlsVisible) 0.30f else 0.18f),
+                                ),
+                                shadowElevation = if (showServerDropdown) 6.dp else 2.dp,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(text = server.icon, fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = server.label,
-                                            color = if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.90f),
-                                            fontSize = 11.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        )
-                                    }
+                                    Text(text = activeServer.icon, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = activeServer.label,
+                                        color = if (showServerDropdown) AppColors.Primary else Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = if (showServerDropdown) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                        contentDescription = "Server Dropdown",
+                                        tint = if (showServerDropdown) AppColors.Primary else Color.White.copy(alpha = 0.75f),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showServerDropdown,
+                                onDismissRequest = { showServerDropdown = false },
+                                modifier = Modifier
+                                    .background(Color(0xFF141420))
+                                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                            ) {
+                                Text(
+                                    text = "SELECT SERVER",
+                                    color = Color.White.copy(alpha = 0.50f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                )
+                                servers.forEachIndexed { index, server ->
+                                    val isSelected = index == serverIndex
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(text = server.icon, fontSize = 13.sp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = server.label,
+                                                    color = if (isSelected) AppColors.Primary else Color.White,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 12.sp,
+                                                )
+                                            }
+                                        },
+                                        trailingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = AppColors.Primary,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            }
+                                        } else null,
+                                        onClick = {
+                                            if (serverIndex != index) {
+                                                switchServer(index)
+                                                Toast.makeText(context, "Switched to ${server.label}", Toast.LENGTH_SHORT).show()
+                                            }
+                                            showServerDropdown = false
+                                        },
+                                        modifier = Modifier.background(
+                                            if (isSelected) AppColors.Primary.copy(alpha = 0.12f) else Color.Transparent
+                                        ),
+                                    )
                                 }
                             }
                         }
