@@ -82,6 +82,8 @@ fun HomeScreen(
     var homeFilters by remember { mutableStateOf(SearchFilters()) }
     var showFilters by remember { mutableStateOf(false) }
 
+    val isOnline by com.job2day.nazaarabox.utils.rememberIsOnline()
+
     val isAppBarBlurred by remember {
         derivedStateOf {
             lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 30
@@ -116,7 +118,11 @@ fun HomeScreen(
             onRefresh = { viewModel.refresh() },
             modifier = Modifier.fillMaxSize(),
         ) {
-            if (state.isLoading && state.categories.isEmpty()) {
+            if (!isOnline && state.categories.isEmpty() && state.trending.isEmpty()) {
+                com.job2day.nazaarabox.widgets.EngoraNoInternetScreen(
+                    onRetry = { viewModel.refresh() },
+                )
+            } else if (state.isLoading && state.categories.isEmpty()) {
                 HomeShimmerPlaceholder()
             } else {
                 LazyColumn(
@@ -362,6 +368,15 @@ fun HomeScreen(
             onSearch = { navController.navigate(AppRoutes.SEARCH) },
             onFilter = { showFilters = true },
             modifier = Modifier.align(Alignment.TopCenter),
+        )
+
+        // Floating Offline Alert Banner
+        com.job2day.nazaarabox.widgets.EngoraOfflineBanner(
+            visible = !isOnline && (state.categories.isNotEmpty() || state.trending.isNotEmpty()),
+            onRetry = { viewModel.refresh() },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 54.dp),
         )
     }
 

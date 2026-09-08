@@ -209,10 +209,15 @@ fun LoadingSkeleton(modifier: Modifier = Modifier, height: Int = 180, shape: Rou
 }
 
 @Composable
-fun LoadingCenter(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = AppColors.Primary)
-    }
+fun LoadingCenter(
+    modifier: Modifier = Modifier,
+    message: String? = null,
+) {
+    EngoraLoadingWidget(
+        modifier = modifier,
+        message = message,
+        size = EngoraLoadingSize.FULLSCREEN,
+    )
 }
 
 @Composable

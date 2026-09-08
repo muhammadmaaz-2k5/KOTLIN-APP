@@ -464,14 +464,28 @@ fun CategorySectionScreen(navController: NavController) {
                 .padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (loading && allFetchedItems.isEmpty()) {
-                    LoadingCenter()
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val isOnline = com.job2day.nazaarabox.utils.NetworkConnectivityObserver.isOnline(context)
+
+                if (!isOnline && allFetchedItems.isEmpty()) {
+                    com.job2day.nazaarabox.widgets.EngoraNoInternetScreen(
+                        onRetry = { coroutineScope.launch { loadPage(1, refresh = true) } },
+                    )
+                } else if (loading && allFetchedItems.isEmpty()) {
+                    LoadingCenter(message = "Loading section titles...")
                 } else if (displayedItems.isEmpty()) {
                     EmptyState(
                         message = if (searchQuery.isNotBlank()) "No titles match \"$searchQuery\"" else "No titles found in this section",
                         modifier = Modifier.align(Alignment.Center),
                     )
                 } else {
+                    if (!isOnline) {
+                        com.job2day.nazaarabox.widgets.EngoraOfflineBanner(
+                            visible = true,
+                            onRetry = { coroutineScope.launch { loadPage(1, refresh = true) } },
+                            modifier = Modifier.align(Alignment.TopCenter),
+                        )
+                    }
                     val gridItems = buildList<Any?> {
                         addAll(displayedItems)
                         displayedItems.forEachIndexed { index, _ ->
