@@ -9,6 +9,7 @@ object AppRoutes {
     const val MOVIES = "movies"
     const val TV_SHOWS = "tv_shows"
     const val ANIME = "anime"
+    const val MIDNIGHT = "midnight"
     const val SEARCH = "search"
     const val DETAIL = "detail"
     const val ACTOR = "actor/{personId}"

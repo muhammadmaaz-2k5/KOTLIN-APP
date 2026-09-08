@@ -24,8 +24,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OpenInBrowser
@@ -65,8 +63,6 @@ import com.job2day.nazaarabox.utils.AdManager
 fun DetailBottomActionBar(
     item: MediaItem,
     seasons: List<SeasonItem>,
-    isInWatchlist: Boolean,
-    onWatchlistToggle: () -> Unit,
     onPlay: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,16 +75,10 @@ fun DetailBottomActionBar(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconActionButton(
-                icon = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                isActive = isInWatchlist,
-                onClick = onWatchlistToggle,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
             WatchButton(
                 item = item,
                 seasons = seasons,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 onPlay = onPlay,
             )
         }

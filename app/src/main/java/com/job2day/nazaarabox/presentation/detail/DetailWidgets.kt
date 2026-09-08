@@ -24,8 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -270,14 +268,12 @@ fun DetailTitleHeader(item: MediaItem) {
 }
 
 /**
- * Primary In-Content CTA Action Row (Watch Now, Watchlist, Share)
+ * Primary In-Content CTA Action Row (Watch Now, Share)
  */
 @Composable
 fun DetailHeroActions(
     item: MediaItem,
-    isInWatchlist: Boolean,
     onPlay: () -> Unit,
-    onWatchlistToggle: () -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -316,75 +312,37 @@ fun DetailHeroActions(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Secondary Action Row (Watchlist, Share)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        // Secondary Action Button (Share Stream)
+        OutlinedButton(
+            onClick = onShare,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(22.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color.White,
+                containerColor = Color.White.copy(alpha = 0.05f),
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                Color.White.copy(alpha = 0.18f),
+            ),
         ) {
-            // Watchlist Button
-            OutlinedButton(
-                onClick = onWatchlistToggle,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (isInWatchlist) AppColors.Primary else Color.White,
-                    containerColor = if (isInWatchlist) AppColors.Primary.copy(alpha = 0.15f) else Color.Transparent,
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isInWatchlist) AppColors.Primary else Color.White.copy(alpha = 0.25f),
-                ),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isInWatchlist) AppColors.Primary else Color.White,
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isInWatchlist) "In Watchlist" else "Watchlist",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                    )
-                }
-            }
-
-            // Share Button
-            OutlinedButton(
-                onClick = onShare,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White,
-                    containerColor = Color.White.copy(alpha = 0.06f),
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    Color.White.copy(alpha = 0.22f),
-                ),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Share",
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White,
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Share",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Share,
+                    contentDescription = "Share",
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Share Stream",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                )
             }
         }
     }

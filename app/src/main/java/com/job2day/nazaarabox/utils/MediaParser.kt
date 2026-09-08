@@ -14,6 +14,7 @@ import com.job2day.nazaarabox.core.DownloadLink
 import com.job2day.nazaarabox.core.PersonItem
 import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.core.HomeFeed
+import com.job2day.nazaarabox.core.MidnightFeed
 
 object MediaParser {
     fun imageUrl(path: String?, size: String = "w342"): String {
@@ -122,6 +123,24 @@ object MediaParser {
             popular = popular,
             customExclusives = customExclusives,
             sections = sections
+        )
+    }
+
+    fun parseMidnightFeed(obj: JsonObject): MidnightFeed {
+        val categories = parseCategories(obj.getAsJsonArray("categories")?.asList())
+        val featured = parseItems(obj.getAsJsonArray("featured")?.asList(), "movie")
+        val sections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
+        val title = obj.stringOr("title", "ENGORA MIDNIGHT")
+        val tagline = obj.stringOr("tagline", "18+ Adult Nightlife & Late Night Cinema")
+        val is18Plus = obj.get("is_18_plus")?.asBoolean ?: true
+
+        return MidnightFeed(
+            title = title,
+            tagline = tagline,
+            is18Plus = is18Plus,
+            categories = categories,
+            featured = featured,
+            sections = sections,
         )
     }
 

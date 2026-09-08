@@ -46,6 +46,16 @@ data class HomeFeed(
 )
 
 @Serializable
+data class MidnightFeed(
+    val title: String = "ENGORA MIDNIGHT",
+    val tagline: String = "18+ Adult Nightlife & Late Night Cinema",
+    val is18Plus: Boolean = true,
+    val categories: List<HomeCategory> = emptyList(),
+    val featured: List<MediaItem> = emptyList(),
+    val sections: List<ThemedSection> = emptyList(),
+)
+
+@Serializable
 data class LanguageOption(
     val code: String = "",
     val label: String = "",

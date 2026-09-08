@@ -86,7 +86,6 @@ fun DetailScreen(
     var showMore by remember { mutableStateOf(false) }
     var showAllCast by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
-    var isInWatchlist by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val showAppBarTitle by remember {
@@ -146,7 +145,6 @@ fun DetailScreen(
             item(key = "hero_actions") {
                 DetailHeroActions(
                     item = item,
-                    isInWatchlist = isInWatchlist,
                     onPlay = {
                         if (isTv) {
                             showEpisodePicker = true
@@ -154,7 +152,6 @@ fun DetailScreen(
                             navController.navigateToPlayer(item)
                         }
                     },
-                    onWatchlistToggle = { isInWatchlist = !isInWatchlist },
                     onShare = { AppActions.shareItem(context, item) },
                 )
             }
@@ -461,8 +458,6 @@ fun DetailScreen(
         DetailBottomActionBar(
             item = item,
             seasons = state.seasons,
-            isInWatchlist = isInWatchlist,
-            onWatchlistToggle = { isInWatchlist = !isInWatchlist },
             onPlay = { playItem -> navController.navigateToPlayer(playItem) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )

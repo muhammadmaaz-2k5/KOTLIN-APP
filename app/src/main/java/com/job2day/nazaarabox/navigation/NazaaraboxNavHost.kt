@@ -24,6 +24,7 @@ import com.job2day.nazaarabox.presentation.category.CategorySectionScreen
 import com.job2day.nazaarabox.presentation.detail.DetailScreen
 import com.job2day.nazaarabox.presentation.home.HomeScreen
 import com.job2day.nazaarabox.presentation.language.LanguageBrowseScreen
+import com.job2day.nazaarabox.presentation.midnight.MidnightScreen
 import com.job2day.nazaarabox.presentation.player.PlayerScreen
 import com.job2day.nazaarabox.presentation.search.SearchScreen
 import com.job2day.nazaarabox.presentation.season.SeasonScreen
@@ -41,7 +42,7 @@ fun NazaaraboxNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val mainRoutes = setOf(AppRoutes.HOME, AppRoutes.MOVIES, AppRoutes.TV_SHOWS, AppRoutes.ANIME)
+    val mainRoutes = setOf(AppRoutes.HOME, AppRoutes.MOVIES, AppRoutes.TV_SHOWS, AppRoutes.ANIME, AppRoutes.MIDNIGHT)
 
     val showBottomBar = currentRoute in mainRoutes
 
@@ -135,6 +136,9 @@ fun NazaaraboxNavHost() {
                         title = "Anime",
                         navController = navController,
                     )
+                }
+                composable(AppRoutes.MIDNIGHT) {
+                    MidnightScreen(navController = navController)
                 }
                 composable(AppRoutes.SEARCH) {
                     SearchScreen(navController = navController)

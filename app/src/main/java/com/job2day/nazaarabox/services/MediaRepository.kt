@@ -8,6 +8,7 @@ import com.job2day.nazaarabox.core.DownloadLink
 import com.job2day.nazaarabox.core.EpisodeItem
 import com.job2day.nazaarabox.core.HomeCategory
 import com.job2day.nazaarabox.core.HomeFeed
+import com.job2day.nazaarabox.core.MidnightFeed
 import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.PersonItem
@@ -49,6 +50,29 @@ class MediaRepository {
 
         if (result.categories.isNotEmpty() || result.trending.isNotEmpty()) {
             homeFeedCache[categoryId] = CacheEntry(result, now + 1800_000L) // 30 minutes
+        }
+        return result
+    }
+
+    private var midnightFeedCache: CacheEntry<MidnightFeed>? = null
+
+    suspend fun getMidnightFeed(forceRefresh: Boolean = false): MidnightFeed {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh) {
+            midnightFeedCache?.let {
+                if (now < it.expiresAt) return it.data
+            }
+        }
+
+        val result = runCatching {
+            val response = api.getMidnightFeed()
+            MediaParser.parseMidnightFeed(response)
+        }.getOrElse {
+            midnightFeedCache?.data ?: MidnightFeed()
+        }
+
+        if (result.sections.isNotEmpty() || result.featured.isNotEmpty()) {
+            midnightFeedCache = CacheEntry(result, now + 1800_000L) // 30 minutes
         }
         return result
     }

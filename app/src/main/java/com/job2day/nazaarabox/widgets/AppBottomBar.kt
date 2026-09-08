@@ -17,11 +17,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Nightlife
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Nightlife
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -53,6 +55,7 @@ private val allTabsList = listOf(
     TabSpec("Movies", "movies", Icons.Filled.Movie, Icons.Outlined.Movie, AppColors.TabMovies),
     TabSpec("TV Shows", "tv_shows", Icons.Filled.Tv, Icons.Outlined.Tv, AppColors.TabTv),
     TabSpec("Anime", "anime", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome, AppColors.TabAnime),
+    TabSpec("Midnight", "midnight", Icons.Filled.Nightlife, Icons.Outlined.Nightlife, Color(0xFFFF1A75)),
     TabSpec("Search", "search", Icons.Filled.Search, Icons.Filled.Search, AppColors.TabSearch, isOverlay = true),
 )
 
@@ -99,7 +102,7 @@ fun AppBottomBar(
                                 contentDescription = tab.label,
                                 tint = color,
                                 modifier = Modifier
-                                    .padding(horizontal = 14.dp, vertical = 5.dp)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                                     .size(22.dp),
                             )
                         }
