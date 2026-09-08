@@ -90,7 +90,6 @@ fun HomeGlassAppBar(
     onLanguage: () -> Unit,
     onSearch: () -> Unit,
     onFilter: () -> Unit,
-    onNotifications: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isSafeMode = !com.job2day.nazaarabox.utils.AdManager.isLiveMode
@@ -132,8 +131,6 @@ fun HomeGlassAppBar(
                 GlassIconButton(iconName = "search_rounded", onClick = onSearch)
                 Spacer(modifier = Modifier.size(8.dp))
                 GlassFilterButton(activeCount = filterActiveCount, onClick = onFilter)
-                Spacer(modifier = Modifier.size(8.dp))
-                GlassIconButton(iconName = "notifications_none_rounded", onClick = onNotifications)
             }
         }
     }
