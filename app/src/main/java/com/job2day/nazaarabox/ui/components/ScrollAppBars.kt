@@ -117,12 +117,11 @@ fun HomeGlassAppBar(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "ENGORA",
-                color = Color.White,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 22.sp,
-                letterSpacing = (-0.5).sp,
+            com.job2day.nazaarabox.widgets.EngoraBrandLogo(
+                showMonogram = true,
+                showBadge = true,
+                badgeText = "STREAM",
+                fontSize = 20,
             )
             Spacer(modifier = Modifier.weight(1f))
             if (!isSafeMode) {

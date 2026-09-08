@@ -148,29 +148,12 @@ fun HomeScreen(
                             ) {
                                 state.categories.forEachIndexed { index, cat ->
                                     val isSelected = selected == index
-                                    Surface(
+                                    com.job2day.nazaarabox.widgets.EngoraFilterChip(
+                                        label = cat.label,
+                                        emoji = cat.emoji,
+                                        selected = isSelected,
                                         onClick = { viewModel.selectCategory(index) },
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = if (isSelected) AppColors.Primary else Color(0xFF1B1D28),
-                                        border = androidx.compose.foundation.BorderStroke(
-                                            1.dp,
-                                            if (isSelected) AppColors.Primary else Color.White.copy(alpha = 0.12f)
-                                        ),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(text = cat.emoji, fontSize = 14.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = cat.label,
-                                                color = if (isSelected) Color.White else Color(0xFFC4C4D4),
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                            )
-                                        }
-                                    }
+                                    )
                                 }
                             }
                             Spacer(modifier = Modifier.height(20.dp))
@@ -210,9 +193,10 @@ fun HomeScreen(
 
                     // 4. Trending Section Header
                     item(key = "trending_header") {
-                        SectionHeader(
+                        com.job2day.nazaarabox.widgets.EngoraSectionHeader(
                             title = trendingLabel,
                             emoji = "🔥",
+                            itemCount = trending.size.takeIf { it > 0 },
                             onSeeAll = if (trending.isNotEmpty()) {
                                 { navController.navigateToSeeAll(trendingLabel, trending) }
                             } else null,
@@ -279,9 +263,10 @@ fun HomeScreen(
 
                     // 7. Popular Section Header
                     item(key = "popular_header") {
-                        SectionHeader(
+                        com.job2day.nazaarabox.widgets.EngoraSectionHeader(
                             title = popularLabel,
                             emoji = "⭐",
+                            itemCount = popular.size.takeIf { it > 0 },
                             onSeeAll = if (popular.isNotEmpty()) {
                                 { navController.navigateToSeeAll(popularLabel, popular) }
                             } else null,
@@ -401,38 +386,12 @@ private fun DynamicSectionRow(
     if (section.items.isEmpty()) return
 
     Column(modifier = Modifier.padding(bottom = 22.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(text = section.emoji.ifBlank { "🎬" }, fontSize = 20.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = section.title,
-                color = AppColors.TextPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Surface(
-                onClick = onMore,
-                shape = RoundedCornerShape(20.dp),
-                color = AppColors.Primary.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.35f)),
-            ) {
-                Text(
-                    text = "More",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                    color = AppColors.Primary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
+        com.job2day.nazaarabox.widgets.EngoraSectionHeader(
+            title = section.title,
+            emoji = section.emoji.ifBlank { "🎬" },
+            itemCount = section.items.size.takeIf { it > 0 },
+            onSeeAll = onMore,
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 

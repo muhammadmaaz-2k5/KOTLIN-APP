@@ -23,7 +23,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.job2day.nazaarabox.navigation.NazaaraboxNavHost
 import com.job2day.nazaarabox.navigation.NotificationRouter
 import com.job2day.nazaarabox.ui.components.SplashScreen
-import com.job2day.nazaarabox.ui.theme.NazaaraboxTheme
+import com.job2day.nazaarabox.ui.theme.EngoraTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         enableEdgeToEdge()
         setContent {
-            NazaaraboxTheme {
+            EngoraTheme {
                 ApplyDarkStatusBar()
                 var isSplashComplete by rememberSaveable { mutableStateOf(false) }
                 if (!isSplashComplete) {
