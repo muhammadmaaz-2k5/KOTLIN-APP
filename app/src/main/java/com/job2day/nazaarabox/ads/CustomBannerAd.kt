@@ -60,7 +60,7 @@ fun CustomBannerAd(
     modifier: Modifier = Modifier,
     alwaysExpanded: Boolean = true,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) {
+    if (!AdManager.isAdsEnabled) {
         return
     }
 

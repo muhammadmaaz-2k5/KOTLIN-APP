@@ -39,7 +39,7 @@ object AdManager {
     var isAdMobEnabled: Boolean = true
         private set
 
-    var isWebviewAdsEnabled: Boolean = false
+    var isWebviewAdsEnabled: Boolean = true
         private set
 
     var admobBannerId: String = TEST_BANNER_ID
@@ -110,7 +110,7 @@ object AdManager {
         rawSettings = settings
         isAdsEnabled = if (settings.containsKey("ads_enabled")) parseBoolean(settings["ads_enabled"]) else true
         isAdMobEnabled = if (settings.containsKey("admob_enabled")) parseBoolean(settings["admob_enabled"]) else true
-        isWebviewAdsEnabled = parseBoolean(settings["enable_webview_ads"])
+        isWebviewAdsEnabled = if (settings.containsKey("enable_webview_ads")) parseBoolean(settings["enable_webview_ads"]) else true
 
         admobBannerId = settings["admob_banner_id"]?.takeIf { it.isNotBlank() } ?: TEST_BANNER_ID
         admobInterstitialId = settings["admob_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_INTERSTITIAL_ID
@@ -134,11 +134,27 @@ object AdManager {
     fun isAdPlacementEnabled(placement: String): Boolean {
         if (!isAdsEnabled) return false
         val specificToggle = rawSettings["enable_ad_$placement"]
-        return if (specificToggle != null) {
-            parseBoolean(specificToggle)
-        } else {
-            true
+        if (specificToggle != null) {
+            return parseBoolean(specificToggle)
         }
+        val basePlacement = when {
+            placement.startsWith("home_") -> "home_banner"
+            placement.startsWith("detail_") -> "detail_banner"
+            placement.startsWith("actor_") -> "actor_banner"
+            placement.startsWith("browse_") -> "browse_banner"
+            placement.startsWith("search_") -> "search_banner"
+            placement.startsWith("season_") -> "season_banner"
+            placement.startsWith("category_") -> "category_banner"
+            placement.startsWith("seeall_") -> "seeall_banner"
+            else -> null
+        }
+        if (basePlacement != null) {
+            val baseToggle = rawSettings["enable_ad_$basePlacement"]
+            if (baseToggle != null) {
+                return parseBoolean(baseToggle)
+            }
+        }
+        return true
     }
 
     fun getAdPlacementUrl(placement: String): String {
@@ -156,10 +172,10 @@ object AdManager {
     }
 
     private fun parseBoolean(value: String?): Boolean {
-        if (value == null) return false
-        return when (value.lowercase()) {
-            "true", "1", "yes", "on" -> true
-            else -> false
+        if (value == null) return true
+        return when (value.trim().lowercase()) {
+            "false", "0", "no", "off" -> false
+            else -> true
         }
     }
 

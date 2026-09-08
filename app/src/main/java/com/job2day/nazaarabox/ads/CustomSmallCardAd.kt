@@ -37,12 +37,13 @@ fun CustomSmallCardAd(
     modifier: Modifier = Modifier,
     showClose: Boolean = true,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isWebviewAdsEnabled) {
+    if (!AdManager.isAdsEnabled) {
         return
     }
 
     val context = LocalContext.current
     var isVisible by remember { mutableStateOf(true) }
+    val effectiveUrl = adUrl.ifBlank { AdManager.webviewAdUrl }
     
     if (isVisible) {
         Box(

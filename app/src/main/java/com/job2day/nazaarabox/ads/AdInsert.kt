@@ -60,7 +60,9 @@ fun InlineBannerAd(
     if (AdManager.isAdMobEnabled) {
         AdMobBanner(
             adUnitId = AdManager.admobBannerId,
-            modifier = modifier.padding(vertical = 4.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
         )
     } else {
         Box(
@@ -89,7 +91,9 @@ fun FullWidthAdBanner(
     if (AdManager.isAdMobEnabled) {
         AdMobBanner(
             adUnitId = AdManager.admobBannerId,
-            modifier = modifier.padding(vertical = 4.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
         )
     } else {
         CustomBannerAd(

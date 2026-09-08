@@ -241,7 +241,7 @@ fun HomeScreen(
                     }
 
                     // 6. Inline Banner Ad between Trending & Popular
-                    if (AdManager.isAdPlacementEnabled("detail_banner_reviews")) {
+                    if (AdManager.isAdPlacementEnabled("home_inline")) {
                         item(key = "mid_banner_ad") {
                             Column(
                                 modifier = Modifier
@@ -257,7 +257,7 @@ fun HomeScreen(
                                     letterSpacing = 0.5.sp,
                                 )
                                 InlineBannerAd(
-                                    placement = "detail_banner_reviews",
+                                    placement = "home_inline",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
