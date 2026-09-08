@@ -92,8 +92,8 @@ class HomeViewModel(
     private fun applyFeed(feed: HomeFeed) {
         _uiState.update { current ->
             val categories = if (feed.categories.isNotEmpty()) feed.categories else current.categories
-            val featured = if (feed.featured.isNotEmpty()) feed.featured else current.featured
             val trending = if (feed.trending.isNotEmpty()) feed.trending else current.trending
+            val featured = if (feed.featured.isNotEmpty()) feed.featured else trending.take(5)
             val popular = if (feed.popular.isNotEmpty()) feed.popular else current.popular
             val sections = if (feed.sections.isNotEmpty()) feed.sections else current.sections
             val custom = if (feed.customExclusives.isNotEmpty()) feed.customExclusives else current.customExclusives
@@ -127,7 +127,7 @@ class HomeViewModel(
             current.copy(
                 trending = trending,
                 popular = popular,
-                featured = if (index == 0 && trending.isNotEmpty()) trending.take(5) else current.featured,
+                featured = if (trending.isNotEmpty()) trending.take(5) else current.featured,
             )
         }
     }
