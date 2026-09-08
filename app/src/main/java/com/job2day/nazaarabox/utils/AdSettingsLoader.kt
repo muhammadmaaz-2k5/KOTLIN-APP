@@ -26,6 +26,9 @@ object AdSettingsLoader {
                 Log.d(TAG, "Remote ad settings loaded successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load remote ad settings, using defaults", e)
+                withContext(Dispatchers.Main) {
+                    AdManager.initialize(application)
+                }
             }
         }
     }

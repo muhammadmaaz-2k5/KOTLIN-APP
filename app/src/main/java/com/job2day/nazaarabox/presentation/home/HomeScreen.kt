@@ -162,7 +162,20 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
+
+                        // Top AdMob Banner
+                        if (AdManager.isAdPlacementEnabled("home_banner")) {
+                            item(key = "home_top_banner") {
+                                FullWidthAdBanner(
+                                    placement = "home_banner",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                            }
                         }
                     }
 

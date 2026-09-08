@@ -21,9 +21,16 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory {
         RetrofitClient.init(this)
         AdSettingsLoader.load(this)
 
-        // Initialize Google Mobile Ads SDK on a background thread
+        // Initialize Google Mobile Ads SDK with test devices enabled
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                val testDeviceIds = listOf(
+                    com.google.android.gms.ads.AdRequest.DEVICE_ID_EMULATOR,
+                )
+                val config = com.google.android.gms.ads.RequestConfiguration.Builder()
+                    .setTestDeviceIds(testDeviceIds)
+                    .build()
+                com.google.android.gms.ads.MobileAds.setRequestConfiguration(config)
                 com.google.android.gms.ads.MobileAds.initialize(this@NazaaraboxApplication) { status ->
                     android.util.Log.d("AdMob", "Google Mobile Ads initialized: ${status.adapterStatusMap.keys}")
                 }

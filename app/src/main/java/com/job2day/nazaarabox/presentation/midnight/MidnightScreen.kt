@@ -75,6 +75,8 @@ import com.job2day.nazaarabox.widgets.EngoraLoadingWidget
 import com.job2day.nazaarabox.widgets.EngoraMediaCard
 import com.job2day.nazaarabox.widgets.EngoraNoInternetScreen
 import com.job2day.nazaarabox.widgets.EngoraOfflineBanner
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
+import com.job2day.nazaarabox.utils.AdManager
 
 private val MidnightBg = Color(0xFF07070B)
 private val NeonMagenta = Color(0xFFFF1A75)
@@ -174,6 +176,18 @@ fun MidnightScreen(
                 }
             }
 
+            // Top AdMob Banner
+            if (AdManager.isAdPlacementEnabled("midnight_banner")) {
+                item(key = "midnight_top_admob") {
+                    FullWidthAdBanner(
+                        placement = "midnight_banner",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                    )
+                }
+            }
+
             // D. Themed Nightclub Sections or 2-Column Category Grid
             if (state.selectedCategoryId == 0) {
                 // All Midnight: Show All Category Sections in Horizontal Shelves
@@ -257,6 +271,17 @@ fun MidnightScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (AdManager.isAdPlacementEnabled("midnight_banner")) {
+                item(key = "midnight_bottom_admob") {
+                    FullWidthAdBanner(
+                        placement = "midnight_banner",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
                 }
             }
         }

@@ -54,6 +54,8 @@ import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.routes.AppRoutes
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.EmptyState
 
@@ -133,6 +135,15 @@ fun LanguageBrowseScreen(
                     TypeChip("TV", "tv", Icons.Default.Tv, state.selectedType, accent) { viewModel.selectType(it) }
                 }
                 HorizontalDivider(color = AppColors.SurfaceVariantDark)
+
+                if (AdManager.isAdPlacementEnabled("language_banner")) {
+                    FullWidthAdBanner(
+                        placement = "language_banner",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                    )
+                }
 
                 when {
                     isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

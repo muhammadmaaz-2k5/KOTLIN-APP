@@ -24,6 +24,7 @@ object AdManager {
     private const val MAX_INTERSTITIALS_PER_SESSION = 10
 
     // Google Official Sample Test Ad Unit IDs (Safe for testing on productions & release APKs)
+    const val FORCE_TEST_ADS = true
     const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
     const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
     const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
@@ -112,12 +113,21 @@ object AdManager {
         isAdMobEnabled = if (settings.containsKey("admob_enabled")) parseBoolean(settings["admob_enabled"]) else true
         isWebviewAdsEnabled = if (settings.containsKey("enable_webview_ads")) parseBoolean(settings["enable_webview_ads"]) else true
 
-        admobBannerId = settings["admob_banner_id"]?.takeIf { it.isNotBlank() } ?: TEST_BANNER_ID
-        admobInterstitialId = settings["admob_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_INTERSTITIAL_ID
-        admobRewardedId = settings["admob_rewarded_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_ID
-        admobRewardedInterstitialId = settings["admob_rewarded_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_INTERSTITIAL_ID
-        admobAppOpenId = settings["admob_app_open_id"]?.takeIf { it.isNotBlank() } ?: TEST_APP_OPEN_ID
-        admobNativeId = settings["admob_native_id"]?.takeIf { it.isNotBlank() } ?: TEST_NATIVE_ID
+        if (FORCE_TEST_ADS) {
+            admobBannerId = TEST_BANNER_ID
+            admobInterstitialId = TEST_INTERSTITIAL_ID
+            admobRewardedId = TEST_REWARDED_ID
+            admobRewardedInterstitialId = TEST_REWARDED_INTERSTITIAL_ID
+            admobAppOpenId = TEST_APP_OPEN_ID
+            admobNativeId = TEST_NATIVE_ID
+        } else {
+            admobBannerId = settings["admob_banner_id"]?.takeIf { it.isNotBlank() } ?: TEST_BANNER_ID
+            admobInterstitialId = settings["admob_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_INTERSTITIAL_ID
+            admobRewardedId = settings["admob_rewarded_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_ID
+            admobRewardedInterstitialId = settings["admob_rewarded_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_INTERSTITIAL_ID
+            admobAppOpenId = settings["admob_app_open_id"]?.takeIf { it.isNotBlank() } ?: TEST_APP_OPEN_ID
+            admobNativeId = settings["admob_native_id"]?.takeIf { it.isNotBlank() } ?: TEST_NATIVE_ID
+        }
 
         webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
             ?: DEFAULT_WEBVIEW_AD_URL
@@ -127,7 +137,7 @@ object AdManager {
 
         Log.d(
             TAG,
-            "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode",
+            "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode, forceTestAds=$FORCE_TEST_ADS",
         )
     }
 
@@ -146,6 +156,11 @@ object AdManager {
             placement.startsWith("season_") -> "season_banner"
             placement.startsWith("category_") -> "category_banner"
             placement.startsWith("seeall_") -> "seeall_banner"
+            placement.startsWith("midnight_") -> "midnight_banner"
+            placement.startsWith("player_") -> "player_banner"
+            placement.startsWith("moreapps_") -> "moreapps_banner"
+            placement.startsWith("language_") -> "language_banner"
+            placement.startsWith("privacy_") -> "privacy_banner"
             else -> null
         }
         if (basePlacement != null) {

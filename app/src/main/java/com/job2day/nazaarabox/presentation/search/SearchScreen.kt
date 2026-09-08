@@ -81,6 +81,7 @@ import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.presentation.shared.SearchFilterSheet
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.widgets.CustomImage
 import com.job2day.nazaarabox.widgets.shimmerBrush
 
@@ -308,6 +309,15 @@ fun SearchScreen(
                         modifier = Modifier.height(38.dp),
                     )
                 }
+            }
+
+            if (AdManager.isAdPlacementEnabled("search_banner")) {
+                FullWidthAdBanner(
+                    placement = "search_banner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                )
             }
 
             // Active Filters indicator

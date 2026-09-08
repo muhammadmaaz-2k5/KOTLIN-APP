@@ -69,6 +69,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.job2day.nazaarabox.ads.AdMobBanner
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.core.PromotedApp
 import com.job2day.nazaarabox.services.MediaRepository
 import com.job2day.nazaarabox.ui.theme.AppColors
@@ -249,6 +250,19 @@ fun MoreAppsScreen(
                         }
                     }
 
+                    // Top AdMob Banner
+                    if (AdManager.isAdPlacementEnabled("moreapps_banner")) {
+                        item(key = "moreapps_top_admob") {
+                            FullWidthAdBanner(
+                                placement = "moreapps_banner",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
                     // Section Title
                     item(key = "section_header") {
                         Row(
@@ -304,6 +318,19 @@ fun MoreAppsScreen(
                                 app = app,
                                 onInstall = { launchPlayStore(context, app) },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+
+                    // Bottom AdMob Banner
+                    if (AdManager.isAdPlacementEnabled("moreapps_banner")) {
+                        item(key = "moreapps_bottom_admob") {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            FullWidthAdBanner(
+                                placement = "moreapps_banner",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
                             )
                         }
                     }

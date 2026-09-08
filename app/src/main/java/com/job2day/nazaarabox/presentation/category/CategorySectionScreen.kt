@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.getThemedSection
@@ -507,6 +508,10 @@ fun CategorySectionScreen(navController: NavController) {
                     ) {
                         items(
                             gridItems,
+                            span = { entry ->
+                                if (entry is String && entry == "ad") androidx.compose.foundation.lazy.grid.GridItemSpan(columnsCount)
+                                else androidx.compose.foundation.lazy.grid.GridItemSpan(1)
+                            },
                             key = { entry ->
                                 if (entry is String) "ad_${entry}_${System.identityHashCode(entry)}"
                                 else if (entry is MediaItem) "${entry.type}_${entry.id}"
@@ -517,11 +522,11 @@ fun CategorySectionScreen(navController: NavController) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(110.dp),
+                                        .padding(vertical = 4.dp),
                                 ) {
-                                    InlineBannerAd(
+                                    FullWidthAdBanner(
                                         placement = "category_banner",
-                                        modifier = Modifier.fillMaxSize(),
+                                        modifier = Modifier.fillMaxWidth(),
                                     )
                                 }
                             } else if (entry is MediaItem) {

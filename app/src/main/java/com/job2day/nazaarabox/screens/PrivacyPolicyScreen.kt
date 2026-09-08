@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.job2day.nazaarabox.ui.theme.AppColors
+import com.job2day.nazaarabox.utils.AdManager
+import com.job2day.nazaarabox.ads.FullWidthAdBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,6 +167,14 @@ fun PrivacyPolicyScreen(navController: NavController) {
                         SectionTitle("10. Changes to This Policy")
                         BodyText("We may update this Privacy Policy from time to time. Continued use of the app after changes constitutes acceptance of the updated policy.")
                     }
+                }
+
+                if (AdManager.isAdPlacementEnabled("privacy_banner")) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    FullWidthAdBanner(
+                        placement = "privacy_banner",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

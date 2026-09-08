@@ -122,6 +122,14 @@ fun SeasonScreen(navController: NavController) {
                             },
                         )
                     }
+                    if (AdManager.isAdPlacementEnabled("season_banner")) {
+                        item {
+                            FullWidthAdBanner(
+                                placement = "season_banner",
+                                modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

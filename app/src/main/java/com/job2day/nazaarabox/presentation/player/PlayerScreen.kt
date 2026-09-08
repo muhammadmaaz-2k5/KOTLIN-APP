@@ -1108,7 +1108,9 @@ fun PlayerScreen(navController: NavController) {
                         if (AdManager.isAdPlacementEnabled("player_banner")) {
                             InlineBannerAd(
                                 placement = "player_banner",
-                                modifier = Modifier.height(100.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
                             )
                             Spacer(modifier = Modifier.height(18.dp))
                         }

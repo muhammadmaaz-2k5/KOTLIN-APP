@@ -145,6 +145,15 @@ fun MediaBrowseScreen(
                 }
             }
 
+            if (AdManager.isAdPlacementEnabled("browse_banner")) {
+                FullWidthAdBanner(
+                    placement = "browse_banner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                )
+            }
+
             val items = state.itemsByTab[state.selectedTab].orEmpty()
             val loading = state.loadingByTab.contains(state.selectedTab)
 
@@ -216,6 +225,21 @@ fun MediaBrowseScreen(
                                 }
                             }
                         }
+                    }
+
+                    if (AdManager.isAdPlacementEnabled("browse_banner")) {
+                        item(key = "browse_bottom_admob") {
+                            FullWidthAdBanner(
+                                placement = "browse_banner",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                            )
+                        }
+                    }
+
+                    item(key = "browse_bottom_spacer") {
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
             }
