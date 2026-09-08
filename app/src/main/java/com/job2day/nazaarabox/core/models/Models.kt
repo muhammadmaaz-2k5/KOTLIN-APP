@@ -156,3 +156,22 @@ data class PersonItem(
     val placeOfBirth: String = "",
     val knownForDepartment: String = "",
 )
+
+@Serializable
+data class PromotedApp(
+    val id: Int = 0,
+    val name: String = "",
+    val tagline: String = "",
+    val description: String = "",
+    val category: String = "Entertainment",
+    val packageName: String = "",
+    val playStoreUrl: String = "",
+    val iconUrl: String = "",
+    val bannerUrl: String = "",
+    val rating: Double = 4.8,
+    val downloads: String = "100K+",
+    val badge: String = "",
+    val sortOrder: Int = 0,
+    val isFeatured: Boolean = false,
+    val isActive: Boolean = true,
+)

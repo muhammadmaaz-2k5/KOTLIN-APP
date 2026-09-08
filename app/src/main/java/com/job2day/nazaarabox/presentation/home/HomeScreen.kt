@@ -367,6 +367,7 @@ fun HomeScreen(
             onLanguage = { navController.navigate(AppRoutes.LANGUAGE_BROWSE) },
             onSearch = { navController.navigate(AppRoutes.SEARCH) },
             onFilter = { showFilters = true },
+            onMoreApps = { navController.navigate(AppRoutes.MORE_APPS) },
             modifier = Modifier.align(Alignment.TopCenter),
         )
 

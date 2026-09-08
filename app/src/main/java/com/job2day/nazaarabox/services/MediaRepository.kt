@@ -12,6 +12,7 @@ import com.job2day.nazaarabox.core.MidnightFeed
 import com.job2day.nazaarabox.core.ThemedSection
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.PersonItem
+import com.job2day.nazaarabox.core.PromotedApp
 import com.job2day.nazaarabox.core.ReviewItem
 import com.job2day.nazaarabox.core.SearchFilters
 import com.job2day.nazaarabox.core.SeasonItem
@@ -441,5 +442,142 @@ class MediaRepository {
     private suspend fun tmdb(path: String, params: Map<String, String>): JsonObject {
         val url = "${AppConfig.tmdbProxyUrl}/$path"
         return api.getJson(url, params)
+    }
+
+    private var moreAppsCache: CacheEntry<List<PromotedApp>>? = null
+
+    suspend fun getMoreApps(forceRefresh: Boolean = false): List<PromotedApp> {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh) {
+            moreAppsCache?.let {
+                if (now < it.expiresAt) return it.data
+            }
+        }
+
+        val apps = runCatching {
+            val jsonArray = api.getMoreApps()
+            val list = mutableListOf<PromotedApp>()
+            for (elem in jsonArray) {
+                if (elem.isJsonObject) {
+                    val obj = elem.asJsonObject
+                    list.add(
+                        PromotedApp(
+                            id = obj.get("id")?.asInt ?: 0,
+                            name = obj.get("name")?.asString ?: "",
+                            tagline = if (obj.has("tagline") && !obj.get("tagline").isJsonNull) obj.get("tagline").asString else "",
+                            description = if (obj.has("description") && !obj.get("description").isJsonNull) obj.get("description").asString else "",
+                            category = if (obj.has("category") && !obj.get("category").isJsonNull) obj.get("category").asString else "Entertainment",
+                            packageName = if (obj.has("package_name") && !obj.get("package_name").isJsonNull) obj.get("package_name").asString else "",
+                            playStoreUrl = if (obj.has("play_store_url") && !obj.get("play_store_url").isJsonNull) obj.get("play_store_url").asString else "",
+                            iconUrl = if (obj.has("icon_url") && !obj.get("icon_url").isJsonNull) obj.get("icon_url").asString else "",
+                            bannerUrl = if (obj.has("banner_url") && !obj.get("banner_url").isJsonNull) obj.get("banner_url").asString else "",
+                            rating = if (obj.has("rating") && !obj.get("rating").isJsonNull) obj.get("rating").asDouble else 4.8,
+                            downloads = if (obj.has("downloads") && !obj.get("downloads").isJsonNull) obj.get("downloads").asString else "100K+",
+                            badge = if (obj.has("badge") && !obj.get("badge").isJsonNull) obj.get("badge").asString else "",
+                            sortOrder = if (obj.has("sort_order") && !obj.get("sort_order").isJsonNull) obj.get("sort_order").asInt else 0,
+                            isFeatured = if (obj.has("is_featured") && !obj.get("is_featured").isJsonNull) obj.get("is_featured").asBoolean else false,
+                            isActive = if (obj.has("is_active") && !obj.get("is_active").isJsonNull) obj.get("is_active").asBoolean else true,
+                        )
+                    )
+                }
+            }
+            list
+        }.getOrElse {
+            moreAppsCache?.data ?: getFallbackMoreApps()
+        }
+
+        val finalList = if (apps.isNotEmpty()) apps else getFallbackMoreApps()
+        moreAppsCache = CacheEntry(finalList, now + 1800_000L) // 30 minutes cache
+        return finalList
+    }
+
+    private fun getFallbackMoreApps(): List<PromotedApp> {
+        return listOf(
+            PromotedApp(
+                id = 1,
+                name = "CinePlay Ultra 4K Player",
+                tagline = "Hardware accelerated 4K HDR & subtitle player",
+                description = "Ultra high-performance media player with HDR10+ support, multi-audio tracks, background playback, and automatic subtitle downloader.",
+                category = "Utilities",
+                packageName = "com.cineplay.ultraplayer",
+                playStoreUrl = "https://play.google.com/store/apps/details?id=com.cineplay.ultraplayer",
+                iconUrl = "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=256&h=256&fit=crop",
+                bannerUrl = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&h=400&fit=crop",
+                rating = 4.9,
+                downloads = "500K+",
+                badge = "FEATURED",
+                sortOrder = 1,
+                isFeatured = true,
+                isActive = true,
+            ),
+            PromotedApp(
+                id = 2,
+                name = "AnimeWorld Pro",
+                tagline = "Seasonal anime schedule, tracking & reminders",
+                description = "The ultimate anime companion. Track ongoing simulcasts, manga updates, voice cast notes, and episode notifications.",
+                category = "Anime",
+                packageName = "com.animeworld.hub",
+                playStoreUrl = "https://play.google.com/store/apps/details?id=com.animeworld.hub",
+                iconUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=256&h=256&fit=crop",
+                bannerUrl = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&h=400&fit=crop",
+                rating = 4.8,
+                downloads = "250K+",
+                badge = "HOT",
+                sortOrder = 2,
+                isFeatured = false,
+                isActive = true,
+            ),
+            PromotedApp(
+                id = 3,
+                name = "Cast2Screen Smart TV",
+                tagline = "Cast videos & mirror screen to any Smart TV",
+                description = "1-tap stream casting to Roku, Chromecast, Fire TV, Apple TV, and DLNA devices with zero latency.",
+                category = "Utilities",
+                packageName = "com.streamcast.smartmirror",
+                playStoreUrl = "https://play.google.com/store/apps/details?id=com.streamcast.smartmirror",
+                iconUrl = "https://images.unsplash.com/photo-1593784991095-a205069470b6?w=256&h=256&fit=crop",
+                bannerUrl = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&h=400&fit=crop",
+                rating = 4.7,
+                downloads = "1M+",
+                badge = "POPULAR",
+                sortOrder = 3,
+                isFeatured = false,
+                isActive = true,
+            ),
+            PromotedApp(
+                id = 4,
+                name = "Midnight Cinema VIP",
+                tagline = "Curated late-night cinema & noir lounge",
+                description = "Exclusive portal for mature cinematic storytelling, psychological thrillers, and private indie collections.",
+                category = "Entertainment",
+                packageName = "com.engora.midnightclub",
+                playStoreUrl = "https://play.google.com/store/apps/details?id=com.engora.midnightclub",
+                iconUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=256&h=256&fit=crop",
+                bannerUrl = "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&h=400&fit=crop",
+                rating = 4.9,
+                downloads = "100K+",
+                badge = "18+ VIP",
+                sortOrder = 4,
+                isFeatured = false,
+                isActive = true,
+            ),
+            PromotedApp(
+                id = 5,
+                name = "Subtitle Master & Audio Sync",
+                tagline = "Instant subtitles in 50+ languages with auto sync",
+                description = "Search and download SRT subtitles in seconds with time-shift fine tuning and offline playback support.",
+                category = "Utilities",
+                packageName = "com.subtitlesync.multilingual",
+                playStoreUrl = "https://play.google.com/store/apps/details?id=com.subtitlesync.multilingual",
+                iconUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=256&h=256&fit=crop",
+                bannerUrl = "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&h=400&fit=crop",
+                rating = 4.8,
+                downloads = "300K+",
+                badge = "NEW",
+                sortOrder = 5,
+                isFeatured = false,
+                isActive = true,
+            ),
+        )
     }
 }

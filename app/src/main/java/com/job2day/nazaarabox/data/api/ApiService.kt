@@ -46,6 +46,9 @@ interface ApiService {
         @Query("episode") episode: Int? = null,
     ): JsonArray
 
+    @GET("api/more-apps")
+    suspend fun getMoreApps(): JsonArray
+
     @GET
     suspend fun tmdb(@Url url: String, @QueryMap params: Map<String, String>): JsonObject
 }

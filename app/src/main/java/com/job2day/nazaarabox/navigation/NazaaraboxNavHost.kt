@@ -31,6 +31,7 @@ import com.job2day.nazaarabox.presentation.season.SeasonScreen
 import com.job2day.nazaarabox.presentation.seeall.SeeAllScreen
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.routes.AppRoutes
+import com.job2day.nazaarabox.presentation.moreapps.MoreAppsScreen
 import com.job2day.nazaarabox.screens.PrivacyPolicyScreen
 import com.job2day.nazaarabox.ui.theme.AppColors
 import com.job2day.nazaarabox.utils.AdManager
@@ -170,6 +171,9 @@ fun NazaaraboxNavHost() {
                 }
                 composable(AppRoutes.PRIVACY_POLICY) {
                     PrivacyPolicyScreen(navController = navController)
+                }
+                composable(AppRoutes.MORE_APPS) {
+                    MoreAppsScreen(navController = navController)
                 }
             }
         }

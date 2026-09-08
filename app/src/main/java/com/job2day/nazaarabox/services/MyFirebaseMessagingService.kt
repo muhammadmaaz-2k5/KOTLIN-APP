@@ -139,6 +139,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 com.job2day.nazaarabox.routes.AppRoutes.actor(actorId)
             }
             "privacy", "privacy_policy" -> com.job2day.nazaarabox.routes.AppRoutes.PRIVACY_POLICY
+            "more_apps", "apps" -> com.job2day.nazaarabox.routes.AppRoutes.MORE_APPS
             else -> com.job2day.nazaarabox.routes.AppRoutes.HOME
         }
     }
