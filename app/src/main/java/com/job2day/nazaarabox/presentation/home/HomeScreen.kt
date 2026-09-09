@@ -65,6 +65,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
 import com.job2day.nazaarabox.widgets.PopularMovieCard
 import com.job2day.nazaarabox.widgets.TrendingCard
+import com.job2day.nazaarabox.ads.CustomSmallCardAd
+import com.job2day.nazaarabox.ads.InlineCardAd
 import com.job2day.nazaarabox.utils.AdManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -159,6 +161,27 @@ fun HomeScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.height(14.dp))
+                        }
+                    }
+
+                    // 3. Sponsored Ads Row (Native Small Cards / Webview Article Ads)
+                    if (AdManager.isAdPlacementEnabled("home_inline")) {
+                        item(key = "sponsored_ads_row") {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.height(210.dp),
+                            ) {
+                                items(6) {
+                                    CustomSmallCardAd(
+                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                                        modifier = Modifier
+                                            .width(140.dp)
+                                            .height(200.dp),
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
                         }
                     }
 
@@ -333,12 +356,24 @@ private fun DynamicSectionRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                items(
-                    count = section.items.size,
-                    key = { "${section.id}_${section.items[it].id}_$it" },
-                ) { index ->
-                    val entry = section.items[index]
-                    SectionMovieCard(item = entry, onClick = { onItemClick(entry) })
+                val rowItems = buildList<Any?> {
+                    addAll(section.items)
+                    section.items.forEachIndexed { index, _ ->
+                        if ((index + 1) % 4 == 0 && index < section.items.lastIndex) {
+                            add(null)
+                        }
+                    }
+                }
+                items(rowItems) { entry ->
+                    if (entry is MediaItem) {
+                        SectionMovieCard(item = entry, onClick = { onItemClick(entry) })
+                    } else if (AdManager.isAdPlacementEnabled("home_inline")) {
+                        InlineCardAd(
+                            placement = "home_inline",
+                            modifier = Modifier.width(140.dp),
+                            label = "",
+                        )
+                    }
                 }
             }
         }
