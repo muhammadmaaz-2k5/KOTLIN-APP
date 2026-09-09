@@ -46,7 +46,7 @@ fun InlineCardAd(
 
 /**
  * Standard in-feed banners remain disabled.
- * The only banner ad used in the app is the StickyCollapsibleBannerAd
+ * The only banner ad used in the app is the StickyAdaptiveBannerAd
  * anchored with the bottom navigation bar.
  */
 @Composable

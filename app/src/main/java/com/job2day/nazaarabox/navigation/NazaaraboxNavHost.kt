@@ -19,7 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.job2day.nazaarabox.ads.StickyCollapsibleBannerAd
+import com.job2day.nazaarabox.ads.StickyAdaptiveBannerAd
 import com.job2day.nazaarabox.presentation.actor.ActorScreen
 import com.job2day.nazaarabox.presentation.browse.BrowseMode
 import com.job2day.nazaarabox.presentation.browse.MediaBrowseScreen
@@ -94,7 +94,7 @@ fun NazaaraboxNavHost() {
             bottomBar = {
                 if (showBottomBar) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        StickyCollapsibleBannerAd(
+                        StickyAdaptiveBannerAd(
                             modifier = Modifier.fillMaxWidth(),
                         )
                         AppBottomBar(

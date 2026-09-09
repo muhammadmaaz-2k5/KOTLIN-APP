@@ -1,7 +1,6 @@
 package com.job2day.nazaarabox.ads
 
 import android.content.Context
-import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -20,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -32,6 +30,7 @@ private const val TAG = "AdMobBanner"
 
 /**
  * Calculates current anchored adaptive banner ad size based on screen width.
+ * Fills the full width of the screen.
  */
 fun getAdaptiveBannerAdSize(context: Context): AdSize {
     val displayMetrics = context.resources.displayMetrics
@@ -43,12 +42,12 @@ fun getAdaptiveBannerAdSize(context: Context): AdSize {
 }
 
 /**
- * Sticky Google AdMob Collapsible Adaptive Banner Ad.
- * Designed to stick directly above the bottom navigation bar.
- * Uses Google AdMob's anchored adaptive banner size with "collapsible" = "bottom".
+ * Sticky Google AdMob Full-Size Adaptive Banner Ad (Non-Collapsible).
+ * Anchored directly above the bottom navigation bar.
+ * Uses Google AdMob's anchored adaptive banner size at full device width without collapsible behavior.
  */
 @Composable
-fun StickyCollapsibleBannerAd(
+fun StickyAdaptiveBannerAd(
     modifier: Modifier = Modifier,
     adUnitId: String = AdManager.admobBannerId,
     onAdLoaded: (() -> Unit)? = null,
@@ -86,24 +85,19 @@ fun StickyCollapsibleBannerAd(
                             super.onAdLoaded()
                             isLoaded = true
                             onAdLoaded?.invoke()
-                            Log.d(TAG, "Sticky collapsible adaptive banner loaded: $adUnitId")
+                            Log.d(TAG, "Sticky full-size adaptive banner loaded: $adUnitId")
                         }
 
                         override fun onAdFailedToLoad(error: LoadAdError) {
                             super.onAdFailedToLoad(error)
                             isLoaded = false
                             onAdFailed?.invoke(error)
-                            Log.w(TAG, "Sticky collapsible banner failed to load: ${error.message} (code ${error.code})")
+                            Log.w(TAG, "Sticky full-size adaptive banner failed to load: ${error.message} (code ${error.code})")
                         }
                     }
 
-                    val extras = Bundle().apply {
-                        putString("collapsible", "bottom")
-                    }
-                    val adRequest = AdRequest.Builder()
-                        .addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
-                        .build()
-
+                    // Full-width anchored adaptive banner (standard, non-collapsible)
+                    val adRequest = AdRequest.Builder().build()
                     loadAd(adRequest)
                 }
             },
@@ -111,11 +105,29 @@ fun StickyCollapsibleBannerAd(
                 try {
                     adView.destroy()
                 } catch (e: Exception) {
-                    Log.w(TAG, "Error destroying collapsible AdView: ${e.message}")
+                    Log.w(TAG, "Error destroying adaptive AdView: ${e.message}")
                 }
             },
         )
     }
+}
+
+/**
+ * Backward compatibility alias for StickyAdaptiveBannerAd.
+ */
+@Composable
+fun StickyCollapsibleBannerAd(
+    modifier: Modifier = Modifier,
+    adUnitId: String = AdManager.admobBannerId,
+    onAdLoaded: (() -> Unit)? = null,
+    onAdFailed: ((LoadAdError) -> Unit)? = null,
+) {
+    StickyAdaptiveBannerAd(
+        modifier = modifier,
+        adUnitId = adUnitId,
+        onAdLoaded = onAdLoaded,
+        onAdFailed = onAdFailed,
+    )
 }
 
 /**
