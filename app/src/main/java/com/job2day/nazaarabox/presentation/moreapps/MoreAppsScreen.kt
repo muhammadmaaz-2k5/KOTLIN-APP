@@ -68,7 +68,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.AdMobBanner
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.core.PromotedApp
 import com.job2day.nazaarabox.services.MediaRepository
@@ -153,29 +152,6 @@ fun MoreAppsScreen(
     Scaffold(
         containerColor = EngoraColors.Background,
         contentWindowInsets = WindowInsets(0),
-        bottomBar = {
-            if (AdManager.isAdMobEnabled) {
-                Surface(
-                    color = EngoraColors.BackgroundElevated,
-                    border = BorderStroke(1.dp, EngoraColors.CardBorder),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        AdMobBanner(
-                            adUnitId = AdManager.admobBannerId,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-            }
-        },
     ) { paddingValues ->
         Column(
             modifier = Modifier
