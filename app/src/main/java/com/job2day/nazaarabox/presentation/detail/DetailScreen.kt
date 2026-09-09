@@ -531,6 +531,10 @@ fun DetailScreen(
                     }
                 } ?: navController.navigateToPlayer(item)
             },
+            onSkip = {
+                showMovieAdDialog = false
+                navController.navigateToPlayer(item)
+            },
             onDismiss = { showMovieAdDialog = false },
         )
     }
@@ -548,6 +552,7 @@ fun DetailScreen(
 fun MovieAdDialog(
     movieTitle: String,
     onWatchAd: () -> Unit,
+    onSkip: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     androidx.compose.ui.window.Dialog(
@@ -607,7 +612,7 @@ fun MovieAdDialog(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Watch a sponsor ad to stream \"$movieTitle\".",
+                    text = "You can watch a short ad or skip directly to stream \"$movieTitle\".",
                     color = AppColors.TextMuted,
                     fontSize = 13.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -620,20 +625,20 @@ fun MovieAdDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Cancel button
+                    // Skip Ad button (allows user to skip the ad and play the movie directly)
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White.copy(alpha = 0.06f))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-                            .clickable { onDismiss() },
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .clickable { onSkip() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "Cancel",
-                            color = AppColors.TextMuted,
+                            text = "Skip Ad",
+                            color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
