@@ -138,6 +138,10 @@ fun PlayerScreen(navController: NavController) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
+    LaunchedEffect(Unit) {
+        AdManager.loadInterstitial(context)
+    }
+
     DisposableEffect(Unit) {
         AdManager.isPlayerActive = true
         onDispose {
@@ -260,6 +264,44 @@ fun PlayerScreen(navController: NavController) {
         isControlsLocked = false
         showServerDropdown = false
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+
+    fun reapplyFullscreen() {
+        if (isFullscreen) {
+            val window = activity?.window
+            if (window != null) {
+                val controller = WindowCompat.getInsetsController(window, view)
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+    }
+
+    fun switchEpisode(newSeason: Int, newEpisode: Int) {
+        val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
+        val doSwitch = {
+            currentItem = currentItem.copy(
+                season = newSeason,
+                episode = newEpisode,
+                title = "$baseTitle · S${newSeason}E$newEpisode",
+            )
+            refreshKey++
+            isPageLoading = true
+            reapplyFullscreen()
+            Toast.makeText(context, "Playing Season $newSeason Episode $newEpisode", Toast.LENGTH_SHORT).show()
+        }
+
+        if (newEpisode % 2 == 0) {
+            activity?.let { act ->
+                AdManager.showInterstitial(act, force = true) {
+                    reapplyFullscreen()
+                    doSwitch()
+                }
+            } ?: doSwitch()
+        } else {
+            doSwitch()
+        }
     }
 
     val currentUrl = remember(servers, serverIndex, currentItem, refreshKey) {
@@ -529,15 +571,7 @@ fun PlayerScreen(navController: NavController) {
                             val season = currentItem.season ?: 1
                             Surface(
                                 onClick = {
-                                    val newEp = ep - 1
-                                    val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                                    currentItem = currentItem.copy(
-                                        episode = newEp,
-                                        title = "$baseTitle · S${season}E$newEp",
-                                    )
-                                    refreshKey++
-                                    isPageLoading = true
-                                    Toast.makeText(context, "Playing Season $season Episode $newEp", Toast.LENGTH_SHORT).show()
+                                    switchEpisode(season, ep - 1)
                                 },
                                 shape = RoundedCornerShape(20.dp),
                                 color = Color.Black.copy(alpha = 0.65f),
@@ -780,19 +814,7 @@ fun PlayerScreen(navController: NavController) {
                         val nextLabel = if (nextSeasonNum != currentSeasonNum) "Next: S${nextSeasonNum}E${nextEpNum}" else "Next Ep $nextEpNum"
                         Surface(
                             onClick = {
-                                val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                                currentItem = currentItem.copy(
-                                    season = nextSeasonNum,
-                                    episode = nextEpNum,
-                                    title = "$baseTitle · S${nextSeasonNum}E$nextEpNum",
-                                )
-                                refreshKey++
-                                isPageLoading = true
-                                Toast.makeText(
-                                    context,
-                                    "Playing Season $nextSeasonNum Episode $nextEpNum",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                                switchEpisode(nextSeasonNum, nextEpNum)
                             },
                             shape = RoundedCornerShape(14.dp),
                             color = AppColors.Primary.copy(alpha = if (controlsVisible) 0.92f else 0.75f),
@@ -1084,29 +1106,40 @@ fun PlayerScreen(navController: NavController) {
                                 items(episodeCount) { epIndex ->
                                     val epNum = epIndex + 1
                                     val isCurrentEp = currentItem.episode == epNum
+                                    val isEven = epNum % 2 == 0
                                     Surface(
                                         onClick = {
-                                            val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                                            currentItem = currentItem.copy(
-                                                season = currentSeasonNumber,
-                                                episode = epNum,
-                                                title = "$baseTitle · S${currentSeasonNumber}E$epNum",
-                                            )
+                                            if (!isCurrentEp) {
+                                                switchEpisode(currentSeasonNumber, epNum)
+                                            }
                                         },
                                         shape = RoundedCornerShape(10.dp),
                                         color = if (isCurrentEp) AppColors.Primary else AppColors.CardDark,
                                         border = BorderStroke(
                                             1.dp,
-                                            if (isCurrentEp) AppColors.Primary else Color.White.copy(alpha = 0.12f),
+                                            if (isCurrentEp) AppColors.Primary
+                                            else if (isEven) Color(0xFFFFB800).copy(alpha = 0.35f)
+                                            else Color.White.copy(alpha = 0.12f),
                                         ),
                                     ) {
-                                        Text(
-                                            text = "Ep $epNum",
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                            color = if (isCurrentEp) Color.White else Color(0xFFC0C0D0),
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isCurrentEp) FontWeight.Bold else FontWeight.Medium,
-                                        )
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        ) {
+                                            Text(
+                                                text = "Ep $epNum",
+                                                color = if (isCurrentEp) Color.White else Color(0xFFC0C0D0),
+                                                fontSize = 12.sp,
+                                                fontWeight = if (isCurrentEp) FontWeight.Bold else FontWeight.Medium,
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = if (isEven) "AD" else "FREE",
+                                                color = if (isCurrentEp) Color.White.copy(alpha = 0.9f) else if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1244,23 +1277,7 @@ fun PlayerScreen(navController: NavController) {
             seasons = seasons,
             onPlay = { season, episode ->
                 showEpisodePicker = false
-                val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                val updateItem = {
-                    currentItem = currentItem.copy(
-                        season = season,
-                        episode = episode,
-                        title = "$baseTitle · S${season}E$episode",
-                    )
-                }
-                if (episode % 2 == 0) {
-                    activity?.let { act ->
-                        AdManager.showInterstitial(act, force = true) {
-                            updateItem()
-                        }
-                    } ?: updateItem()
-                } else {
-                    updateItem()
-                }
+                switchEpisode(season, episode)
             },
             onDismiss = { showEpisodePicker = false },
         )

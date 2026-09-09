@@ -329,9 +329,16 @@ object AdManager {
             return
         }
 
-        if (isAdMobEnabled && interstitialAd != null) {
-            showAdMobInterstitialOnly(activity, onAdDismissed)
-            return
+        if (isAdMobEnabled) {
+            val ad = interstitialAd
+            if (ad != null) {
+                showAdMobInterstitialOnly(activity, onAdDismissed)
+                return
+            } else if (force) {
+                // If forced (e.g. user selected even episode or watched movie ad), load and show on demand
+                loadAndShowInterstitial(activity, onAdDismissed)
+                return
+            }
         }
 
         // Preload next AdMob interstitial
@@ -342,6 +349,58 @@ object AdManager {
         } else {
             onAdDismissed()
         }
+    }
+
+    fun loadAndShowInterstitial(activity: Activity, onAdDismissed: () -> Unit) {
+        if (!isAdsEnabled || !isAdMobEnabled) {
+            onAdDismissed()
+            return
+        }
+
+        val ad = interstitialAd
+        if (ad != null) {
+            showAdMobInterstitialOnly(activity, onAdDismissed)
+            return
+        }
+
+        var hasDismissed = false
+        val dismissOnce: () -> Unit = {
+            if (!hasDismissed) {
+                hasDismissed = true
+                onAdDismissed()
+            }
+        }
+
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val timeoutRunnable = Runnable {
+            Log.d(TAG, "AdMob Interstitial on-demand load timeout (3.5s), proceeding to stream")
+            dismissOnce()
+        }
+        handler.postDelayed(timeoutRunnable, 3500L)
+
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(
+            activity,
+            admobInterstitialId,
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(loadedAd: InterstitialAd) {
+                    handler.removeCallbacks(timeoutRunnable)
+                    interstitialAd = loadedAd
+                    isInterstitialLoading = false
+                    Log.d(TAG, "AdMob Interstitial loaded on demand, displaying now")
+                    showAdMobInterstitialOnly(activity, dismissOnce)
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    handler.removeCallbacks(timeoutRunnable)
+                    interstitialAd = null
+                    isInterstitialLoading = false
+                    Log.d(TAG, "AdMob Interstitial failed on demand: ${loadAdError.message}")
+                    dismissOnce()
+                }
+            }
+        )
     }
 
     fun showWebviewAd(activity: Activity, onAdDismissed: () -> Unit) {
