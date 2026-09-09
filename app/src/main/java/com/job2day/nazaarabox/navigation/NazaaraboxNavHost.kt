@@ -1,17 +1,21 @@
 package com.job2day.nazaarabox.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,7 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.job2day.nazaarabox.ads.StickyAdaptiveBannerAd
+import com.job2day.nazaarabox.ads.StickyCollapsibleBannerAd
 import com.job2day.nazaarabox.presentation.actor.ActorScreen
 import com.job2day.nazaarabox.presentation.browse.BrowseMode
 import com.job2day.nazaarabox.presentation.browse.MediaBrowseScreen
@@ -92,27 +96,38 @@ fun NazaaraboxNavHost() {
             containerColor = AppColors.BackgroundDark,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (showBottomBar) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        StickyAdaptiveBannerAd(
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        AppBottomBar(
-                            currentRoute = currentRoute,
-                            onTabSelected = { route, isOverlay ->
-                                if (isOverlay) {
-                                    if (AdManager.isLiveMode) navController.navigate(AppRoutes.SEARCH)
-                                } else {
-                                    navController.navigate(route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                if (currentRoute != AppRoutes.PLAYER) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF0D0D11))
+                            .then(
+                                if (!showBottomBar) Modifier.navigationBarsPadding() else Modifier
+                            ),
+                    ) {
+                        key(currentRoute) {
+                            StickyCollapsibleBannerAd(
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        if (showBottomBar) {
+                            AppBottomBar(
+                                currentRoute = currentRoute,
+                                onTabSelected = { route, isOverlay ->
+                                    if (isOverlay) {
+                                        if (AdManager.isLiveMode) navController.navigate(AppRoutes.SEARCH)
+                                    } else {
+                                        navController.navigate(route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
-                                }
-                            },
-                        )
+                                },
+                            )
+                        }
                     }
                 }
             },
