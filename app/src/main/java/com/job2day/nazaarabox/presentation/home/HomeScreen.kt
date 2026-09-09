@@ -65,7 +65,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
 import com.job2day.nazaarabox.widgets.PopularMovieCard
 import com.job2day.nazaarabox.widgets.TrendingCard
-import com.job2day.nazaarabox.ads.AdMobNativeCompactAd
+import com.job2day.nazaarabox.ads.AdMobNativeMediumAd
 import com.job2day.nazaarabox.ads.CustomSmallCardAd
 import com.job2day.nazaarabox.ads.InlineCardAd
 import com.job2day.nazaarabox.utils.AdManager
@@ -229,9 +229,9 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(20.dp))
                     }
 
-                    // Google AdMob Native Ad (Small Template) between Trending and Popular
+                    // Google AdMob Native Medium Template (supports all videos and images)
                     item(key = "home_native_ad") {
-                        AdMobNativeCompactAd(
+                        AdMobNativeMediumAd(
                             placement = "home_native",
                             modifier = Modifier.padding(vertical = 4.dp),
                         )

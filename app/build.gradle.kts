@@ -78,9 +78,10 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
 
-    // AdMob
+    // AdMob & UI
     implementation("com.google.android.gms:play-services-ads:23.0.0")
     implementation("com.google.android.ump:user-messaging-platform:2.2.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

@@ -73,7 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.AdMobNativeCompactAd
+import com.job2day.nazaarabox.ads.AdMobNativeMediumAd
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
@@ -312,8 +312,8 @@ fun SearchScreen(
                 }
             }
 
-            // Native Compact Ad below category chips
-            AdMobNativeCompactAd(
+            // Google AdMob Native Medium Template (supports all videos and images)
+            AdMobNativeMediumAd(
                 placement = "search_native",
                 modifier = Modifier
                     .fillMaxWidth()
