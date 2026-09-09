@@ -454,43 +454,140 @@ object AdManager {
         )
     }
 
-    fun showRewarded(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
+    fun showRewarded(
+        activity: Activity,
+        force: Boolean = false,
+        onUserEarnedReward: () -> Unit,
+        onAdDismissed: () -> Unit = {}
+    ) {
         if (!isAdsEnabled) {
             onUserEarnedReward()
             onAdDismissed()
             return
         }
 
-        val ad = rewardedAd
-        if (isAdMobEnabled && ad != null) {
-            var earned = false
-            isShowingAd = true
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    rewardedAd = null
-                    isShowingAd = false
-                    loadRewarded(activity)
-                    if (earned) onUserEarnedReward()
-                    onAdDismissed()
-                }
+        if (isAdMobEnabled) {
+            val ad = rewardedAd
+            if (ad != null) {
+                showAdMobRewardedOnly(activity, onUserEarnedReward, onAdDismissed)
+                return
+            } else if (force) {
+                // If forced (e.g. Midnight 18+ VIP content), load on demand and display immediately
+                loadAndShowRewarded(activity, onUserEarnedReward, onAdDismissed)
+                return
+            }
+        }
 
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    rewardedAd = null
-                    isShowingAd = false
-                    loadRewarded(activity)
-                    if (earned) onUserEarnedReward()
-                    onAdDismissed()
-                }
-            }
-            ad.show(activity) { rewardItem ->
-                earned = true
-                Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
-            }
-        } else {
-            loadRewarded(activity)
+        loadRewarded(activity)
+        onUserEarnedReward()
+        onAdDismissed()
+    }
+
+    fun showRewarded(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
+        showRewarded(activity, force = false, onUserEarnedReward = onUserEarnedReward, onAdDismissed = onAdDismissed)
+    }
+
+    private fun showAdMobRewardedOnly(
+        activity: Activity,
+        onUserEarnedReward: () -> Unit,
+        onAdDismissed: () -> Unit
+    ) {
+        val ad = rewardedAd ?: run {
             onUserEarnedReward()
             onAdDismissed()
+            return
         }
+
+        var earned = false
+        var hasDismissed = false
+        val dismissOnce: () -> Unit = {
+            if (!hasDismissed) {
+                hasDismissed = true
+                isShowingAd = false
+                rewardedAd = null
+                loadRewarded(activity)
+                if (earned) onUserEarnedReward()
+                onAdDismissed()
+            }
+        }
+
+        isShowingAd = true
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                Log.d(TAG, "AdMob Rewarded Ad dismissed")
+                dismissOnce()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                Log.d(TAG, "AdMob Rewarded Ad failed to show: ${adError.message}")
+                dismissOnce()
+            }
+        }
+
+        ad.show(activity) { rewardItem ->
+            earned = true
+            Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
+        }
+    }
+
+    fun loadAndShowRewarded(
+        activity: Activity,
+        onUserEarnedReward: () -> Unit,
+        onAdDismissed: () -> Unit = {}
+    ) {
+        if (!isAdsEnabled || !isAdMobEnabled) {
+            onUserEarnedReward()
+            onAdDismissed()
+            return
+        }
+
+        val ad = rewardedAd
+        if (ad != null) {
+            showAdMobRewardedOnly(activity, onUserEarnedReward, onAdDismissed)
+            return
+        }
+
+        var hasFinished = false
+        val finishOnce: (Boolean) -> Unit = { earnedReward ->
+            if (!hasFinished) {
+                hasFinished = true
+                if (earnedReward) onUserEarnedReward()
+                onAdDismissed()
+            }
+        }
+
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val timeoutRunnable = Runnable {
+            Log.d(TAG, "AdMob Rewarded on-demand load timeout (4.0s), proceeding to stream")
+            finishOnce(true)
+        }
+        handler.postDelayed(timeoutRunnable, 4000L)
+
+        val adRequest = AdRequest.Builder().build()
+        RewardedAd.load(
+            activity,
+            admobRewardedId,
+            adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(loadedAd: RewardedAd) {
+                    handler.removeCallbacks(timeoutRunnable)
+                    rewardedAd = loadedAd
+                    isRewardedLoading = false
+                    Log.d(TAG, "AdMob Rewarded Ad loaded on demand, displaying now")
+                    showAdMobRewardedOnly(activity, onUserEarnedReward) {
+                        finishOnce(false)
+                    }
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    handler.removeCallbacks(timeoutRunnable)
+                    rewardedAd = null
+                    isRewardedLoading = false
+                    Log.d(TAG, "AdMob Rewarded Ad failed on demand: ${loadAdError.message}")
+                    finishOnce(true)
+                }
+            }
+        )
     }
 
     // --- AdMob App Open ---

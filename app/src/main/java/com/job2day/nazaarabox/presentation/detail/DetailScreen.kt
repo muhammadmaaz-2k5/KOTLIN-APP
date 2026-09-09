@@ -93,6 +93,7 @@ fun DetailScreen(
     var showAllCast by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
     var showMovieAdDialog by remember { mutableStateOf(false) }
+    var showMidnightAdDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val showAppBarTitle by remember {
@@ -153,7 +154,13 @@ fun DetailScreen(
                 DetailHeroActions(
                     item = item,
                     onPlay = {
-                        if (isTv) {
+                        if (item.isMidnight) {
+                            if (isTv) {
+                                showEpisodePicker = true
+                            } else {
+                                showMidnightAdDialog = true
+                            }
+                        } else if (isTv) {
                             showEpisodePicker = true
                         } else {
                             showMovieAdDialog = true
@@ -468,7 +475,13 @@ fun DetailScreen(
                 item = item,
                 seasons = state.seasons,
                 onPlay = { playItem ->
-                    if (isTv) {
+                    if (item.isMidnight) {
+                        if (isTv) {
+                            showEpisodePicker = true
+                        } else {
+                            showMidnightAdDialog = true
+                        }
+                    } else if (isTv) {
                         if ((playItem.episode ?: 1) % 2 == 0) {
                             activity?.let { act ->
                                 AdManager.showInterstitial(act, force = true) {
@@ -506,7 +519,13 @@ fun DetailScreen(
                     episode = episode,
                     title = "${item.title} · S${season}E$episode",
                 )
-                if (episode % 2 == 0) {
+                if (item.isMidnight) {
+                    activity?.let { act ->
+                        AdManager.showRewarded(act, force = true, onUserEarnedReward = {
+                            navController.navigateToPlayer(playItem)
+                        }, onAdDismissed = {})
+                    } ?: navController.navigateToPlayer(playItem)
+                } else if (episode % 2 == 0) {
                     activity?.let { act ->
                         AdManager.showInterstitial(act, force = true) {
                             navController.navigateToPlayer(playItem)
@@ -536,6 +555,21 @@ fun DetailScreen(
                 navController.navigateToPlayer(item)
             },
             onDismiss = { showMovieAdDialog = false },
+        )
+    }
+
+    if (showMidnightAdDialog) {
+        MidnightRewardedAdDialog(
+            contentTitle = item.title,
+            onWatchAd = {
+                showMidnightAdDialog = false
+                activity?.let { act ->
+                    AdManager.showRewarded(act, force = true, onUserEarnedReward = {
+                        navController.navigateToPlayer(item)
+                    }, onAdDismissed = {})
+                } ?: navController.navigateToPlayer(item)
+            },
+            onDismiss = { showMidnightAdDialog = false },
         )
     }
 
@@ -670,6 +704,136 @@ fun MovieAdDialog(
                                 text = "Watch Ad",
                                 color = Color.White,
                                 fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MidnightRewardedAdDialog(
+    contentTitle: String,
+    onWatchAd: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF0C0C14))
+                .border(
+                    androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(Color(0xFFFF1A75), Color(0xFF9D4EDD).copy(alpha = 0.5f))
+                        )
+                    ),
+                    RoundedCornerShape(24.dp)
+                )
+                .padding(24.dp),
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                // Neon 18+ VIP Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                listOf(Color(0xFFFF1A75), Color(0xFFD90429))
+                            )
+                        )
+                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                ) {
+                    Text(
+                        text = "🍸 18+ MIDNIGHT VIP",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Unlock Midnight Stream",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "To stream \"$contentTitle\", please watch a short sponsor video ad. Your mature 18+ stream will start immediately after.",
+                    color = Color(0xFFB0B0C0),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Cancel button
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+
+                    // Watch Ad to Unlock button
+                    Box(
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                    listOf(Color(0xFFFF1A75), Color(0xFFD90429))
+                                )
+                            )
+                            .clickable { onWatchAd() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Watch Ad & Unlock",
+                                color = Color.White,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
                             )
                         }

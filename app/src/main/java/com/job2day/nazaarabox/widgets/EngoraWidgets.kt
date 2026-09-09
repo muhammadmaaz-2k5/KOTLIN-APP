@@ -857,29 +857,54 @@ fun MidnightMediaCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Glowing 18+ VIP Badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFFFF1A75), Color(0xFFD90429))
-                                )
-                            )
-                            .border(
-                                0.5.dp,
-                                Color.White.copy(alpha = 0.5f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 3.dp),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "18+ VIP",
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.3.sp,
-                        )
+                        // Glowing 18+ VIP Badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFFFF1A75), Color(0xFFD90429))
+                                    )
+                                )
+                                .border(
+                                    0.5.dp,
+                                    Color.White.copy(alpha = 0.5f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        ) {
+                            Text(
+                                text = "18+ VIP",
+                                color = Color.White,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.3.sp,
+                            )
+                        }
+
+                        // Rewarded Ad Indicator Badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFFFB800).copy(alpha = 0.88f))
+                                .border(
+                                    0.5.dp,
+                                    Color.White.copy(alpha = 0.4f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 5.dp, vertical = 3.dp),
+                        ) {
+                            Text(
+                                text = "REWARD AD",
+                                color = Color.Black,
+                                fontSize = 7.5.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                            )
+                        }
                     }
 
                     // Gold Rating Pill

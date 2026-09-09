@@ -93,6 +93,11 @@ fun MidnightScreen(
 
     val isOnline by rememberIsOnline()
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        AdManager.loadRewarded(context)
+    }
 
     // 1. Age Verification Permission Gate (18+ Only)
     if (!isVerified) {
@@ -160,7 +165,7 @@ fun MidnightScreen(
                 item(key = "midnight_hero") {
                     MidnightHeroSpotlight(
                         items = state.feed.featured,
-                        onItemClick = { navController.navigateToDetail(it) },
+                        onItemClick = { navController.navigateToDetail(it.copy(isMidnight = true)) },
                     )
                 }
             }
@@ -197,7 +202,7 @@ fun MidnightScreen(
                 ) { section ->
                     MidnightSectionRow(
                         section = section,
-                        onItemClick = { navController.navigateToDetail(it) },
+                        onItemClick = { navController.navigateToDetail(it.copy(isMidnight = true)) },
                     )
                 }
             } else {
@@ -255,7 +260,7 @@ fun MidnightScreen(
                                 MidnightMediaCard(
                                     item = pair[0],
                                     isGrid = true,
-                                    onClick = { navController.navigateToDetail(pair[0]) },
+                                    onClick = { navController.navigateToDetail(pair[0].copy(isMidnight = true)) },
                                 )
                             }
                             if (pair.size > 1) {
@@ -263,7 +268,7 @@ fun MidnightScreen(
                                     MidnightMediaCard(
                                         item = pair[1],
                                         isGrid = true,
-                                        onClick = { navController.navigateToDetail(pair[1]) },
+                                        onClick = { navController.navigateToDetail(pair[1].copy(isMidnight = true)) },
                                     )
                                 }
                             } else {
@@ -683,7 +688,7 @@ private fun MidnightSectionRow(
                 MidnightMediaCard(
                     item = item,
                     isGrid = false,
-                    onClick = { onItemClick(item) },
+                    onClick = { onItemClick(item.copy(isMidnight = true)) },
                 )
             }
         }

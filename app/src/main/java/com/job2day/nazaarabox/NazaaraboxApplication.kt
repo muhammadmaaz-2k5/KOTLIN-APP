@@ -38,9 +38,10 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory, Appli
             com.google.android.gms.ads.MobileAds.setRequestConfiguration(config)
             com.google.android.gms.ads.MobileAds.initialize(this) { status ->
                 android.util.Log.d("AdMob", "Google Mobile Ads initialized on Main thread: ${status.adapterStatusMap.keys}")
-                // Preload App Open and Interstitial ads immediately on initialization
+                // Preload App Open, Interstitial, and Rewarded ads immediately on initialization
                 AdManager.loadAppOpenAd(this@NazaaraboxApplication)
                 AdManager.loadInterstitial(this@NazaaraboxApplication)
+                AdManager.loadRewarded(this@NazaaraboxApplication)
             }
         } catch (e: Exception) {
             android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)

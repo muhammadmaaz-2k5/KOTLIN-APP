@@ -140,6 +140,7 @@ fun PlayerScreen(navController: NavController) {
 
     LaunchedEffect(Unit) {
         AdManager.loadInterstitial(context)
+        AdManager.loadRewarded(context)
     }
 
     DisposableEffect(Unit) {
@@ -292,7 +293,16 @@ fun PlayerScreen(navController: NavController) {
             Toast.makeText(context, "Playing Season $newSeason Episode $newEpisode", Toast.LENGTH_SHORT).show()
         }
 
-        if (newEpisode % 2 == 0) {
+        if (currentItem.isMidnight) {
+            activity?.let { act ->
+                AdManager.showRewarded(act, force = true, onUserEarnedReward = {
+                    reapplyFullscreen()
+                    doSwitch()
+                }, onAdDismissed = {
+                    reapplyFullscreen()
+                })
+            } ?: doSwitch()
+        } else if (newEpisode % 2 == 0) {
             activity?.let { act ->
                 AdManager.showInterstitial(act, force = true) {
                     reapplyFullscreen()
@@ -1107,6 +1117,7 @@ fun PlayerScreen(navController: NavController) {
                                     val epNum = epIndex + 1
                                     val isCurrentEp = currentItem.episode == epNum
                                     val isEven = epNum % 2 == 0
+                                    val isMidnight = currentItem.isMidnight
                                     Surface(
                                         onClick = {
                                             if (!isCurrentEp) {
@@ -1118,6 +1129,7 @@ fun PlayerScreen(navController: NavController) {
                                         border = BorderStroke(
                                             1.dp,
                                             if (isCurrentEp) AppColors.Primary
+                                            else if (isMidnight) Color(0xFFFF1A75).copy(alpha = 0.5f)
                                             else if (isEven) Color(0xFFFFB800).copy(alpha = 0.35f)
                                             else Color.White.copy(alpha = 0.12f),
                                         ),
@@ -1134,8 +1146,11 @@ fun PlayerScreen(navController: NavController) {
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = if (isEven) "AD" else "FREE",
-                                                color = if (isCurrentEp) Color.White.copy(alpha = 0.9f) else if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                                                text = if (isMidnight) "REWARD" else if (isEven) "AD" else "FREE",
+                                                color = if (isCurrentEp) Color.White.copy(alpha = 0.9f)
+                                                else if (isMidnight) Color(0xFFFF1A75)
+                                                else if (isEven) Color(0xFFFFB800)
+                                                else Color(0xFF4CAF50),
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                             )

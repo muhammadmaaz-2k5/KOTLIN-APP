@@ -50,6 +50,8 @@ object MediaParser {
         val isCustom = obj.get("is_custom")?.asBoolean == true || customId != null || id >= 1000000000
         val overview = obj.stringOr("overview", obj.stringOr("description", ""))
 
+        val isMidnight = obj.get("is_midnight")?.asBoolean == true
+
         return MediaItem(
             id = id,
             customId = customId,
@@ -64,6 +66,7 @@ object MediaParser {
             popularity = obj.doubleOr("popularity"),
             isCustom = isCustom,
             tmdbId = obj.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: 0,
+            isMidnight = isMidnight,
         )
     }
 
@@ -139,8 +142,11 @@ object MediaParser {
 
     fun parseMidnightFeed(obj: JsonObject): MidnightFeed {
         val categories = parseCategories(obj.getAsJsonArray("categories")?.asList())
-        val featured = parseItems(obj.getAsJsonArray("featured")?.asList(), "movie")
-        val sections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
+        val featured = parseItems(obj.getAsJsonArray("featured")?.asList(), "movie").map { it.copy(isMidnight = true) }
+        val rawSections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
+        val sections = rawSections.map { sec ->
+            sec.copy(items = sec.items.map { it.copy(isMidnight = true) })
+        }
         val title = obj.stringOr("title", "ENGORA MIDNIGHT")
         val tagline = obj.stringOr("tagline", "18+ Adult Nightlife & Late Night Cinema")
         val is18Plus = obj.get("is_18_plus")?.asBoolean ?: true

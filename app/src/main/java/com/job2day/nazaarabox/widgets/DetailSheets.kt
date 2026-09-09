@@ -278,13 +278,16 @@ fun EpisodePickerSheet(
                 ) {
                     items((1..currentSeason.episodeCount.coerceAtLeast(1)).toList()) { ep ->
                         val isEven = ep % 2 == 0
+                        val isMidnight = item.isMidnight
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(AppColors.SurfaceDark)
                                 .border(
                                     1.dp,
-                                    if (isEven) Color(0xFFFFB800).copy(alpha = 0.35f) else AppColors.SurfaceVariantDark,
+                                    if (isMidnight) Color(0xFFFF1A75).copy(alpha = 0.5f)
+                                    else if (isEven) Color(0xFFFFB800).copy(alpha = 0.35f)
+                                    else AppColors.SurfaceVariantDark,
                                     RoundedCornerShape(10.dp),
                                 )
                                 .clickable { onPlay(currentSeason.seasonNumber, ep) }
@@ -295,8 +298,8 @@ fun EpisodePickerSheet(
                                 Text("E$ep", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 Spacer(modifier = Modifier.height(3.dp))
                                 Text(
-                                    text = if (isEven) "AD" else "FREE",
-                                    color = if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                                    text = if (isMidnight) "REWARD" else if (isEven) "AD" else "FREE",
+                                    color = if (isMidnight) Color(0xFFFF1A75) else if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                 )

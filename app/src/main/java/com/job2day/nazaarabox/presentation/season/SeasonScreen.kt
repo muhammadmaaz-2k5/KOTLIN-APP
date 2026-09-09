@@ -123,7 +123,13 @@ fun SeasonScreen(navController: NavController) {
                                     episode = episode.episodeNumber,
                                     title = "${showItem.title} S${seasonNumber}E${episode.episodeNumber}",
                                 )
-                                if (episode.episodeNumber % 2 == 0) {
+                                if (showItem.isMidnight) {
+                                    activity?.let { act ->
+                                        AdManager.showRewarded(act, force = true, onUserEarnedReward = {
+                                            navController.navigateToPlayer(playerItem)
+                                        }, onAdDismissed = {})
+                                    } ?: navController.navigateToPlayer(playerItem)
+                                } else if (episode.episodeNumber % 2 == 0) {
                                     activity?.let { act ->
                                         AdManager.showInterstitial(act, force = true) {
                                             navController.navigateToPlayer(playerItem)
@@ -187,9 +193,10 @@ private fun EpisodeRow(
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(horizontal = 4.dp))
                     val isEven = episode.episodeNumber % 2 == 0
+                    val isMidnight = showItem.isMidnight
                     Text(
-                        text = if (isEven) "AD" else "FREE",
-                        color = if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                        text = if (isMidnight) "REWARD" else if (isEven) "AD" else "FREE",
+                        color = if (isMidnight) Color(0xFFFF1A75) else if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 10.sp,
                     )

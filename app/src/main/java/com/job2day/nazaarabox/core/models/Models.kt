@@ -22,6 +22,7 @@ data class MediaItem(
     val episode: Int? = null,
     val popularity: Double = 0.0,
     val tmdbId: Int = 0,
+    val isMidnight: Boolean = false,
 )
 
 @Serializable
