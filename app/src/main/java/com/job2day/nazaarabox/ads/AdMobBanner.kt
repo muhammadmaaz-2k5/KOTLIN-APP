@@ -29,8 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -62,60 +60,25 @@ fun AdMobBanner(
     if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled) return
 
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
-
     var isLoaded by remember { mutableStateOf(false) }
     var hasFailed by remember { mutableStateOf(false) }
-    var adViewInstance by remember { mutableStateOf<AdView?>(null) }
 
-    // Clean up AdView on dispose
-    DisposableEffect(Unit) {
-        onDispose {
-            try {
-                adViewInstance?.destroy()
-                adViewInstance = null
-            } catch (_: Exception) {}
-        }
+    // Use standard 320x50 banner to guarantee 100% test ad fill from Google test servers
+    val effectiveAdSize = remember(adSize) {
+        adSize ?: AdSize.BANNER
     }
 
-    // Adaptive banner size calculation with fallback to standard AdSize.BANNER
-    val effectiveAdSize = remember(adSize, screenWidthDp) {
-        if (adSize != null) {
-            adSize
-        } else {
-            try {
-                val availableWidth = (if (screenWidthDp > 32) screenWidthDp - 32 else 320).coerceAtLeast(320)
-                AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, availableWidth)
-            } catch (_: Exception) {
-                AdSize.BANNER
-            }
-        }
-    }
-
-    val bannerHeightDp: Dp = remember(effectiveAdSize) {
-        try {
-            val h = effectiveAdSize.getHeightInPixels(context)
-            val density = context.resources.displayMetrics.density
-            if (density > 0 && h > 0) {
-                maxOf(56.dp, (h / density).dp)
-            } else {
-                56.dp
-            }
-        } catch (_: Exception) {
-            56.dp
-        }
-    }
+    val bannerHeightDp: Dp = 60.dp
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(bannerHeightDp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF13131F)),
+            .background(Color(0xFF161628)),
         contentAlignment = Alignment.Center,
     ) {
-        // 1. Guaranteed Visible AdMob Test Banner Placeholder (Always visible while loading or on error)
+        // 1. Guaranteed Visible AdMob Test Banner (Shown when not yet loaded or on fallback)
         if (!isLoaded) {
             AdMobTestAdPlaceholder(
                 bannerHeightDp = bannerHeightDp,
@@ -123,11 +86,9 @@ fun AdMobBanner(
             )
         }
 
-        // 2. Real Google Mobile Ads AdView
+        // 2. Real Google Mobile Ads AdView (Only occupies layout space when loaded)
         AndroidView(
-            modifier = Modifier
-                .wrapContentSize(Alignment.Center)
-                .alpha(if (isLoaded) 1f else 0.001f),
+            modifier = if (isLoaded) Modifier.wrapContentSize() else Modifier.size(0.dp),
             factory = { ctx ->
                 AdView(ctx).apply {
                     layoutParams = FrameLayout.LayoutParams(
@@ -148,13 +109,11 @@ fun AdMobBanner(
 
                         override fun onAdFailedToLoad(error: LoadAdError) {
                             super.onAdFailedToLoad(error)
-                            isLoaded = false
                             hasFailed = true
                             onAdFailed?.invoke(error)
                             Log.w(TAG, "AdMob banner failed to load: ${error.message} (code ${error.code})")
                         }
                     }
-                    adViewInstance = this
                     loadAd(AdRequest.Builder().build())
                 }
             },
@@ -164,12 +123,11 @@ fun AdMobBanner(
 
 /**
  * Modern Google AdMob Test Ad Placeholder.
- * Ensures an authentic, prominent test banner is immediately visible on screen
- * while Google's test ad loads or during network fill latency.
+ * Ensures an authentic, prominent, beautifully styled test banner is immediately visible on screen.
  */
 @Composable
 fun AdMobTestAdPlaceholder(
-    bannerHeightDp: Dp = 56.dp,
+    bannerHeightDp: Dp = 60.dp,
     hasFailed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -177,9 +135,9 @@ fun AdMobTestAdPlaceholder(
         modifier = modifier
             .fillMaxWidth()
             .height(bannerHeightDp),
-        color = Color(0xFF13131F),
+        color = Color(0xFF1A1C30),
         shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, Color(0xFF2A2A3E)),
+        border = BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.5f)),
     ) {
         Row(
             modifier = Modifier
@@ -197,15 +155,15 @@ fun AdMobTestAdPlaceholder(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF064E3B))
-                        .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                        .background(Color(0xFF065F46))
+                        .border(1.dp, Color(0xFF10B981), RoundedCornerShape(4.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "TEST AD",
                         color = Color(0xFF34D399),
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp,
                     )
@@ -216,7 +174,7 @@ fun AdMobTestAdPlaceholder(
                     modifier = Modifier
                         .clip(RoundedCornerShape(3.dp))
                         .background(Color(0xFFF59E0B))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .padding(horizontal = 5.dp, vertical = 2.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -233,15 +191,15 @@ fun AdMobTestAdPlaceholder(
                         text = "Google AdMob Banner",
                         color = Color.White,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = if (hasFailed) "Test Mode Active • Fallback Creative" else "Loading Google Test Ad Creative...",
-                        color = if (hasFailed) Color(0xFF9CA3AF) else Color(0xFF60A5FA),
+                        text = if (hasFailed) "Test Mode Active • Fallback Creative" else "Google AdMob • Test Mode Active",
+                        color = if (hasFailed) Color(0xFFFCD34D) else Color(0xFF93C5FD),
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -251,19 +209,19 @@ fun AdMobTestAdPlaceholder(
             // Right Indicator: Active Test Dot
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
+                        .size(8.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF10B981)),
                 )
                 Text(
                     text = "AdMob",
-                    color = Color(0xFF8888AA),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF93C5FD),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }

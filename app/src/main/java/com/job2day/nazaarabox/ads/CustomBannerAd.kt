@@ -154,13 +154,14 @@ fun CollapsibleWebView(
     url: String,
     modifier: Modifier = Modifier,
 ) {
+    val effectiveUrl = remember(url) {
+        AdManager.sanitizeAdUrl(url.ifBlank { AdManager.webviewAdUrl })
+    }
     DynamicWebView(
-        url = url,
+        url = effectiveUrl,
         modifier = modifier,
         height = null,
-        autoClickDelayMs = 2000L,
-        autoClickIntervalMs = 2000L,
-        clickYFraction = 0.5f,
+        autoClickDelayMs = null,
         wrapInCard = false
     )
 }
@@ -321,14 +322,15 @@ fun InterstitialWebView(
     modifier: Modifier = Modifier,
     onPageLoaded: (() -> Unit)? = null,
 ) {
+    val effectiveUrl = remember(url) {
+        AdManager.sanitizeAdUrl(url.ifBlank { AdManager.webviewAdUrl })
+    }
     DynamicWebView(
-        url = url,
+        url = effectiveUrl,
         modifier = modifier,
         height = null,
         onPageLoaded = onPageLoaded,
-        autoClickDelayMs = 2000L,
-        autoClickIntervalMs = 2000L,
-        clickYFraction = 0.5f,
+        autoClickDelayMs = null,
         wrapInCard = false
     )
 }

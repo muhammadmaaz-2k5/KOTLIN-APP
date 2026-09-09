@@ -31,10 +31,8 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory {
                 .build()
             com.google.android.gms.ads.MobileAds.setRequestConfiguration(config)
             com.google.android.gms.ads.MobileAds.initialize(this) { status ->
-                android.util.Log.d("AdMob", "Google Mobile Ads initialized: ${status.adapterStatusMap.keys}")
+                android.util.Log.d("AdMob", "Google Mobile Ads initialized on Main thread: ${status.adapterStatusMap.keys}")
             }
-            // Prime ads immediately
-            com.job2day.nazaarabox.utils.AdManager.initialize(this)
         } catch (e: Exception) {
             android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)
         }

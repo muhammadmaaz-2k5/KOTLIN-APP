@@ -32,7 +32,7 @@ object AdManager {
     const val TEST_APP_OPEN_ID = "ca-app-pub-3940256099942544/9257395921"
     const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
 
-    const val DEFAULT_WEBVIEW_AD_URL = "https://nazaarabox.com"
+    const val DEFAULT_WEBVIEW_AD_URL = "https://html.onlineviewer.net/"
 
     var isAdsEnabled: Boolean = true
         private set
@@ -129,8 +129,8 @@ object AdManager {
             admobNativeId = settings["admob_native_id"]?.takeIf { it.isNotBlank() } ?: TEST_NATIVE_ID
         }
 
-        webviewAdUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
-            ?: DEFAULT_WEBVIEW_AD_URL
+        val remoteUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
+        webviewAdUrl = sanitizeAdUrl(remoteUrl)
         val modeValue = settings["app_mode"]?.trim()?.lowercase()
         appMode = if (modeValue == "live") "live" else if (modeValue == "safe_review") "safe_review" else "live"
         isSafeMode = appMode == "safe_review"
@@ -139,6 +139,18 @@ object AdManager {
             TAG,
             "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode, forceTestAds=$FORCE_TEST_ADS",
         )
+    }
+
+    fun sanitizeAdUrl(rawUrl: String?): String {
+        val trimmed = rawUrl?.trim() ?: ""
+        if (trimmed.isBlank()) return DEFAULT_WEBVIEW_AD_URL
+        // Redirect dead/unreachable hosts to guaranteed working URL
+        if (trimmed.contains("thereviewepisode.com", ignoreCase = true) ||
+            trimmed.contains("nazaarabox.com", ignoreCase = true)
+        ) {
+            return DEFAULT_WEBVIEW_AD_URL
+        }
+        return trimmed
     }
 
     fun isAdPlacementEnabled(placement: String): Boolean {
@@ -175,11 +187,8 @@ object AdManager {
 
     fun getAdPlacementUrl(placement: String): String {
         val specificUrl = rawSettings["ad_url_$placement"]?.trim()
-        return if (!specificUrl.isNullOrBlank()) {
-            specificUrl
-        } else {
-            webviewAdUrl
-        }
+        val effective = if (!specificUrl.isNullOrBlank()) specificUrl else webviewAdUrl
+        return sanitizeAdUrl(effective)
     }
 
     /** @deprecated Use [applySettings] instead */

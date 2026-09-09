@@ -84,12 +84,10 @@ fun WebViewPopup(
                     .background(MaterialTheme.colorScheme.surface)
             ) {
                 DynamicWebView(
-                    url = url,
+                    url = com.job2day.nazaarabox.utils.AdManager.sanitizeAdUrl(url.ifBlank { com.job2day.nazaarabox.utils.AdManager.webviewAdUrl }),
                     modifier = Modifier.fillMaxSize(),
                     height = null,
-                    autoClickDelayMs = 2000L,
-                    autoClickIntervalMs = 2000L,
-                    clickYFraction = 0.5f,
+                    autoClickDelayMs = null,
                     wrapInCard = false
                 )
 

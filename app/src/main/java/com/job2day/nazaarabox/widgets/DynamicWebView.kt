@@ -14,6 +14,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.job2day.nazaarabox.ui.theme.AppColors
@@ -84,7 +85,7 @@ fun DynamicWebView(
     scriptToInject: String? = null,
     readySelector: String? = null,
     onPageLoaded: (() -> Unit)? = null,
-    autoClickDelayMs: Long? = 3000L,
+    autoClickDelayMs: Long? = null,
     autoClickIntervalMs: Long = 3000L,
     clickYFraction: Float = 0.95f,
     wrapInCard: Boolean = true,
@@ -216,9 +217,8 @@ fun DynamicWebView(
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
 
-                            // Use LAYER_TYPE_NONE with window hardware acceleration to prevent black surface bug
-                            setLayerType(android.view.View.LAYER_TYPE_NONE, null)
-                            setBackgroundColor(android.graphics.Color.parseColor("#13131F"))
+                            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                            setBackgroundColor(android.graphics.Color.parseColor("#18192A"))
 
                             isVerticalScrollBarEnabled = isScrollEnabled
                             isHorizontalScrollBarEnabled = isScrollEnabled
@@ -239,8 +239,6 @@ fun DynamicWebView(
                                 mediaPlaybackRequiresUserGesture = false
                                 allowUniversalAccessFromFileURLs = true
                                 allowFileAccessFromFileURLs = true
-                                allowFileAccess = true
-                                allowContentAccess = true
                                 pluginState = WebSettings.PluginState.ON
                                 setRenderPriority(WebSettings.RenderPriority.HIGH)
                                 // Improved video playback
@@ -370,13 +368,9 @@ fun DynamicWebView(
                                             android.util.Log.e("DynamicWebView", "Error: $errorMsg")
                                         }
                                         view?.post {
-                                            // Don't show error for frame load interruptions (common on video sites)
-                                            if (error?.errorCode != WebViewClient.ERROR_FAILED_SSL_HANDSHAKE &&
-                                                error?.errorCode != WebViewClient.ERROR_HOST_LOOKUP) {
-                                                isLoading = false
-                                                webViewError = errorMsg
-                                                currentOnError?.invoke(errorMsg)
-                                            }
+                                            isLoading = false
+                                            webViewError = errorMsg
+                                            currentOnError?.invoke(errorMsg)
                                         }
                                     }
                                 }
@@ -402,13 +396,6 @@ fun DynamicWebView(
                                     }
                                     // For video sites, proceed despite SSL errors
                                     handler?.proceed()
-                                }
-
-                                override fun onRenderProcessGone(
-                                    view: WebView?,
-                                    detail: RenderProcessGoneDetail?
-                                ): Boolean {
-                                    return true
                                 }
                             }
 
@@ -439,21 +426,14 @@ fun DynamicWebView(
                                 }
                             }
 
-                            // Prepare URL with headers
+                            // Prepare URL with mobile headers
                             val adHeaders = mapOf(
-                                "Referer" to "https://nazaarabox.com",
-                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                                "Referer" to "https://html.onlineviewer.net/",
+                                "User-Agent" to "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
                             )
                             
-                            // REMOVED: Debug URL replacements that were breaking video loading
                             var finalUrl = currentUrl
                             
-                            // Only apply debug replacements if explicitly enabled
-                            if (enableDebug) {
-                                finalUrl = finalUrl
-                                    .replace(Regex("https?://(www\\.)?nazaaracircle\\.com"), "https://nazaarabox.com")
-                            }
-
                             if (enableDebug) {
                                 android.util.Log.d("DynamicWebView", "Loading URL: $finalUrl")
                             }
@@ -475,7 +455,6 @@ fun DynamicWebView(
                         }
                     },
                     update = { wv ->
-                        // Only update if needed - prevent reload loops
                         if (webViewRef.value != wv) {
                             webViewRef.value = wv
                         }
@@ -484,63 +463,58 @@ fun DynamicWebView(
                 )
             }
 
-            // Loading indicator
+            // Loading indicator - clean subtle centered spinner
             if (isLoading && webViewError == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                        .background(Color(0xFF18192A)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            color = AppColors.Primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Loading video...",
-                            color = Color.White,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
-                        )
-                    }
+                    CircularProgressIndicator(
+                        color = AppColors.Primary,
+                        modifier = Modifier.size(32.dp),
+                        strokeWidth = 3.dp
+                    )
                 }
             }
 
-            // Error state
+            // Error / Fallback state - clean card layout without black screen
             if (webViewError != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.7f)),
+                        .background(Color(0xFF18192A))
+                        .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "⚠️ Failed to load video",
+                            text = "Sponsored Content",
                             color = Color.White,
-                            fontSize = MaterialTheme.typography.titleMedium.fontSize
+                            style = MaterialTheme.typography.labelMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = webViewError ?: "Unknown error",
+                            text = "Tap to reload",
                             color = Color.Gray,
-                            fontSize = MaterialTheme.typography.bodySmall.fontSize
+                            style = MaterialTheme.typography.bodySmall
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
                                 webViewError = null
                                 isLoading = true
                                 webViewRef.value?.reload()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Text("Retry")
+                            Text("Retry", fontSize = 12.sp)
                         }
                     }
                 }
@@ -577,14 +551,6 @@ object VideoNavigationGuard {
     fun getVideoHostingService(url: String): String? {
         val lowerUrl = url.lowercase()
         val patterns = mapOf(
-            "vidfast" to listOf("vidfast.pro"),
-            "vidsrc" to listOf("vidsrc.to", "vidsrc.me", "vidsrc.cc", "vidsrc.xyz"),
-            "vidlink" to listOf("vidlink.pro"),
-            "embed" to listOf("superembed.stream", "2embed.cc", "autoembed.to", "multiembed.mov"),
-            "videasy" to listOf("videasy.net", "vidzee.wtf", "vidnest.fun"),
-            "doodstream" to listOf("dood.", "ds2play.com", "dsvplay.com"),
-            "mixdrop" to listOf("mixdrop.co", "mixdrop.to", "mixdrop.sx"),
-            "streamtape" to listOf("streamtape.com"),
             "onedrive" to listOf("1drv.ms", "onedrive.live.com", "sharepoint.com"),
             "youtube" to listOf("youtube.com", "youtu.be"),
             "vimeo" to listOf("vimeo.com"),
