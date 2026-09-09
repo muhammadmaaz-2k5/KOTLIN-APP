@@ -277,28 +277,32 @@ fun EpisodePickerSheet(
                     modifier = Modifier.height(320.dp),
                 ) {
                     items((1..currentSeason.episodeCount.coerceAtLeast(1)).toList()) { ep ->
+                        val isEven = ep % 2 == 0
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(AppColors.SurfaceDark)
-                                .border(1.dp, AppColors.SurfaceVariantDark, RoundedCornerShape(10.dp))
+                                .border(
+                                    1.dp,
+                                    if (isEven) Color(0xFFFFB800).copy(alpha = 0.35f) else AppColors.SurfaceVariantDark,
+                                    RoundedCornerShape(10.dp),
+                                )
                                 .clickable { onPlay(currentSeason.seasonNumber, ep) }
-                                .padding(vertical = 16.dp),
+                                .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("E$ep", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Icon(
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = AppColors.Primary.copy(alpha = 0.7f),
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .align(Alignment.End),
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = if (isEven) "AD" else "FREE",
+                                    color = if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
                                 )
+                            }
+                        }
                     }
-                }
-            }
         }
     }
 }

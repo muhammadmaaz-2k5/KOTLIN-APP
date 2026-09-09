@@ -1245,11 +1245,22 @@ fun PlayerScreen(navController: NavController) {
             onPlay = { season, episode ->
                 showEpisodePicker = false
                 val baseTitle = currentItem.title.substringBefore(" ·").substringBefore(" •")
-                currentItem = currentItem.copy(
-                    season = season,
-                    episode = episode,
-                    title = "$baseTitle · S${season}E$episode",
-                )
+                val updateItem = {
+                    currentItem = currentItem.copy(
+                        season = season,
+                        episode = episode,
+                        title = "$baseTitle · S${season}E$episode",
+                    )
+                }
+                if (episode % 2 == 0) {
+                    activity?.let { act ->
+                        AdManager.showInterstitial(act, force = true) {
+                            updateItem()
+                        }
+                    } ?: updateItem()
+                } else {
+                    updateItem()
+                }
             },
             onDismiss = { showEpisodePicker = false },
         )

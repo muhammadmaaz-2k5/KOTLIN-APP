@@ -1,10 +1,13 @@
 package com.job2day.nazaarabox.presentation.detail
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,11 +86,13 @@ fun DetailScreen(
         ?.let(AppRoutes::decodeItem)
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val activity = context as? Activity
     val listState = rememberLazyListState()
 
     var showMore by remember { mutableStateOf(false) }
     var showAllCast by remember { mutableStateOf(false) }
     var showEpisodePicker by remember { mutableStateOf(false) }
+    var showMovieAdDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val showAppBarTitle by remember {
@@ -151,7 +156,7 @@ fun DetailScreen(
                         if (isTv) {
                             showEpisodePicker = true
                         } else {
-                            navController.navigateToPlayer(item)
+                            showMovieAdDialog = true
                         }
                     },
                     onShare = { AppActions.shareItem(context, item) },
@@ -462,7 +467,21 @@ fun DetailScreen(
             DetailBottomActionBar(
                 item = item,
                 seasons = state.seasons,
-                onPlay = { playItem -> navController.navigateToPlayer(playItem) },
+                onPlay = { playItem ->
+                    if (isTv) {
+                        if ((playItem.episode ?: 1) % 2 == 0) {
+                            activity?.let { act ->
+                                AdManager.showInterstitial(act, force = true) {
+                                    navController.navigateToPlayer(playItem)
+                                }
+                            } ?: navController.navigateToPlayer(playItem)
+                        } else {
+                            navController.navigateToPlayer(playItem)
+                        }
+                    } else {
+                        showMovieAdDialog = true
+                    }
+                },
             )
         }
     }
@@ -482,19 +501,39 @@ fun DetailScreen(
             seasons = state.seasons,
             onPlay = { season, episode ->
                 showEpisodePicker = false
-                navController.navigateToPlayer(
-                    item.copy(
-                        season = season,
-                        episode = episode,
-                        title = "${item.title} · S${season}E$episode",
-                    ),
+                val playItem = item.copy(
+                    season = season,
+                    episode = episode,
+                    title = "${item.title} · S${season}E$episode",
                 )
+                if (episode % 2 == 0) {
+                    activity?.let { act ->
+                        AdManager.showInterstitial(act, force = true) {
+                            navController.navigateToPlayer(playItem)
+                        }
+                    } ?: navController.navigateToPlayer(playItem)
+                } else {
+                    navController.navigateToPlayer(playItem)
+                }
             },
             onDismiss = { showEpisodePicker = false },
         )
     }
 
-
+    if (showMovieAdDialog) {
+        MovieAdDialog(
+            movieTitle = item.title,
+            onWatchAd = {
+                showMovieAdDialog = false
+                activity?.let { act ->
+                    AdManager.showInterstitial(act, force = true) {
+                        navController.navigateToPlayer(item)
+                    }
+                } ?: navController.navigateToPlayer(item)
+            },
+            onDismiss = { showMovieAdDialog = false },
+        )
+    }
 
     if (showAllCast) {
         FullCastSheet(
@@ -502,5 +541,136 @@ fun DetailScreen(
             onPersonTap = { member -> navController.navigateToActor(member.id) },
             onDismiss = { showAllCast = false },
         )
+    }
+}
+
+@Composable
+fun MovieAdDialog(
+    movieTitle: String,
+    onWatchAd: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.CardDark)
+                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(24.dp))
+                .padding(24.dp),
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Glowing Accent Circle with Play/Ad Icon
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(AppColors.Primary.copy(alpha = 0.25f), AppColors.Primary.copy(alpha = 0.08f))
+                            )
+                        )
+                        .border(1.dp, AppColors.Primary.copy(alpha = 0.45f), androidx.compose.foundation.shape.CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = AppColors.Primary,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Watch Movie",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Sir, do you want to watch the ad?",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Watch a sponsor ad to stream \"$movieTitle\".",
+                    color = AppColors.TextMuted,
+                    fontSize = 13.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    lineHeight = 18.sp,
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Cancel button
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.06f))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = AppColors.TextMuted,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+
+                    // Watch Ad button
+                    Box(
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                    listOf(AppColors.Primary, AppColors.Primary.copy(alpha = 0.85f))
+                                )
+                            )
+                            .clickable { onWatchAd() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Watch Ad",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

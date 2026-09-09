@@ -312,6 +312,10 @@ object AdManager {
     }
 
     fun showInterstitial(activity: Activity, onAdDismissed: () -> Unit) {
+        showInterstitial(activity, force = false, onAdDismissed)
+    }
+
+    fun showInterstitial(activity: Activity, force: Boolean, onAdDismissed: () -> Unit) {
         if (!isAdsEnabled) {
             onAdDismissed()
             return
@@ -320,7 +324,7 @@ object AdManager {
             onAdDismissed()
             return
         }
-        if (!canShowInterstitial()) {
+        if (!force && !canShowInterstitial()) {
             onAdDismissed()
             return
         }

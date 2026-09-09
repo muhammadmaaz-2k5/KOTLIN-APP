@@ -1,5 +1,6 @@
 package com.job2day.nazaarabox.presentation.season
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +51,8 @@ import com.job2day.nazaarabox.widgets.LoadingCenter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeasonScreen(navController: NavController) {
+    val context = LocalContext.current
+    val activity = context as? Activity
     val handle = navController.previousBackStackEntry?.savedStateHandle
     val showItem = handle?.get<String>("mediaItem")?.let(AppRoutes::decodeItem)
     val seasonNumber = handle?.get<Int>("seasonNumber") ?: 1
@@ -118,7 +123,15 @@ fun SeasonScreen(navController: NavController) {
                                     episode = episode.episodeNumber,
                                     title = "${showItem.title} S${seasonNumber}E${episode.episodeNumber}",
                                 )
-                                navController.navigateToPlayer(playerItem)
+                                if (episode.episodeNumber % 2 == 0) {
+                                    activity?.let { act ->
+                                        AdManager.showInterstitial(act, force = true) {
+                                            navController.navigateToPlayer(playerItem)
+                                        }
+                                    } ?: navController.navigateToPlayer(playerItem)
+                                } else {
+                                    navController.navigateToPlayer(playerItem)
+                                }
                             },
                         )
                     }
@@ -162,12 +175,25 @@ private fun EpisodeRow(
                     .padding(0.dp),
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "E${episode.episodeNumber} • ${episode.name}",
-                    color = AppColors.TextPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "E${episode.episodeNumber} • ${episode.name}",
+                        color = AppColors.TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+                    val isEven = episode.episodeNumber % 2 == 0
+                    Text(
+                        text = if (isEven) "AD" else "FREE",
+                        color = if (isEven) Color(0xFFFFB800) else Color(0xFF4CAF50),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 10.sp,
+                    )
+                }
                 if (episode.overview.isNotBlank()) {
                     Text(
                         text = episode.overview,
