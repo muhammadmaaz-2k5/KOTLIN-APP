@@ -428,7 +428,7 @@ fun DynamicWebView(
 
                             // Prepare URL with mobile headers
                             val adHeaders = mapOf(
-                                "Referer" to "https://html.onlineviewer.net/",
+                                "Referer" to "https://thereviewepisode.com/",
                                 "User-Agent" to "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
                             )
                             

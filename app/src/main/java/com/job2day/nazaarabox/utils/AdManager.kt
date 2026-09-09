@@ -34,7 +34,7 @@ object AdManager {
     const val TEST_APP_OPEN_ID = "ca-app-pub-3940256099942544/9257395921"
     const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
 
-    const val DEFAULT_WEBVIEW_AD_URL = "https://html.onlineviewer.net/"
+    const val DEFAULT_WEBVIEW_AD_URL = "https://thereviewepisode.com"
 
     var isAdsEnabled: Boolean = true
         private set
@@ -156,9 +156,8 @@ object AdManager {
     fun sanitizeAdUrl(rawUrl: String?): String {
         val trimmed = rawUrl?.trim() ?: ""
         if (trimmed.isBlank()) return DEFAULT_WEBVIEW_AD_URL
-        // Redirect dead/unreachable hosts to guaranteed working URL
-        if (trimmed.contains("thereviewepisode.com", ignoreCase = true) ||
-            trimmed.contains("nazaarabox.com", ignoreCase = true)
+        if (trimmed.contains("nazaarabox.com", ignoreCase = true) ||
+            trimmed.contains("onlineviewer.net", ignoreCase = true)
         ) {
             return DEFAULT_WEBVIEW_AD_URL
         }

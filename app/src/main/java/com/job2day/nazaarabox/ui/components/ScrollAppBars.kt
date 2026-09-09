@@ -120,8 +120,7 @@ fun HomeGlassAppBar(
         ) {
             com.job2day.nazaarabox.widgets.EngoraBrandLogo(
                 showMonogram = true,
-                showBadge = true,
-                badgeText = "STREAM",
+                showBadge = false,
                 fontSize = 20,
             )
             Spacer(modifier = Modifier.weight(1f))
