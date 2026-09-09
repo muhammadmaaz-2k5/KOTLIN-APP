@@ -22,6 +22,8 @@ object AdManager {
     private const val TAG = "AdManager"
     private const val INTERSTITIAL_COOLDOWN_MS = 30_000L
     private const val MAX_INTERSTITIALS_PER_SESSION = 10
+    private const val APP_OPEN_COOLDOWN_MS = 180_000L // 3 minutes cooldown between App Open ads
+    private const val FOUR_HOURS_MS = 4 * 3600_000L // App open ads expire after 4 hours per AdMob policy
 
     // Google Official Sample Test Ad Unit IDs (Safe for testing on productions & release APKs)
     const val FORCE_TEST_ADS = true
@@ -81,6 +83,16 @@ object AdManager {
 
     var isShowingAd = false
         private set
+
+    var isPlayerActive: Boolean = false
+
+    var isSplashFinished: Boolean = false
+
+    @Volatile
+    private var lastAppOpenShownAt: Long = 0L
+
+    @Volatile
+    private var appOpenLoadTime: Long = 0L
 
     @Volatile
     private var lastInterstitialAt: Long = 0L
@@ -161,6 +173,7 @@ object AdManager {
             return parseBoolean(specificToggle)
         }
         val basePlacement = when {
+            placement == "app_open" -> "app_open"
             placement.endsWith("_native") || placement.startsWith("native_") -> "native_ads"
             placement.startsWith("home_") -> "home_banner"
             placement.startsWith("detail_") -> "detail_banner"
@@ -388,9 +401,11 @@ object AdManager {
         val ad = rewardedAd
         if (isAdMobEnabled && ad != null) {
             var earned = false
+            isShowingAd = true
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     rewardedAd = null
+                    isShowingAd = false
                     loadRewarded(activity)
                     if (earned) onUserEarnedReward()
                     onAdDismissed()
@@ -398,8 +413,9 @@ object AdManager {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     rewardedAd = null
+                    isShowingAd = false
                     loadRewarded(activity)
-                    onUserEarnedReward()
+                    if (earned) onUserEarnedReward()
                     onAdDismissed()
                 }
             }
@@ -416,9 +432,13 @@ object AdManager {
 
     // --- AdMob App Open ---
 
+    fun isAppOpenAdAvailable(): Boolean {
+        return appOpenAd != null && (System.currentTimeMillis() - appOpenLoadTime) < FOUR_HOURS_MS
+    }
+
     fun loadAppOpenAd(context: Context) {
-        if (!isAdsEnabled || !isAdMobEnabled) return
-        if (appOpenAd != null || isAppOpenAdLoading) return
+        if (!isAdsEnabled || !isAdMobEnabled || !isAdPlacementEnabled("app_open")) return
+        if (isAppOpenAdAvailable() || isAppOpenAdLoading) return
 
         isAppOpenAdLoading = true
         val adRequest = AdRequest.Builder().build()
@@ -429,8 +449,9 @@ object AdManager {
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
                     appOpenAd = ad
+                    appOpenLoadTime = System.currentTimeMillis()
                     isAppOpenAdLoading = false
-                    Log.d(TAG, "AdMob Test App Open Ad loaded")
+                    Log.d(TAG, "AdMob Test App Open Ad loaded successfully")
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
@@ -443,30 +464,90 @@ object AdManager {
     }
 
     fun showAppOpenAd(activity: Activity, onAdDismissed: () -> Unit = {}) {
-        if (!isAdsEnabled || !isAdMobEnabled) {
+        if (!isAdsEnabled || !isAdMobEnabled || !isAdPlacementEnabled("app_open")) {
+            onAdDismissed()
+            return
+        }
+
+        if (isShowingAd) {
+            Log.d(TAG, "Cannot show App Open ad: another full-screen ad is active")
+            onAdDismissed()
+            return
+        }
+
+        if (isPlayerActive) {
+            Log.d(TAG, "Cannot show App Open ad: player is actively playing")
+            onAdDismissed()
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        if (lastAppOpenShownAt > 0L && (now - lastAppOpenShownAt) < APP_OPEN_COOLDOWN_MS) {
+            Log.d(TAG, "Cannot show App Open ad: cooldown active (${(now - lastAppOpenShownAt) / 1000}s elapsed)")
+            onAdDismissed()
+            return
+        }
+
+        if (!isAppOpenAdAvailable()) {
+            Log.d(TAG, "App Open ad not available or expired, preloading now")
+            loadAppOpenAd(activity)
             onAdDismissed()
             return
         }
 
         val ad = appOpenAd
         if (ad != null) {
+            isShowingAd = true
+            lastAppOpenShownAt = now
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     appOpenAd = null
+                    isShowingAd = false
+                    Log.d(TAG, "App Open ad dismissed by user")
                     loadAppOpenAd(activity)
                     onAdDismissed()
                 }
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     appOpenAd = null
+                    isShowingAd = false
+                    Log.d(TAG, "App Open ad failed to show: ${adError.message}")
                     loadAppOpenAd(activity)
                     onAdDismissed()
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    appOpenAd = null
+                    Log.d(TAG, "App Open ad showed full screen content")
                 }
             }
             ad.show(activity)
         } else {
             loadAppOpenAd(activity)
             onAdDismissed()
+        }
+    }
+
+    fun onAppForegrounded(activity: Activity) {
+        if (!isSplashFinished) {
+            // App is still in initial cold start / splash screen
+            return
+        }
+        if (!isAdsEnabled || !isAdMobEnabled || !isAdPlacementEnabled("app_open")) {
+            return
+        }
+        if (isShowingAd || isPlayerActive) {
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (lastAppOpenShownAt > 0L && (now - lastAppOpenShownAt) < APP_OPEN_COOLDOWN_MS) {
+            return
+        }
+        if (isAppOpenAdAvailable()) {
+            Log.d(TAG, "Triggering App Open ad on app foreground resume")
+            showAppOpenAd(activity)
+        } else {
+            loadAppOpenAd(activity)
         }
     }
 
@@ -508,9 +589,11 @@ object AdManager {
         val ad = rewardedInterstitialAd
         if (ad != null) {
             var earned = false
+            isShowingAd = true
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     rewardedInterstitialAd = null
+                    isShowingAd = false
                     loadRewardedInterstitial(activity)
                     if (earned) onUserEarnedReward()
                     onAdDismissed()
@@ -518,8 +601,9 @@ object AdManager {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     rewardedInterstitialAd = null
+                    isShowingAd = false
                     loadRewardedInterstitial(activity)
-                    onUserEarnedReward()
+                    if (earned) onUserEarnedReward()
                     onAdDismissed()
                 }
             }

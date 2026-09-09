@@ -138,6 +138,13 @@ fun PlayerScreen(navController: NavController) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
+    DisposableEffect(Unit) {
+        AdManager.isPlayerActive = true
+        onDispose {
+            AdManager.isPlayerActive = false
+        }
+    }
+
     if (initialItem == null) {
         LoadingCenter()
         return

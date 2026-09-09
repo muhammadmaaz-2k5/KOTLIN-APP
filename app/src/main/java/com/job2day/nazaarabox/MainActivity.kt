@@ -24,6 +24,7 @@ import com.job2day.nazaarabox.navigation.NazaaraboxNavHost
 import com.job2day.nazaarabox.navigation.NotificationRouter
 import com.job2day.nazaarabox.ui.components.SplashScreen
 import com.job2day.nazaarabox.ui.theme.EngoraTheme
+import com.job2day.nazaarabox.utils.AdManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +36,14 @@ class MainActivity : ComponentActivity() {
                 ApplyDarkStatusBar()
                 var isSplashComplete by rememberSaveable { mutableStateOf(false) }
                 if (!isSplashComplete) {
-                    SplashScreen(onSplashComplete = { isSplashComplete = true })
+                    SplashScreen(
+                        onSplashComplete = {
+                            AdManager.isSplashFinished = true
+                            AdManager.showAppOpenAd(this@MainActivity) {
+                                isSplashComplete = true
+                            }
+                        }
+                    )
                 } else {
                     NazaaraboxNavHost()
                 }
