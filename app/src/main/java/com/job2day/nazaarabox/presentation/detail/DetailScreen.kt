@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.job2day.nazaarabox.ads.AdMobNativeCardAd
+import com.job2day.nazaarabox.ads.AdMobNativeCompactAd
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.ads.InlineCardAd
@@ -169,9 +169,9 @@ fun DetailScreen(
                 }
             }
 
-            // 5. Native Ad Card (in-stream)
+            // 5. Google AdMob Native Ad (Small Template)
             item(key = "detail_native_ad") {
-                AdMobNativeCardAd(
+                AdMobNativeCompactAd(
                     placement = "detail_native",
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )

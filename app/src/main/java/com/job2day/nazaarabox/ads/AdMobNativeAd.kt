@@ -196,14 +196,15 @@ private fun populateCardNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
     adView.headlineView = headlineView
     headlineView.text = nativeAd.headline
 
-    // Advertiser
+    // Advertiser / Store
     val advertiserView = adView.findViewById<TextView>(R.id.ad_advertiser)
     adView.advertiserView = advertiserView
-    if (nativeAd.advertiser.isNullOrBlank()) {
+    val secondary = nativeAd.advertiser?.takeIf { it.isNotBlank() } ?: nativeAd.store?.takeIf { it.isNotBlank() }
+    if (secondary.isNullOrBlank()) {
         advertiserView.visibility = View.GONE
     } else {
         advertiserView.visibility = View.VISIBLE
-        advertiserView.text = nativeAd.advertiser
+        advertiserView.text = secondary
     }
 
     // Body
@@ -216,10 +217,10 @@ private fun populateCardNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
         bodyView.text = nativeAd.body
     }
 
-    // Media
+    // Media (only show when actual media/video exists to avoid blank voids)
     val mediaView = adView.findViewById<MediaView>(R.id.ad_media)
     adView.mediaView = mediaView
-    if (nativeAd.mediaContent != null) {
+    if (nativeAd.mediaContent != null && (nativeAd.mediaContent?.hasVideoContent() == true || nativeAd.images.isNotEmpty())) {
         mediaView.mediaContent = nativeAd.mediaContent
         mediaView.visibility = View.VISIBLE
     } else {
@@ -256,14 +257,15 @@ private fun populateCompactNativeAdView(nativeAd: NativeAd, adView: NativeAdView
     adView.headlineView = headlineView
     headlineView.text = nativeAd.headline
 
-    // Advertiser
+    // Advertiser / Store
     val advertiserView = adView.findViewById<TextView>(R.id.ad_advertiser)
     adView.advertiserView = advertiserView
-    if (nativeAd.advertiser.isNullOrBlank()) {
+    val secondary = nativeAd.advertiser?.takeIf { it.isNotBlank() } ?: nativeAd.store?.takeIf { it.isNotBlank() }
+    if (secondary.isNullOrBlank()) {
         advertiserView.visibility = View.GONE
     } else {
         advertiserView.visibility = View.VISIBLE
-        advertiserView.text = nativeAd.advertiser
+        advertiserView.text = secondary
     }
 
     // Body

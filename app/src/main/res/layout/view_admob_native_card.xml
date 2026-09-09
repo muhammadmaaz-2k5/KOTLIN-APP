@@ -12,75 +12,66 @@
         android:background="@drawable/bg_native_ad_card"
         android:padding="12dp">
 
-        <!-- Top Row: Ad Attribution Badge & Advertiser -->
+        <!-- Top Header Row: Icon + Texts + CTA Button -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:gravity="center_vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ad"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:textColor="#000000"
-                android:background="@drawable/bg_native_ad_badge"
-                android:paddingLeft="5dp"
-                android:paddingRight="5dp"
-                android:paddingTop="1dp"
-                android:paddingBottom="1dp"
-                android:layout_marginEnd="6dp" />
-
-            <TextView
-                android:id="@+id/ad_advertiser"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="12sp"
-                android:textColor="#8E93B0"
-                android:singleLine="true"
-                android:ellipsize="end" />
-        </LinearLayout>
-
-        <!-- Media View (Ad main image/video) -->
-        <com.google.android.gms.ads.nativead.MediaView
-            android:id="@+id/ad_media"
-            android:layout_width="match_parent"
-            android:layout_height="170dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Info Row: Icon + Headline + Body -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="10dp">
-
+            <!-- App Icon -->
             <ImageView
                 android:id="@+id/ad_app_icon"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:adjustViewBounds="true"
-                android:scaleType="fitCenter"
+                android:scaleType="centerCrop"
                 android:background="@drawable/bg_native_ad_icon"
                 android:layout_marginEnd="10dp" />
 
+            <!-- Middle Text Info -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ad"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFB800"
+                        android:background="@drawable/bg_native_ad_badge"
+                        android:paddingLeft="4dp"
+                        android:paddingRight="4dp"
+                        android:paddingTop="1dp"
+                        android:paddingBottom="1dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:id="@+id/ad_advertiser"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#8E93B0"
+                        android:singleLine="true"
+                        android:ellipsize="end" />
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/ad_headline"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"
                     android:maxLines="1"
@@ -90,25 +81,38 @@
                     android:id="@+id/ad_body"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#A0A5BD"
-                    android:maxLines="2"
+                    android:textSize="11sp"
+                    android:textColor="#9DA3BF"
+                    android:maxLines="1"
                     android:ellipsize="end"
-                    android:layout_marginTop="2dp" />
+                    android:layout_marginTop="1dp" />
             </LinearLayout>
+
+            <!-- Top-Right Call to Action Button -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/ad_call_to_action"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="72dp"
+                android:background="@drawable/bg_native_ad_button"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:layout_marginStart="8dp"
+                android:stateListAnimator="@null" />
         </LinearLayout>
 
-        <!-- CTA Button -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/ad_call_to_action"
+        <!-- Media View (Ad main image/video, only shown when media exists) -->
+        <com.google.android.gms.ads.nativead.MediaView
+            android:id="@+id/ad_media"
             android:layout_width="match_parent"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_native_ad_button"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textAllCaps="false"
-            android:stateListAnimator="@null" />
+            android:layout_height="140dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
 
     </LinearLayout>
 </com.google.android.gms.ads.nativead.NativeAdView>
