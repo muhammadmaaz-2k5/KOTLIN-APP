@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.AdMobNativeCardAd
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.ads.InlineCardAd
@@ -168,12 +169,12 @@ fun DetailScreen(
                 }
             }
 
-            // 5. Sponsored / Inline Ad
-            if (AdManager.isAdPlacementEnabled("detail_banner")) {
-                item(key = "detail_banner_ad") {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    InlineBannerAd("detail_banner")
-                }
+            // 5. Native Ad Card (in-stream)
+            item(key = "detail_native_ad") {
+                AdMobNativeCardAd(
+                    placement = "detail_native",
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
             }
 
             // 6. Scalable Segmented Tabs Row

@@ -161,6 +161,7 @@ object AdManager {
             return parseBoolean(specificToggle)
         }
         val basePlacement = when {
+            placement.endsWith("_native") || placement.startsWith("native_") -> "native_ads"
             placement.startsWith("home_") -> "home_banner"
             placement.startsWith("detail_") -> "detail_banner"
             placement.startsWith("actor_") -> "actor_banner"

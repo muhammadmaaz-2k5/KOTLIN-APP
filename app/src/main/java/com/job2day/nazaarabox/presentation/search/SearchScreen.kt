@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.job2day.nazaarabox.ads.AdMobNativeCompactAd
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.core.SearchFilters
@@ -311,14 +312,13 @@ fun SearchScreen(
                 }
             }
 
-            if (AdManager.isAdPlacementEnabled("search_banner")) {
-                FullWidthAdBanner(
-                    placement = "search_banner",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                )
-            }
+            // Native Compact Ad below category chips
+            AdMobNativeCompactAd(
+                placement = "search_native",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+            )
 
             // Active Filters indicator
             if (state.filters.activeCount > 0) {
