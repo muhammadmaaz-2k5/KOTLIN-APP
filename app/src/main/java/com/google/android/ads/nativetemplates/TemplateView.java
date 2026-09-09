@@ -21,26 +21,25 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import com.google.android.gms.ads.nativead.MediaView;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import com.job2day.nazaarabox.R;
 
 /**
- * Official Google AdMob Base class for a template view.
+ * Official Google AdMob Native TemplateView.
  * Supports all videos and images ads from Google AdMob.
  */
 public class TemplateView extends FrameLayout {
 
   private static final String MEDIUM_TEMPLATE = "medium_template";
-  private static final String SMALL_TEMPLATE = "small_template";
 
   private int templateType;
   private NativeTemplateStyle styles;
@@ -54,7 +53,7 @@ public class TemplateView extends FrameLayout {
   private ImageView iconView;
   private MediaView mediaView;
   private Button callToActionView;
-  private ConstraintLayout background;
+  private View background;
   private LayoutInflater layoutInflater;
 
   public TemplateView(Context context) {
@@ -104,7 +103,25 @@ public class TemplateView extends FrameLayout {
     if (layoutInflater == null) {
       setLayoutInflater(context);
     }
-    layoutInflater.inflate(templateType, this);
+    layoutInflater.inflate(templateType, this, true);
+    findViews();
+  }
+
+  private void findViews() {
+    nativeAdView = (NativeAdView) findViewById(R.id.native_ad_view);
+    primaryView = (TextView) findViewById(R.id.primary);
+    secondaryView = (TextView) findViewById(R.id.secondary);
+    tertiaryView = (TextView) findViewById(R.id.body);
+
+    ratingBar = (RatingBar) findViewById(R.id.rating_bar);
+    if (ratingBar != null) {
+      ratingBar.setEnabled(false);
+    }
+
+    callToActionView = (Button) findViewById(R.id.cta);
+    iconView = (ImageView) findViewById(R.id.icon);
+    mediaView = (MediaView) findViewById(R.id.media_view);
+    background = findViewById(R.id.background);
   }
 
   private void setLayoutInflater(Context context) {
@@ -224,14 +241,6 @@ public class TemplateView extends FrameLayout {
     requestLayout();
   }
 
-  private boolean areAllViewsInitialized() {
-    return nativeAdView != null
-        && callToActionView != null
-        && primaryView != null
-        && secondaryView != null
-        && iconView != null;
-  }
-
   private boolean adHasOnlyStore(NativeAd nativeAd) {
     String store = nativeAd.getStore();
     String advertiser = nativeAd.getAdvertiser();
@@ -241,7 +250,10 @@ public class TemplateView extends FrameLayout {
   public void setNativeAd(NativeAd nativeAd) {
     this.nativeAd = nativeAd;
 
-    if (!areAllViewsInitialized()) {
+    if (nativeAdView == null) {
+      findViews();
+    }
+    if (nativeAdView == null) {
       return;
     }
 
@@ -253,49 +265,81 @@ public class TemplateView extends FrameLayout {
     Double starRating = nativeAd.getStarRating();
     NativeAd.Image icon = nativeAd.getIcon();
 
-    nativeAdView.setCallToActionView(callToActionView);
-    nativeAdView.setHeadlineView(primaryView);
+    // 1. Call to Action
+    if (callToActionView != null) {
+      nativeAdView.setCallToActionView(callToActionView);
+      if (!TextUtils.isEmpty(cta)) {
+        callToActionView.setText(cta);
+      } else {
+        callToActionView.setText("Install");
+      }
+      callToActionView.setVisibility(VISIBLE);
+    }
+
+    // 2. Headline
+    if (primaryView != null) {
+      nativeAdView.setHeadlineView(primaryView);
+      primaryView.setText(headline != null ? headline : "");
+    }
+
+    // 3. MediaView: renders all videos and images from Google AdMob
     if (mediaView != null) {
       nativeAdView.setMediaView(mediaView);
-    }
-    secondaryView.setVisibility(VISIBLE);
-
-    String secondaryText = "";
-    if (adHasOnlyStore(nativeAd)) {
-      nativeAdView.setStoreView(secondaryView);
-      secondaryText = store;
-    } else if (!TextUtils.isEmpty(advertiser)) {
-      nativeAdView.setAdvertiserView(secondaryView);
-      secondaryText = advertiser;
+      mediaView.setVisibility(VISIBLE);
     }
 
-    primaryView.setText(headline);
-    callToActionView.setText(cta);
-
-    if (starRating != null && starRating > 0) {
-      secondaryView.setVisibility(GONE);
-      ratingBar.setVisibility(VISIBLE);
-      ratingBar.setRating(starRating.floatValue());
-      nativeAdView.setStarRatingView(ratingBar);
-    } else {
-      secondaryView.setText(secondaryText);
-      secondaryView.setVisibility(VISIBLE);
-      ratingBar.setVisibility(GONE);
+    // 4. Secondary text (Advertiser or Store)
+    if (secondaryView != null) {
+      String secondaryText = "";
+      if (adHasOnlyStore(nativeAd)) {
+        nativeAdView.setStoreView(secondaryView);
+        secondaryText = store;
+      } else if (!TextUtils.isEmpty(advertiser)) {
+        nativeAdView.setAdvertiserView(secondaryView);
+        secondaryText = advertiser;
+      }
+      if (!TextUtils.isEmpty(secondaryText)) {
+        secondaryView.setText(secondaryText);
+        secondaryView.setVisibility(VISIBLE);
+      } else {
+        secondaryView.setVisibility(GONE);
+      }
     }
 
-    if (icon != null) {
-      iconView.setVisibility(VISIBLE);
-      iconView.setImageDrawable(icon.getDrawable());
-      nativeAdView.setIconView(iconView);
-    } else {
-      iconView.setVisibility(GONE);
+    // 5. Rating Bar
+    if (ratingBar != null) {
+      if (starRating != null && starRating > 0) {
+        ratingBar.setVisibility(VISIBLE);
+        ratingBar.setRating(starRating.floatValue());
+        nativeAdView.setStarRatingView(ratingBar);
+      } else {
+        ratingBar.setVisibility(GONE);
+      }
     }
 
+    // 6. App Icon
+    if (iconView != null) {
+      if (icon != null && icon.getDrawable() != null) {
+        iconView.setVisibility(VISIBLE);
+        iconView.setImageDrawable(icon.getDrawable());
+        nativeAdView.setIconView(iconView);
+      } else {
+        iconView.setVisibility(GONE);
+      }
+    }
+
+    // 7. Body text
     if (tertiaryView != null) {
-      tertiaryView.setText(body);
-      nativeAdView.setBodyView(tertiaryView);
+      if (!TextUtils.isEmpty(body)) {
+        tertiaryView.setText(body);
+        tertiaryView.setVisibility(VISIBLE);
+        nativeAdView.setBodyView(tertiaryView);
+      } else {
+        tertiaryView.setVisibility(GONE);
+      }
     }
 
+    // 8. Register the native ad object with NativeAdView
     nativeAdView.setNativeAd(nativeAd);
   }
 
@@ -315,19 +359,6 @@ public class TemplateView extends FrameLayout {
   @Override
   public void onFinishInflate() {
     super.onFinishInflate();
-    nativeAdView = (NativeAdView) findViewById(R.id.native_ad_view);
-    primaryView = (TextView) findViewById(R.id.primary);
-    secondaryView = (TextView) findViewById(R.id.secondary);
-    tertiaryView = (TextView) findViewById(R.id.body);
-
-    ratingBar = (RatingBar) findViewById(R.id.rating_bar);
-    if (ratingBar != null) {
-      ratingBar.setEnabled(false);
-    }
-
-    callToActionView = (Button) findViewById(R.id.cta);
-    iconView = (ImageView) findViewById(R.id.icon);
-    mediaView = (MediaView) findViewById(R.id.media_view);
-    background = (ConstraintLayout) findViewById(R.id.background);
+    findViews();
   }
 }
