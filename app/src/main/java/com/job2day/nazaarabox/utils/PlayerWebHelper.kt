@@ -1,25 +1,9 @@
 package com.job2day.nazaarabox.utils
 
 object PlayerWebHelper {
-    private val strictBlockedPatterns = listOf(
-        "doubleclick.net",
-        "googlesyndication.com",
-        "google-analytics.com",
-        "adservice.google",
-        "facebook.com",
-        "twitter.com",
-        "instagram.com",
-        "pinterest.com",
-        "linkedin.com",
-        "reddit.com",
-        "tiktok.com",
-        "snapchat.com",
-        "play.google.com",
-        "apps.apple.com",
-        "itunes.apple.com",
-    )
 
-    private val blockedPatterns = listOf(
+    // Comprehensive list of video embed ad networks, pop-under scripts, trackers, and gambling sponsors
+    private val blockedAdDomains = setOf(
         "doubleclick.net",
         "googlesyndication.com",
         "google-analytics.com",
@@ -35,6 +19,49 @@ object PlayerWebHelper {
         "chartboost.com",
         "unity3d.com",
         "ironsrc.com",
+        "vungle.com",
+        "inmobi.com",
+        "fyber.com",
+        "mintegral.com",
+        "smaato.net",
+        "mopub.com",
+        "popads.net",
+        "popcash.net",
+        "propellerads.com",
+        "propellerclick.com",
+        "adsterra.com",
+        "exoclick.com",
+        "monetag.com",
+        "hilltopads.net",
+        "richpush.co",
+        "clickadu.com",
+        "trafficjunky.net",
+        "juicyads.com",
+        "trafficstars.com",
+        "bidgear.com",
+        "adxad.com",
+        "yandex.ru",
+        "aniview.com",
+        "spotxchange.com",
+        "springserve.com",
+        "streamrail.com",
+        "teads.tv",
+        "outbrain.com",
+        "taboola.com",
+        "mgid.com",
+        "revcontent.com",
+        "zergnet.com",
+        "bet365.com",
+        "1xbet.com",
+        "parimatch.com",
+        "mostbet.com",
+        "melbet.com",
+        "stake.com",
+        "dafabet.com",
+        "888casino.com",
+        "vulkan.bet",
+        "pin-up.bet",
+        "linebet.com",
         "facebook.com",
         "twitter.com",
         "instagram.com",
@@ -45,8 +72,66 @@ object PlayerWebHelper {
         "snapchat.com",
         "play.google.com",
         "apps.apple.com",
-        "itunes.apple.com",
+        "itunes.apple.com"
     )
+
+    private val blockedPathKeywords = listOf(
+        "/popunder",
+        "/pop-under",
+        "/popup",
+        "/ad.js",
+        "/ads.js",
+        "/advert.js",
+        "/advertisement.js",
+        "/ad-banner",
+        "/adbanner",
+        "/bannerad",
+        "/banner_ad",
+        "/prebid",
+        "/adserver",
+        "/pixel.gif",
+        "/ad/banner",
+        "/ads/banner"
+    )
+
+    fun isMediaStream(url: String): Boolean {
+        val lower = url.lowercase()
+        return lower.contains(".m3u8") ||
+            lower.contains(".ts") ||
+            lower.contains(".mp4") ||
+            lower.contains(".webm") ||
+            lower.contains(".mkv") ||
+            lower.contains(".key") ||
+            lower.contains("chunk") ||
+            lower.contains("segment") ||
+            lower.contains("manifest") ||
+            lower.contains("playlist") ||
+            lower.startsWith("blob:")
+    }
+
+    fun shouldBlockAdRequest(url: String): Boolean {
+        if (url.isBlank()) return false
+        val lower = url.lowercase()
+
+        // Critical: Never block actual video playback data or legitimate video hosting
+        if (isMediaStream(lower)) return false
+        if (isAllowedVideoHosting(lower)) return false
+
+        // Check if domain matches any known ad/tracking network
+        val host = try { java.net.URI(url).host?.lowercase().orEmpty() } catch (_: Exception) { "" }
+        if (host.isNotBlank()) {
+            if (blockedAdDomains.any { host == it || host.endsWith(".$it") }) {
+                return true
+            }
+        }
+
+        // Check if URL path matches explicit ad patterns
+        if (blockedPathKeywords.any { lower.contains(it) }) {
+            return true
+        }
+
+        return false
+    }
 
     fun detectEmbedPlayer(url: String): Boolean {
         val lower = url.lowercase()
@@ -58,7 +143,7 @@ object PlayerWebHelper {
 
     fun isAllowedVideoHosting(url: String): Boolean = getVideoHostingService(url) != null
 
-    private fun getVideoHostingService(url: String): String? {
+    fun getVideoHostingService(url: String): String? {
         val lower = url.lowercase()
         return when {
             lower.contains("vidfast") -> "vidfast"
@@ -82,25 +167,36 @@ object PlayerWebHelper {
         }
     }
 
-    fun shouldBlockNavigation(url: String, currentUrl: String, isEmbedPlayer: Boolean): Boolean {
-        if (url == currentUrl) return false
+    fun shouldBlockNavigation(url: String, currentUrl: String): Boolean {
+        if (url.isBlank() || url == currentUrl) return false
         val lower = url.lowercase()
-        if (isEmbedPlayer) {
-            val shouldBlock = strictBlockedPatterns.any { lower.contains(it) }
-            if (!shouldBlock) return false
-        }
-        if (isAllowedVideoHosting(url)) return false
 
-        // If target shares same host as the currently loaded stream/server, allow it
-        val targetHost = try { java.net.URI(url).host } catch (_: Exception) { null }
-        val currentHost = try { java.net.URI(currentUrl).host } catch (_: Exception) { null }
-        if (targetHost != null && currentHost != null && (targetHost.endsWith(currentHost) || currentHost.endsWith(targetHost))) {
+        // 1. Never block media stream segments or allowed video hosting
+        if (isMediaStream(lower) || isAllowedVideoHosting(lower)) {
             return false
         }
 
-        if (blockedPatterns.any { lower.contains(it) }) return true
-        if (lower.contains("/app/") || lower.contains("/apps/")) return true
-        return false
+        // 2. Allow navigation within the same host/subdomain of the current video provider
+        val targetHost = try { java.net.URI(url).host?.lowercase() } catch (_: Exception) { null }
+        val currentHost = try { java.net.URI(currentUrl).host?.lowercase() } catch (_: Exception) { null }
+        if (targetHost != null && currentHost != null) {
+            if (targetHost == currentHost || targetHost.endsWith(".$currentHost") || currentHost.endsWith(".$targetHost")) {
+                return false
+            }
+        }
+
+        // 3. Block explicit ad domains or ad keywords
+        if (shouldBlockAdRequest(url)) {
+            return true
+        }
+
+        // 4. Block non-http/https schemes (intent://, market://, tel://, etc.)
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return true
+        }
+
+        // 5. Block external redirects/navigation away from video hosting (popups / new pages)
+        return true
     }
 
     fun buildHtmlContent(url: String): String {
@@ -130,8 +226,6 @@ object PlayerWebHelper {
     fun shouldUseHtmlWrapper(url: String): Boolean {
         if (url.isBlank()) return false
         val lower = url.lowercase()
-        // Web streaming servers (VidFast, VidSrc, VidLink, etc.) must load directly with loadUrl
-        // to prevent X-Frame-Options: SAMEORIGIN from blocking the iframe and displaying a black screen.
         if (lower.startsWith("http://") || lower.startsWith("https://")) {
             if (lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".webm")) {
                 return true
@@ -141,3 +235,4 @@ object PlayerWebHelper {
         return false
     }
 }
+

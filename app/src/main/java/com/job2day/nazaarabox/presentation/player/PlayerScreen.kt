@@ -6,8 +6,10 @@ import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import java.io.ByteArrayInputStream
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -1323,7 +1325,6 @@ private fun PlayerWebView(
     modifier: Modifier = Modifier,
 ) {
     if (url.isBlank()) return
-    val isEmbed = PlayerWebHelper.detectEmbedPlayer(url)
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -1359,18 +1360,36 @@ private fun PlayerWebView(
                     override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
                         request?.grant(request.resources)
                     }
+                    override fun onCreateWindow(
+                        view: WebView?,
+                        isDialog: Boolean,
+                        isUserGesture: Boolean,
+                        resultMsg: android.os.Message?
+                    ): Boolean {
+                        // Strictly reject popup windows spawned by video player embeds
+                        return false
+                    }
                 }
                 webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                        view: WebView?,
+                        request: WebResourceRequest?
+                    ): WebResourceResponse? {
+                        val reqUrl = request?.url?.toString().orEmpty()
+                        if (PlayerWebHelper.shouldBlockAdRequest(reqUrl)) {
+                            return WebResourceResponse(
+                                "text/plain",
+                                "UTF-8",
+                                ByteArrayInputStream(ByteArray(0))
+                            )
+                        }
+                        return super.shouldInterceptRequest(view, request)
+                    }
+
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val target = request?.url?.toString().orEmpty()
                         if (target.isBlank()) return false
-                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
-                            return true
-                        }
-                        if (PlayerWebHelper.isAllowedVideoHosting(target)) {
-                            return false
-                        }
-                        if (!target.startsWith("http://") && !target.startsWith("https://")) {
+                        if (PlayerWebHelper.shouldBlockNavigation(target, url)) {
                             return true
                         }
                         return false
@@ -1380,13 +1399,7 @@ private fun PlayerWebView(
                     override fun shouldOverrideUrlLoading(view: WebView?, targetUrl: String?): Boolean {
                         val target = targetUrl.orEmpty()
                         if (target.isBlank()) return false
-                        if (PlayerWebHelper.shouldBlockNavigation(target, url, isEmbed)) {
-                            return true
-                        }
-                        if (PlayerWebHelper.isAllowedVideoHosting(target)) {
-                            return false
-                        }
-                        if (!target.startsWith("http://") && !target.startsWith("https://")) {
+                        if (PlayerWebHelper.shouldBlockNavigation(target, url)) {
                             return true
                         }
                         return false
@@ -1409,6 +1422,19 @@ private fun PlayerWebView(
 
                     override fun onPageFinished(view: WebView?, finishedUrl: String?) {
                         onPageLoaded()
+                        view?.evaluateJavascript(
+                            """
+                            (function() {
+                                try {
+                                    window.open = function() { return null; };
+                                    window.alert = function() {};
+                                    window.confirm = function() { return false; };
+                                    window.prompt = function() { return null; };
+                                } catch (e) {}
+                            })();
+                            """.trimIndent(),
+                            null
+                        )
                     }
                 }
                 loadPlayerContent(this, url)
