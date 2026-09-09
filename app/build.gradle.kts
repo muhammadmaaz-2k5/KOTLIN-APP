@@ -16,8 +16,8 @@ android {
         versionCode = 26
         versionName = "1.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8000\"")
-        buildConfigField("String", "BACKEND_DEBUG_URL", "\"http://10.0.2.2:8000\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
+        buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://dashboard.thereviewepisode.com\"")
         buildConfigField("String", "TMDB_API_KEY", "\"5bc4d03de6365a0eef7d0a4c4a7d002b\"")
     }
 
