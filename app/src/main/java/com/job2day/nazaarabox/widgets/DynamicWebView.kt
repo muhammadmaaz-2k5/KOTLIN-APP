@@ -493,12 +493,6 @@ fun DynamicWebView(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Sponsored Content",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
                             text = "Tap to reload",
                             color = Color.Gray,
                             style = MaterialTheme.typography.bodySmall

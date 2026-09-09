@@ -26,7 +26,7 @@ import com.job2day.nazaarabox.utils.AdManager
 fun InlineCardAd(
     placement: String = "generic",
     modifier: Modifier = Modifier,
-    label: String = "Sponsored",
+    label: String = "",
 ) {
     if (!AdManager.isAdPlacementEnabled(placement)) return
 

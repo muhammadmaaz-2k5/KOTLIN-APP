@@ -182,28 +182,18 @@ fun HomeScreen(
                     // 3. Sponsored Ads Row (Native Small Cards)
                     if (AdManager.isAdPlacementEnabled("home_inline")) {
                         item(key = "sponsored_ads_row") {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = "Sponsored",
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                                    color = Color(0xFF888899),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    letterSpacing = 0.5.sp,
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.height(210.dp),
-                                ) {
-                                    items(6) {
-                                        CustomSmallCardAd(
-                                            adUrl = AdManager.getAdPlacementUrl("home_inline"),
-                                            modifier = Modifier
-                                                .width(140.dp)
-                                                .height(200.dp),
-                                        )
-                                    }
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.height(210.dp),
+                            ) {
+                                items(6) {
+                                    CustomSmallCardAd(
+                                        adUrl = AdManager.getAdPlacementUrl("home_inline"),
+                                        modifier = Modifier
+                                            .width(140.dp)
+                                            .height(200.dp),
+                                    )
                                 }
                             }
                             Spacer(modifier = Modifier.height(20.dp))
@@ -256,25 +246,17 @@ fun HomeScreen(
                     // 6. Inline Banner Ad between Trending & Popular
                     if (AdManager.isAdPlacementEnabled("home_inline")) {
                         item(key = "mid_banner_ad") {
-                            Column(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
                             ) {
-                                Text(
-                                    text = "Advertisement",
-                                    modifier = Modifier.padding(bottom = 6.dp),
-                                    color = Color(0xFF888899),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    letterSpacing = 0.5.sp,
-                                )
                                 InlineBannerAd(
                                     placement = "home_inline",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
-                                    )
+                                )
                             }
                             Spacer(modifier = Modifier.height(20.dp))
                         }
@@ -344,19 +326,11 @@ fun HomeScreen(
                     if (AdManager.isAdPlacementEnabled("home_banner")) {
                         item(key = "bottom_banner_ad") {
                             Spacer(modifier = Modifier.height(12.dp))
-                            Column(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
                             ) {
-                                Text(
-                                    text = "Advertisement",
-                                    modifier = Modifier.padding(bottom = 6.dp),
-                                    color = Color(0xFF888899),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    letterSpacing = 0.5.sp,
-                                )
                                 FullWidthAdBanner(
                                     placement = "home_banner",
                                     modifier = Modifier.fillMaxWidth(),

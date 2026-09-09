@@ -701,21 +701,6 @@ private fun SearchAdBanner(
                 .fillMaxWidth()
                 .padding(8.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Sponsored",
-                    color = AppColors.TextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.5.sp,
-                )
-            }
             InlineBannerAd(
                 placement = item.placement,
                 modifier = Modifier

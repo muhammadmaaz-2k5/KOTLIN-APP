@@ -417,19 +417,11 @@ fun DetailScreen(
             // 9. Bottom Banner Ad
             if (AdManager.isAdPlacementEnabled("detail_banner_bottom")) {
                 item(key = "detail_banner_bottom_ad") {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     ) {
-                        Text(
-                            text = "Advertisement",
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
                         FullWidthAdBanner(
                             placement = "detail_banner_bottom",
                             modifier = Modifier.fillMaxWidth(),

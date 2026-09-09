@@ -189,7 +189,7 @@ fun MediaBrowseScreen(
                                             InlineCardAd(
                                                 placement = "browse_inline",
                                                 modifier = Modifier.fillMaxWidth(),
-                                                label = "Sponsored",
+                                                label = "",
                                             )
                                         }
                                     } else if (rowItem is com.job2day.nazaarabox.core.MediaItem) {

@@ -342,19 +342,11 @@ fun ActorScreen(
             // ===== FULL WIDTH BANNER AD AT THE BOTTOM =====
             if (AdManager.isAdPlacementEnabled("actor_banner_bottom")) {
                 item {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text(
-                            text = "Advertisement",
-                            color = Color(0xFF888899),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
                         FullWidthAdBanner(
                             placement = "actor_banner_bottom",
                             modifier = Modifier.fillMaxWidth()

@@ -96,11 +96,7 @@ fun CustomBannerAd(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Sponsored",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.TextMuted
-                    )
+                    Spacer(modifier = Modifier.weight(1f))
                     
                     Row {
                         IconButton(
@@ -231,11 +227,7 @@ fun CustomInterstitialAd(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "Advertisement",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = AppColors.TextPrimary
-                        )
+                        Spacer(modifier = Modifier.weight(1f))
                         
                         Box(
                             modifier = Modifier
