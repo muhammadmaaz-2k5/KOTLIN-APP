@@ -96,7 +96,7 @@ fun NazaaraboxNavHost() {
             containerColor = AppColors.BackgroundDark,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (currentRoute != AppRoutes.PLAYER) {
+                if (currentRoute != AppRoutes.PLAYER && currentRoute != AppRoutes.DETAIL) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

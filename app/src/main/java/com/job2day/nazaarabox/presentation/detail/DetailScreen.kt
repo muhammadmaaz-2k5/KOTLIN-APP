@@ -50,6 +50,7 @@ import androidx.navigation.NavController
 import com.job2day.nazaarabox.ads.FullWidthAdBanner
 import com.job2day.nazaarabox.ads.InlineBannerAd
 import com.job2day.nazaarabox.ads.InlineCardAd
+import com.job2day.nazaarabox.ads.StickyCollapsibleBannerAd
 import com.job2day.nazaarabox.core.MediaItem
 import com.job2day.nazaarabox.navigation.navigateToActor
 import com.job2day.nazaarabox.navigation.navigateToDetail
@@ -432,7 +433,7 @@ fun DetailScreen(
 
             // Bottom Navigation Clearance
             item(key = "bottom_spacer") {
-                Spacer(modifier = Modifier.height(110.dp))
+                Spacer(modifier = Modifier.height(180.dp))
             }
         }
 
@@ -446,13 +447,23 @@ fun DetailScreen(
             modifier = Modifier.align(Alignment.TopCenter),
         )
 
-        // Floating Frosted Glass Bottom Action Bar
-        DetailBottomActionBar(
-            item = item,
-            seasons = state.seasons,
-            onPlay = { playItem -> navController.navigateToPlayer(playItem) },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+        // Floating Bottom Bar: Sticky Collapsible Banner Ad ABOVE Detail Bottom Action Bar
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(AppColors.BackgroundDark.copy(alpha = 0.95f))
+                .navigationBarsPadding(),
+        ) {
+            StickyCollapsibleBannerAd(
+                modifier = Modifier.fillMaxWidth(),
+            )
+            DetailBottomActionBar(
+                item = item,
+                seasons = state.seasons,
+                onPlay = { playItem -> navController.navigateToPlayer(playItem) },
+            )
+        }
     }
 
     // Modal Sheets
