@@ -56,6 +56,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.painterResource
+import com.job2day.nazaarabox.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -609,12 +611,23 @@ private fun MidnightCategoryChipsRow(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if (cat.emoji.isNotBlank()) {
-                        Text(text = cat.emoji, fontSize = 13.sp)
+                    val hotIcon = when {
+                        cat.label.contains("Passion", true) || cat.label.contains("After", true) -> R.drawable.ic_hot_lips
+                        cat.label.contains("Noir", true) || cat.label.contains("Crime", true) || cat.label.contains("Nightlife", true) -> R.drawable.ic_hot_heels
+                        cat.label.contains("Madness", true) || cat.label.contains("Horror", true) -> R.drawable.ic_hot_flame
+                        cat.label.contains("Exclusive", true) || cat.label.contains("VIP", true) -> R.drawable.ic_hot_bikini
+                        cat.label.contains("All", true) -> R.drawable.ic_hot_cocktail
+                        else -> R.drawable.ic_hot_girl_nav
                     }
+                    Icon(
+                        painter = painterResource(id = hotIcon),
+                        contentDescription = null,
+                        tint = if (isSelected) Color.White else NeonMagenta,
+                        modifier = Modifier.size(15.dp),
+                    )
                     Text(
                         text = cat.label,
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.75f),
+                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.85f),
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         fontSize = 12.sp,
                     )

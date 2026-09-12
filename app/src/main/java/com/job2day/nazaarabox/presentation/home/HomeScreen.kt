@@ -160,8 +160,25 @@ fun HomeScreen(
                                         onClick = { viewModel.selectCategory(index) },
                                     )
                                 }
+                                com.job2day.nazaarabox.widgets.EngoraFilterChip(
+                                    label = "Midnight 18+",
+                                    emoji = "💃",
+                                    selected = false,
+                                    onClick = { navController.navigate(AppRoutes.MIDNIGHT) },
+                                )
                             }
                             Spacer(modifier = Modifier.height(14.dp))
+                        }
+                    }
+
+                    // 2.5 Midnight 18+ Categories & Lounge Showcase
+                    if (state.midnightCategories.isNotEmpty()) {
+                        item(key = "midnight_home_showcase") {
+                            MidnightHomeShowcase(
+                                navController = navController,
+                                categories = state.midnightCategories,
+                                items = state.midnightItems,
+                            )
                         }
                     }
 

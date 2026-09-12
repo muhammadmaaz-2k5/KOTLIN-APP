@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- VIP Martini Cocktail Vector -->
+    <path
+        android:fillColor="#FFFF1A75"
+        android:pathData="M21,5V3H3V5L11,13V19H7V21H17V19H13V13L21,5ZM7.43,7L5.66,5H18.34L16.57,7H7.43Z"/>
+</vector>

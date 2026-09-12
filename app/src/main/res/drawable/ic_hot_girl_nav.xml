@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Hot Girl Silhouette: Profile with flowing hair, bust curve, slender waist and legs -->
+    <path
+        android:fillColor="#FFFF1A75"
+        android:pathData="M12.5,2C13.6,2 14.5,2.9 14.5,4C14.5,5.1 13.6,6 12.5,6C11.4,6 10.5,5.1 10.5,4C10.5,2.9 11.4,2 12.5,2ZM14.8,5.8C16,6.2 17.2,7.2 17.5,8.5C17.7,9.5 17.2,10.5 16.5,11.2C15.8,10.2 15.2,8.8 14.2,7.8L14.8,5.8ZM12.2,6.5C11.5,7.1 10.8,8 10,8.8C8.8,10 8.2,11.2 8.5,12.5C8.7,13.5 9.8,14 10.5,14.7C11.1,15.3 11,16.2 11.5,17.2C12,18.2 12.3,19.5 12.5,21L11,22.5L12.8,22.8L14,21C14.5,19.2 14.8,17.8 14.5,16C14.2,14.5 14.8,13.2 15,11.8C15.3,10.2 15,8.8 14.2,7.5C13.6,6.8 13,6.5 12.2,6.5Z"/>
+</vector>

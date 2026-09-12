@@ -13,6 +13,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+val defaultMidnightCategories = listOf(
+    HomeCategory(id = 1, label = "VIP Exclusives", emoji = "💃"),
+    HomeCategory(id = 2, label = "Noir & Nightlife", emoji = "👠"),
+    HomeCategory(id = 3, label = "After Hours & Passion", emoji = "💋"),
+    HomeCategory(id = 4, label = "Midnight Madness", emoji = "🔥"),
+    HomeCategory(id = 5, label = "Late Night Mindbenders", emoji = "💄"),
+)
+
 data class HomeUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -24,6 +32,8 @@ data class HomeUiState(
     val customExclusives: List<MediaItem> = emptyList(),
     val sections: List<ThemedSection> = emptyList(),
     val isCategoryLoading: Boolean = false,
+    val midnightCategories: List<HomeCategory> = defaultMidnightCategories,
+    val midnightItems: List<MediaItem> = emptyList(),
 )
 
 class HomeViewModel(
@@ -83,6 +93,20 @@ class HomeViewModel(
                 applyFeed(feed)
             } else {
                 loadFallbackCategories()
+            }
+
+            runCatching {
+                val midnightFeed = repository.getMidnightFeed(forceRefresh)
+                if (midnightFeed.categories.isNotEmpty() || midnightFeed.featured.isNotEmpty() || midnightFeed.sections.isNotEmpty()) {
+                    val cats = midnightFeed.categories.filter { it.id != 0 }.ifEmpty { defaultMidnightCategories }
+                    val items = midnightFeed.featured.ifEmpty { midnightFeed.sections.flatMap { it.items } }
+                    _uiState.update { current ->
+                        current.copy(
+                            midnightCategories = cats,
+                            midnightItems = items,
+                        )
+                    }
+                }
             }
 
             _uiState.update { it.copy(isLoading = false, isRefreshing = false) }

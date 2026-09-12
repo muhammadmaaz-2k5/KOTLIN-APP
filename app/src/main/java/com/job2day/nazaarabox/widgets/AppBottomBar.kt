@@ -48,6 +48,7 @@ internal data class TabSpec(
     val unselectedIcon: ImageVector,
     val color: Color,
     val isOverlay: Boolean = false,
+    val customDrawableId: Int? = null,
 )
 
 private val allTabsList = listOf(
@@ -55,7 +56,14 @@ private val allTabsList = listOf(
     TabSpec("Movies", "movies", Icons.Filled.Movie, Icons.Outlined.Movie, AppColors.TabMovies),
     TabSpec("TV Shows", "tv_shows", Icons.Filled.Tv, Icons.Outlined.Tv, AppColors.TabTv),
     TabSpec("Anime", "anime", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome, AppColors.TabAnime),
-    TabSpec("Midnight", "midnight", Icons.Filled.Nightlife, Icons.Outlined.Nightlife, Color(0xFFFF1A75)),
+    TabSpec(
+        label = "Midnight",
+        route = "midnight",
+        selectedIcon = Icons.Filled.Nightlife,
+        unselectedIcon = Icons.Outlined.Nightlife,
+        color = Color(0xFFFF1A75),
+        customDrawableId = com.job2day.nazaarabox.R.drawable.ic_hot_girl_nav,
+    ),
     TabSpec("Search", "search", Icons.Filled.Search, Icons.Filled.Search, AppColors.TabSearch, isOverlay = true),
 )
 
@@ -97,14 +105,25 @@ fun AppBottomBar(
                             color = if (isActive) tab.color.copy(alpha = 0.16f) else Color.Transparent,
                             border = if (isActive) BorderStroke(0.5.dp, tab.color.copy(alpha = 0.35f)) else null,
                         ) {
-                            Icon(
-                                imageVector = if (isActive) tab.selectedIcon else tab.unselectedIcon,
-                                contentDescription = tab.label,
-                                tint = color,
-                                modifier = Modifier
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    .size(22.dp),
-                            )
+                            if (tab.customDrawableId != null) {
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(id = tab.customDrawableId),
+                                    contentDescription = tab.label,
+                                    tint = color,
+                                    modifier = Modifier
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        .size(22.dp),
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = if (isActive) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = tab.label,
+                                    tint = color,
+                                    modifier = Modifier
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        .size(22.dp),
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
