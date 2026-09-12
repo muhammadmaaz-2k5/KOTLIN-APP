@@ -160,19 +160,21 @@ fun HomeScreen(
                                         onClick = { viewModel.selectCategory(index) },
                                     )
                                 }
-                                com.job2day.nazaarabox.widgets.EngoraFilterChip(
-                                    label = "Midnight 18+",
-                                    emoji = "💃",
-                                    selected = false,
-                                    onClick = { navController.navigate(AppRoutes.MIDNIGHT) },
-                                )
+                                if (AdManager.isLiveMode) {
+                                    com.job2day.nazaarabox.widgets.EngoraFilterChip(
+                                        label = "Midnight 18+",
+                                        emoji = "💃",
+                                        selected = false,
+                                        onClick = { navController.navigate(AppRoutes.MIDNIGHT) },
+                                    )
+                                }
                             }
                             Spacer(modifier = Modifier.height(14.dp))
                         }
                     }
 
-                    // 2.5 Midnight 18+ Categories & Lounge Showcase
-                    if (state.midnightCategories.isNotEmpty()) {
+                    // 2.5 Midnight 18+ Categories & Lounge Showcase (Live Mode only)
+                    if (AdManager.isLiveMode && state.midnightCategories.isNotEmpty()) {
                         item(key = "midnight_home_showcase") {
                             MidnightHomeShowcase(
                                 navController = navController,
