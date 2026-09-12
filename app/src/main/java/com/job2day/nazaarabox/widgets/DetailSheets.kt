@@ -66,38 +66,22 @@ fun DetailBottomActionBar(
     onPlay: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (AdManager.isLiveMode) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
-                .border(0.5.dp, Color.White.copy(alpha = 0.08f))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            WatchButton(
-                item = item,
-                seasons = seasons,
-                modifier = Modifier.fillMaxWidth(),
-                onPlay = onPlay,
-            )
-        }
-    } else {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
-                .border(0.5.dp, Color.White.copy(alpha = 0.08f))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            androidx.compose.material3.Text(
-                text = "Safe Review Mode — Info Only",
-                color = AppColors.TextMuted,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-            )
-        }
+    if (!AdManager.isLiveMode) return
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(AppColors.BackgroundDark.copy(alpha = 0.85f))
+            .border(0.5.dp, Color.White.copy(alpha = 0.08f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        WatchButton(
+            item = item,
+            seasons = seasons,
+            modifier = Modifier.fillMaxWidth(),
+            onPlay = onPlay,
+        )
     }
 }
 

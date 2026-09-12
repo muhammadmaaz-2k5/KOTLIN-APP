@@ -798,16 +798,18 @@ fun FeaturedBanner(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        androidx.compose.material3.Button(
-                            onClick = { onItemClick(item) },
-                            shape = RoundedCornerShape(24.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary,
-                                contentColor = Color.White,
-                            ),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),
-                        ) {
-                            Text(text = "▶  Watch Now", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        if (com.job2day.nazaarabox.utils.AdManager.isLiveMode) {
+                            androidx.compose.material3.Button(
+                                onClick = { onItemClick(item) },
+                                shape = RoundedCornerShape(24.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = AppColors.Primary,
+                                    contentColor = Color.White,
+                                ),
+                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),
+                            ) {
+                                Text(text = "▶  Watch Now", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
                         }
 
                         androidx.compose.material3.OutlinedButton(

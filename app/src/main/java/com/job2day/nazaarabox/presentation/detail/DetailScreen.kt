@@ -116,9 +116,13 @@ fun DetailScreen(
     val isTv = item.type.equals("tv", ignoreCase = true)
 
     // Scalable Segmented Tabs definition
-    val tabs = remember(isTv) {
+    val tabs = remember(isTv, AdManager.isLiveMode) {
         if (isTv) {
-            listOf("Episodes", "More Like This", "Cast & Info")
+            if (AdManager.isLiveMode) {
+                listOf("Episodes", "More Like This", "Cast & Info")
+            } else {
+                listOf("More Like This", "Cast & Info")
+            }
         } else {
             listOf("More Like This", "Cast & Crew", "Details & Reviews")
         }
@@ -200,7 +204,8 @@ fun DetailScreen(
 
             // 7. Active Tab Content
             if (isTv) {
-                when (selectedTab) {
+                val effectiveTab = if (!AdManager.isLiveMode) selectedTab + 1 else selectedTab
+                when (effectiveTab) {
                     0 -> { // TV Tab 0: Episodes & Seasons
                         item(key = "tv_seasons_content") {
                             if (state.seasons.isNotEmpty()) {
@@ -460,42 +465,44 @@ fun DetailScreen(
             modifier = Modifier.align(Alignment.TopCenter),
         )
 
-        // Floating Bottom Bar: Sticky Collapsible Banner Ad ABOVE Detail Bottom Action Bar
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .background(AppColors.BackgroundDark.copy(alpha = 0.95f))
-                .navigationBarsPadding(),
-        ) {
-            StickyCollapsibleBannerAd(
-                modifier = Modifier.fillMaxWidth(),
-            )
-            DetailBottomActionBar(
-                item = item,
-                seasons = state.seasons,
-                onPlay = { playItem ->
-                    if (item.isMidnight) {
-                        if (isTv) {
-                            showEpisodePicker = true
+        // Floating Bottom Bar: Sticky Collapsible Banner Ad ABOVE Detail Bottom Action Bar (Live Mode only)
+        if (AdManager.isLiveMode) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(AppColors.BackgroundDark.copy(alpha = 0.95f))
+                    .navigationBarsPadding(),
+            ) {
+                StickyCollapsibleBannerAd(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                DetailBottomActionBar(
+                    item = item,
+                    seasons = state.seasons,
+                    onPlay = { playItem ->
+                        if (item.isMidnight) {
+                            if (isTv) {
+                                showEpisodePicker = true
+                            } else {
+                                showMidnightAdDialog = true
+                            }
+                        } else if (isTv) {
+                            if ((playItem.episode ?: 1) % 2 == 0) {
+                                activity?.let { act ->
+                                    AdManager.showInterstitial(act, force = true) {
+                                        navController.navigateToPlayer(playItem)
+                                    }
+                                } ?: navController.navigateToPlayer(playItem)
+                            } else {
+                                navController.navigateToPlayer(playItem)
+                            }
                         } else {
-                            showMidnightAdDialog = true
+                            showMovieAdDialog = true
                         }
-                    } else if (isTv) {
-                        if ((playItem.episode ?: 1) % 2 == 0) {
-                            activity?.let { act ->
-                                AdManager.showInterstitial(act, force = true) {
-                                    navController.navigateToPlayer(playItem)
-                                }
-                            } ?: navController.navigateToPlayer(playItem)
-                        } else {
-                            navController.navigateToPlayer(playItem)
-                        }
-                    } else {
-                        showMovieAdDialog = true
-                    }
-                },
-            )
+                    },
+                )
+            }
         }
     }
 
