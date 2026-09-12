@@ -4,14 +4,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,10 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.job2day.nazaarabox.R
 import com.job2day.nazaarabox.core.HomeCategory
-import com.job2day.nazaarabox.core.MediaItem
-import com.job2day.nazaarabox.navigation.navigateToDetail
 import com.job2day.nazaarabox.routes.AppRoutes
-import com.job2day.nazaarabox.widgets.CustomImage
 
 private val NeonMagenta = Color(0xFFFF1A75)
 private val NeonPurple = Color(0xFF9D4EDD)
@@ -53,7 +47,6 @@ private val DarkCardBg = Color(0xFF140F1D)
 fun MidnightHomeShowcase(
     navController: NavController,
     categories: List<HomeCategory>,
-    items: List<MediaItem>,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -162,23 +155,6 @@ fun MidnightHomeShowcase(
                 )
             }
         }
-
-        // --- 3. Featured Midnight Streams Row (if available) ---
-        if (items.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(14.dp))
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(items.take(8)) { item ->
-                    MidnightStreamCard(
-                        item = item,
-                        onClick = { navController.navigateToDetail(item.copy(isMidnight = true)) },
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -259,78 +235,6 @@ private fun MidnightCategoryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun MidnightStreamCard(
-    item: MediaItem,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFF100D16),
-        border = BorderStroke(0.6.dp, NeonMagenta.copy(alpha = 0.35f)),
-        modifier = Modifier.width(115.dp),
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f / 3f),
-            ) {
-                CustomImage(
-                    imageUrl = item.posterUrl,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-
-                // 18+ Tag on Poster
-                Surface(
-                    shape = RoundedCornerShape(topStart = 10.dp, bottomEnd = 8.dp),
-                    color = NeonMagenta,
-                    modifier = Modifier.align(Alignment.TopStart),
-                ) {
-                    Text(
-                        text = "18+",
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                    )
-                }
-
-                // Rating Pill
-                if (item.rating > 0.0) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color.Black.copy(alpha = 0.75f),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(4.dp),
-                    ) {
-                        Text(
-                            text = "★ ${String.format("%.1f", item.rating)}",
-                            color = Color(0xFFFFD166),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-            }
-
-            Text(
-                text = item.title,
-                color = Color.White.copy(alpha = 0.90f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
-            )
         }
     }
 }

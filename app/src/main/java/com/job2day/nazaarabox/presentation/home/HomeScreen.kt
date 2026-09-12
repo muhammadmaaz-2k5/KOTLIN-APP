@@ -177,7 +177,6 @@ fun HomeScreen(
                             MidnightHomeShowcase(
                                 navController = navController,
                                 categories = state.midnightCategories,
-                                items = state.midnightItems,
                             )
                         }
                     }
