@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "464167360959",
-    "project_id": "engora-7acda",
-    "storage_bucket": "engora-7acda.firebasestorage.app"
+    "project_number": "890176640442",
+    "project_id": "jobzincanada-64230",
+    "storage_bucket": "jobzincanada-64230.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:464167360959:android:a5735f9f1794e07226e90a",
+        "mobilesdk_app_id": "1:890176640442:android:9ee02ac46ba034828a7983",
         "android_client_info": {
           "package_name": "com.job2day"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD8r6l28e7fbq4fQIGxZIAN4MDe01EArAM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:464167360959:android:a5735f9f1794e07226e90a",
-        "android_client_info": {
-          "package_name": "com.engora.app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyD8r6l28e7fbq4fQIGxZIAN4MDe01EArAM"
+          "current_key": "AIzaSyA_uImbVVt3JzFXMDIPPgLNlxAqKLcgVEQ"
         }
       ],
       "services": {
