@@ -25,8 +25,25 @@ object AdManager {
     private const val APP_OPEN_COOLDOWN_MS = 180_000L // 3 minutes cooldown between App Open ads
     private const val FOUR_HOURS_MS = 4 * 3600_000L // App open ads expire after 4 hours per AdMob policy
 
-    // Google Official Sample Test Ad Unit IDs (Safe for testing on productions & release APKs)
-    const val FORCE_TEST_ADS = true
+    // =========================================================================
+    // ADMOB AD UNIT IDs (Configured statically in-app - NOT dynamic from API)
+    // =========================================================================
+    // Set USE_PRODUCTION_ADMOB_IDS = true when you are ready to use your real AdMob IDs.
+    // When false, official Google test ad unit IDs are used safely.
+    const val USE_PRODUCTION_ADMOB_IDS = false
+
+    // Backward-compatibility alias
+    const val FORCE_TEST_ADS = !USE_PRODUCTION_ADMOB_IDS
+
+    // --- Production AdMob Ad Unit IDs (Change your real AdMob IDs here directly) ---
+    const val PROD_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val PROD_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
+    const val PROD_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
+    const val PROD_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
+    const val PROD_APP_OPEN_ID = "ca-app-pub-3940256099942544/9257395921"
+    const val PROD_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
+
+    // --- Google Official Sample Test Ad Unit IDs ---
     const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
     const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
     const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
@@ -45,23 +62,23 @@ object AdManager {
     var isWebviewAdsEnabled: Boolean = true
         private set
 
-    var admobBannerId: String = TEST_BANNER_ID
-        private set
+    val admobBannerId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_BANNER_ID else TEST_BANNER_ID
 
-    var admobInterstitialId: String = TEST_INTERSTITIAL_ID
-        private set
+    val admobInterstitialId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_INTERSTITIAL_ID else TEST_INTERSTITIAL_ID
 
-    var admobRewardedId: String = TEST_REWARDED_ID
-        private set
+    val admobRewardedId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_REWARDED_ID else TEST_REWARDED_ID
 
-    var admobRewardedInterstitialId: String = TEST_REWARDED_INTERSTITIAL_ID
-        private set
+    val admobRewardedInterstitialId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_REWARDED_INTERSTITIAL_ID else TEST_REWARDED_INTERSTITIAL_ID
 
-    var admobAppOpenId: String = TEST_APP_OPEN_ID
-        private set
+    val admobAppOpenId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_APP_OPEN_ID else TEST_APP_OPEN_ID
 
-    var admobNativeId: String = TEST_NATIVE_ID
-        private set
+    val admobNativeId: String
+        get() = if (USE_PRODUCTION_ADMOB_IDS) PROD_NATIVE_ID else TEST_NATIVE_ID
 
     var webviewAdUrl: String = DEFAULT_WEBVIEW_AD_URL
         private set
@@ -121,25 +138,13 @@ object AdManager {
 
     fun applySettings(settings: Map<String, String>) {
         rawSettings = settings
+        // Dynamic remote toggles (turn ads on/off from backend):
         isAdsEnabled = if (settings.containsKey("ads_enabled")) parseBoolean(settings["ads_enabled"]) else true
         isAdMobEnabled = if (settings.containsKey("admob_enabled")) parseBoolean(settings["admob_enabled"]) else true
         isWebviewAdsEnabled = if (settings.containsKey("enable_webview_ads")) parseBoolean(settings["enable_webview_ads"]) else true
 
-        if (FORCE_TEST_ADS) {
-            admobBannerId = TEST_BANNER_ID
-            admobInterstitialId = TEST_INTERSTITIAL_ID
-            admobRewardedId = TEST_REWARDED_ID
-            admobRewardedInterstitialId = TEST_REWARDED_INTERSTITIAL_ID
-            admobAppOpenId = TEST_APP_OPEN_ID
-            admobNativeId = TEST_NATIVE_ID
-        } else {
-            admobBannerId = settings["admob_banner_id"]?.takeIf { it.isNotBlank() } ?: TEST_BANNER_ID
-            admobInterstitialId = settings["admob_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_INTERSTITIAL_ID
-            admobRewardedId = settings["admob_rewarded_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_ID
-            admobRewardedInterstitialId = settings["admob_rewarded_interstitial_id"]?.takeIf { it.isNotBlank() } ?: TEST_REWARDED_INTERSTITIAL_ID
-            admobAppOpenId = settings["admob_app_open_id"]?.takeIf { it.isNotBlank() } ?: TEST_APP_OPEN_ID
-            admobNativeId = settings["admob_native_id"]?.takeIf { it.isNotBlank() } ?: TEST_NATIVE_ID
-        }
+        // NOTE: AdMob ad unit IDs are static in-app constants and are NOT overwritten from API.
+        // The backend dynamically controls ONLY enable/disable switches.
 
         val remoteUrl = settings["webview_ad_url"]?.trim()?.takeIf { it.isNotBlank() }
         webviewAdUrl = sanitizeAdUrl(remoteUrl)
@@ -149,7 +154,7 @@ object AdManager {
 
         Log.d(
             TAG,
-            "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode, forceTestAds=$FORCE_TEST_ADS",
+            "Settings applied: ads=$isAdsEnabled, admob=$isAdMobEnabled, webview=$isWebviewAdsEnabled, appMode=$appMode, useProdAdMob=$USE_PRODUCTION_ADMOB_IDS",
         )
     }
 
@@ -165,15 +170,26 @@ object AdManager {
     }
 
     fun isAdPlacementEnabled(placement: String): Boolean {
-        if (FORCE_TEST_ADS) return true
         if (!isAdsEnabled) return false
+
+        // Check specific placement toggle first
         val specificToggle = rawSettings["enable_ad_$placement"]
         if (specificToggle != null) {
             return parseBoolean(specificToggle)
         }
+
+        // Format-level toggles from backend
+        if (placement == "app_open") {
+            val appOpenToggle = rawSettings["enable_ad_app_open"]
+            if (appOpenToggle != null) return parseBoolean(appOpenToggle)
+        }
+
+        if (placement.endsWith("_native") || placement.startsWith("native_")) {
+            val nativeToggle = rawSettings["enable_ad_native"] ?: rawSettings["enable_ad_native_ads"]
+            if (nativeToggle != null) return parseBoolean(nativeToggle)
+        }
+
         val basePlacement = when {
-            placement == "app_open" -> "app_open"
-            placement.endsWith("_native") || placement.startsWith("native_") -> "native_ads"
             placement.startsWith("home_") -> "home_banner"
             placement.startsWith("detail_") -> "detail_banner"
             placement.startsWith("actor_") -> "actor_banner"
