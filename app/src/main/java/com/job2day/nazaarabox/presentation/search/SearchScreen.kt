@@ -314,13 +314,6 @@ fun SearchScreen(
                 }
             }
 
-            // Google AdMob Native Medium Template (supports all videos and images)
-            AdMobNativeMediumAd(
-                placement = "search_native",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-            )
 
             // Active Filters indicator
             if (state.filters.activeCount > 0) {
@@ -501,7 +494,17 @@ fun SearchScreen(
                             }
                         }
 
-                        // 4. Explore by Genre Grid
+                        // 4. Sponsored Native Ad
+                        item {
+                            AdMobNativeMediumAd(
+                                placement = "search_native",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            )
+                        }
+
+                        // 5. Explore by Genre Grid
                         item {
                             Column {
                                 Text(

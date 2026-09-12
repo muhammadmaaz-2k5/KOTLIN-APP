@@ -96,22 +96,18 @@ fun NazaaraboxNavHost() {
             containerColor = AppColors.BackgroundDark,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (currentRoute != AppRoutes.PLAYER && currentRoute != AppRoutes.DETAIL) {
+                if (showBottomBar) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF0D0D11))
-                            .then(
-                                if (!showBottomBar) Modifier.navigationBarsPadding() else Modifier
-                            ),
+                            .background(Color(0xFF0D0D11)),
                     ) {
                         key(currentRoute) {
                             StickyCollapsibleBannerAd(
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
-                        if (showBottomBar) {
-                            AppBottomBar(
+                        AppBottomBar(
                                 currentRoute = currentRoute,
                                 onTabSelected = { route, isOverlay ->
                                     if (isOverlay) {
@@ -127,7 +123,6 @@ fun NazaaraboxNavHost() {
                                     }
                                 },
                             )
-                        }
                     }
                 }
             },

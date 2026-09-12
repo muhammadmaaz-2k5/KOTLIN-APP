@@ -8,21 +8,25 @@ import com.job2day.nazaarabox.core.PersonItem
 
 object AppActions {
     fun shareItem(context: Context, item: MediaItem) {
-        val typeStr = if (item.type == "tv") "tv" else "movie"
-        val url = "https://www.themoviedb.org/$typeStr/${item.id}"
+        val appUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
         val text = buildString {
             append("🎬 I am watching \"${item.title}\"!\n\n")
             append("🍿 Watch your favorite Movies, TV Shows & Anime for FREE on Nazaarabox.\n\n")
-            append("ℹ️ Info: $url\n\n")
             append("🚀 Download the Nazaarabox App now and start streaming!\n")
-            append("👉 https://play.google.com/store/apps/details?id=com.job2day.nazaarabox")
+            append("👉 $appUrl")
         }
         shareText(context, text)
     }
 
     fun sharePerson(context: Context, person: PersonItem) {
-        val url = "https://www.themoviedb.org/person/${person.id}"
-        shareText(context, "🎭 ${person.name}\n\nView on Nazaarabox!\n$url")
+        val appUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
+        val text = buildString {
+            append("🎭 ${person.name}\n\n")
+            append("🍿 Discover your favorite Movies, TV Shows & Anime for FREE on Nazaarabox.\n\n")
+            append("🚀 Download the Nazaarabox App now and start streaming!\n")
+            append("👉 $appUrl")
+        }
+        shareText(context, text)
     }
 
     fun openTmdbPage(context: Context, item: MediaItem) {

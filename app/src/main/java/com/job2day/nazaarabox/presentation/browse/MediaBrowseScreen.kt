@@ -89,29 +89,6 @@ fun MediaBrowseScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-                if (AdManager.isAdPlacementEnabled("browse_banner")) {
-                    FullWidthAdBanner(
-                        placement = "browse_banner",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                }
-
-                if (AdManager.isAdPlacementEnabled("browse_inline")) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                    ) {
-                        items(4) {
-                            InlineCardAd(
-                                placement = "browse_inline",
-                                modifier = Modifier
-                                    .width(140.dp)
-                                    .height(200.dp),
-                            )
-                        }
-                    }
-                }
-
                 androidx.compose.foundation.layout.Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -143,15 +120,6 @@ fun MediaBrowseScreen(
                         shape = RoundedCornerShape(20.dp),
                     )
                 }
-            }
-
-            if (AdManager.isAdPlacementEnabled("browse_banner")) {
-                FullWidthAdBanner(
-                    placement = "browse_banner",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                )
             }
 
             val items = state.itemsByTab[state.selectedTab].orEmpty()
