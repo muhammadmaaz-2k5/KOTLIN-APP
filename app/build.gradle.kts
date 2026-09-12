@@ -13,8 +13,8 @@ android {
         applicationId = "com.job2day"
         minSdk = 24
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.0.2"
+        versionCode = 10
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
         buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://dashboard.thereviewepisode.com\"")
