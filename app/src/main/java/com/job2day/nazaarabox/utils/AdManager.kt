@@ -30,13 +30,13 @@ object AdManager {
     // =========================================================================
     // Set USE_PRODUCTION_ADMOB_IDS = true when you are ready to use your real AdMob IDs.
     // When false, official Google test ad unit IDs are used safely.
-    const val USE_PRODUCTION_ADMOB_IDS = false
+    const val USE_PRODUCTION_ADMOB_IDS = true
 
     // Backward-compatibility alias
     const val FORCE_TEST_ADS = !USE_PRODUCTION_ADMOB_IDS
 
     // --- Production AdMob Ad Unit IDs (Change your real AdMob IDs here directly) ---
-    const val PROD_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val PROD_BANNER_ID = ""
     const val PROD_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
     const val PROD_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
     const val PROD_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
@@ -265,7 +265,7 @@ object AdManager {
     // --- AdMob Interstitial ---
 
     fun loadInterstitial(context: Context) {
-        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (!isAdsEnabled || !isAdMobEnabled || admobInterstitialId.isBlank()) return
         if (interstitialAd != null || isInterstitialLoading) return
 
         isInterstitialLoading = true
@@ -444,7 +444,7 @@ object AdManager {
     // --- AdMob Rewarded ---
 
     fun loadRewarded(context: Context) {
-        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (!isAdsEnabled || !isAdMobEnabled || admobRewardedId.isBlank()) return
         if (rewardedAd != null || isRewardedLoading) return
 
         isRewardedLoading = true
@@ -612,7 +612,7 @@ object AdManager {
     }
 
     fun loadAppOpenAd(context: Context) {
-        if (!isAdsEnabled || !isAdMobEnabled || !isAdPlacementEnabled("app_open")) return
+        if (!isAdsEnabled || !isAdMobEnabled || !isAdPlacementEnabled("app_open") || admobAppOpenId.isBlank()) return
         if (isAppOpenAdAvailable() || isAppOpenAdLoading) return
 
         isAppOpenAdLoading = true
@@ -729,7 +729,7 @@ object AdManager {
     // --- AdMob Rewarded Interstitial ---
 
     fun loadRewardedInterstitial(context: Context) {
-        if (!isAdsEnabled || !isAdMobEnabled) return
+        if (!isAdsEnabled || !isAdMobEnabled || admobRewardedInterstitialId.isBlank()) return
         if (rewardedInterstitialAd != null || isRewardedInterstitialLoading) return
 
         isRewardedInterstitialLoading = true

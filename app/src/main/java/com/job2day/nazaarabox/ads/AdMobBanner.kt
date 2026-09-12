@@ -55,7 +55,7 @@ fun StickyCollapsibleBannerAd(
     onAdLoaded: (() -> Unit)? = null,
     onAdFailed: ((LoadAdError) -> Unit)? = null,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled) return
+    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled || adUnitId.isBlank()) return
 
     val context = LocalContext.current
     var isLoaded by remember { mutableStateOf(false) }
@@ -80,7 +80,7 @@ fun StickyCollapsibleBannerAd(
                         android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.BOTTOM,
                     )
                     setAdSize(adaptiveSize)
-                    setAdUnitId(adUnitId.ifBlank { AdManager.TEST_BANNER_ID })
+                    setAdUnitId(adUnitId)
 
                     adListener = object : AdListener() {
                         override fun onAdLoaded() {
@@ -149,7 +149,7 @@ fun AdMobBanner(
     onAdLoaded: (() -> Unit)? = null,
     onAdFailed: ((LoadAdError) -> Unit)? = null,
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled) return
+    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled || adUnitId.isBlank()) return
 
     val context = LocalContext.current
     var isLoaded by remember { mutableStateOf(false) }
@@ -174,7 +174,7 @@ fun AdMobBanner(
                         android.view.Gravity.CENTER,
                     )
                     setAdSize(effectiveAdSize)
-                    setAdUnitId(adUnitId.ifBlank { AdManager.TEST_BANNER_ID })
+                    setAdUnitId(adUnitId)
                     adListener = object : AdListener() {
                         override fun onAdLoaded() {
                             super.onAdLoaded()

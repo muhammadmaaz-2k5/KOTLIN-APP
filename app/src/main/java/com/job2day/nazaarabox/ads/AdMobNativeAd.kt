@@ -39,16 +39,15 @@ fun AdMobNativeMediumAd(
     adUnitId: String = AdManager.admobNativeId,
     placement: String = "medium_native",
 ) {
-    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled || !AdManager.isAdPlacementEnabled(placement)) {
+    if (!AdManager.isAdsEnabled || !AdManager.isAdMobEnabled || !AdManager.isAdPlacementEnabled(placement) || adUnitId.isBlank()) {
         return
     }
 
     val context = LocalContext.current
     var loadedNativeAd by remember { mutableStateOf<NativeAd?>(null) }
-    val effectiveAdUnitId = adUnitId.ifBlank { AdManager.TEST_NATIVE_ID }
 
-    DisposableEffect(effectiveAdUnitId) {
-        val adLoader = AdLoader.Builder(context, effectiveAdUnitId)
+    DisposableEffect(adUnitId) {
+        val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad ->
                 Log.d(TAG, "[$placement] Google Medium Template Ad loaded successfully: ${ad.headline}")
                 loadedNativeAd?.destroy()
