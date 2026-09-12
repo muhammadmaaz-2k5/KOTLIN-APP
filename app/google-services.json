@@ -9,6 +9,25 @@
       "client_info": {
         "mobilesdk_app_id": "1:464167360959:android:a5735f9f1794e07226e90a",
         "android_client_info": {
+          "package_name": "com.job2day"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8r6l28e7fbq4fQIGxZIAN4MDe01EArAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:464167360959:android:a5735f9f1794e07226e90a",
+        "android_client_info": {
           "package_name": "com.engora.app"
         }
       },

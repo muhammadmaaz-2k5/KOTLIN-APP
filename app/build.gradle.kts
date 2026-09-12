@@ -10,11 +10,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.engora.app"
+        applicationId = "com.job2day"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26
-        versionName = "1.0.4"
+        versionCode = 9
+        versionName = "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
         buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://dashboard.thereviewepisode.com\"")
@@ -23,10 +23,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("upload-keystore.jks")
-            storePassword = "engora123"
-            keyAlias = "engora"
-            keyPassword = "engora123"
+            storeFile = file("job2day-release.jks")
+            storePassword = "job2day123"
+            keyAlias = "job2day"
+            keyPassword = "job2day123"
         }
     }
 
