@@ -50,7 +50,26 @@ object MediaParser {
         val isCustom = obj.get("is_custom")?.asBoolean == true || customId != null || id >= 1000000000
         val overview = obj.stringOr("overview", obj.stringOr("description", ""))
 
-        val isMidnight = obj.get("is_midnight")?.asBoolean == true
+        val midnightFlagRaw = obj.get("is_midnight")?.takeIf { !it.isJsonNull }?.asString?.trim()?.lowercase()
+        val adultFlagRaw = obj.get("is_adult")?.takeIf { !it.isJsonNull }?.asString?.trim()?.lowercase()
+            ?: obj.get("adult")?.takeIf { !it.isJsonNull }?.asString?.trim()?.lowercase()
+        val posterPathLower = (posterPath ?: "").lowercase()
+        val backdropPathLower = (backdropPath ?: "").lowercase()
+        val isMidnight = (midnightFlagRaw == "true" || midnightFlagRaw == "1" || obj.get("is_midnight")?.asBoolean == true)
+            || (adultFlagRaw == "true" || adultFlagRaw == "1" || obj.get("is_adult")?.asBoolean == true || obj.get("adult")?.asBoolean == true)
+            || isCustom
+            || customId != null
+            || id >= 1000000000
+            || overview.contains("adult", ignoreCase = true)
+            || overview.contains("erotic", ignoreCase = true)
+            || overview.contains("midnight", ignoreCase = true)
+            || posterPathLower.contains("aoneroom")
+            || backdropPathLower.contains("aoneroom")
+            || obj.stringOr("category").contains("midnight", ignoreCase = true)
+            || obj.stringOr("genre").contains("midnight", ignoreCase = true)
+            || obj.stringOr("section").contains("midnight", ignoreCase = true)
+            || title.contains("midnight", ignoreCase = true)
+            || title.contains("passion", ignoreCase = true)
 
         return MediaItem(
             id = id,
@@ -122,13 +141,33 @@ object MediaParser {
         }
     }
 
+    fun isCleanHomeContent(item: MediaItem): Boolean {
+        if (item.isMidnight || item.isCustom || item.customId != null || item.id >= 1000000000) return false
+        val overview = item.overview.lowercase()
+        if (overview.contains("adult") || overview.contains("erotic") || overview.contains("midnight") || overview.contains("porn")) return false
+        val title = item.title.lowercase()
+        if (title.contains("midnight") || title.contains("passion") || title.contains("adult") || title.contains("erotic")) return false
+        val poster = item.posterUrl.lowercase()
+        if (poster.contains("aoneroom")) return false
+        val backdrop = item.backdropUrl.lowercase()
+        if (backdrop.contains("aoneroom")) return false
+        if (item.genres.any { it.contains("midnight", true) || it.contains("18+", true) || it.contains("erotic", true) || it.contains("adult", true) }) return false
+        return true
+    }
+
     fun parseHomeFeed(obj: JsonObject): HomeFeed {
         val categories = parseCategories(obj.getAsJsonArray("categories")?.asList())
+            .filter { !it.label.contains("midnight", ignoreCase = true) }
         val featured = parseItems(obj.getAsJsonArray("featured")?.asList(), "movie")
+            .filter(::isCleanHomeContent)
         val trending = parseItems(obj.getAsJsonArray("trending")?.asList(), "movie")
+            .filter(::isCleanHomeContent)
         val popular = parseItems(obj.getAsJsonArray("popular")?.asList(), "movie")
-        val customExclusives = parseItems(obj.getAsJsonArray("custom_exclusives")?.asList(), "movie")
+            .filter(::isCleanHomeContent)
+        val customExclusives = emptyList<MediaItem>()
         val sections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
+            .filter { !it.title.contains("midnight", ignoreCase = true) }
+            .map { sec -> sec.copy(items = sec.items.filter(::isCleanHomeContent)) }
 
         return HomeFeed(
             categories = categories,

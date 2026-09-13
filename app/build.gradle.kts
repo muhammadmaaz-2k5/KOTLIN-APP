@@ -13,8 +13,8 @@ android {
         applicationId = "com.job2day"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "3.0.0"
+        versionCode = 15
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
         buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://dashboard.thereviewepisode.com\"")
@@ -45,6 +45,15 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+            excludes += "**/libdatastore_shared_counter.so"
+        }
+        resources {
+            excludes += "**/libdatastore_shared_counter.so"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -52,13 +61,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-    packaging {
-        jniLibs {
-            excludes += listOf(
-                "**/libdatastore_shared_counter.so"
-            )
-        }
     }
 }
 

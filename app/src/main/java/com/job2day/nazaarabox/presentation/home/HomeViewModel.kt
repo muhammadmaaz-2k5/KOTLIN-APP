@@ -116,11 +116,10 @@ class HomeViewModel(
     private fun applyFeed(feed: HomeFeed) {
         _uiState.update { current ->
             val categories = if (feed.categories.isNotEmpty()) feed.categories else current.categories
-            val trending = if (feed.trending.isNotEmpty()) feed.trending else current.trending
-            val featured = if (feed.featured.isNotEmpty()) feed.featured else trending.take(5)
-            val popular = if (feed.popular.isNotEmpty()) feed.popular else current.popular
+            val trending = (if (feed.trending.isNotEmpty()) feed.trending else current.trending).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
+            val featured = (if (feed.featured.isNotEmpty()) feed.featured.filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent) else trending).take(5)
+            val popular = (if (feed.popular.isNotEmpty()) feed.popular else current.popular).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
             val sections = if (feed.sections.isNotEmpty()) feed.sections else current.sections
-            val custom = if (feed.customExclusives.isNotEmpty()) feed.customExclusives else current.customExclusives
 
             current.copy(
                 categories = categories,
@@ -128,7 +127,7 @@ class HomeViewModel(
                 trending = trending,
                 popular = popular,
                 sections = sections,
-                customExclusives = custom,
+                customExclusives = emptyList(),
                 isLoading = false,
             )
         }
@@ -138,15 +137,15 @@ class HomeViewModel(
         val cats = repository.getCategories()
         _uiState.update { it.copy(categories = cats, isLoading = false) }
         if (cats.isNotEmpty()) {
-            val trending = repository.getTrending(cats[0])
-            val popular = repository.getPopular(cats[0])
+            val trending = repository.getTrending(cats[0]).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
+            val popular = repository.getPopular(cats[0]).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
             _uiState.update { it.copy(trending = trending, popular = popular, featured = trending.take(5)) }
         }
     }
 
     private suspend fun fallbackCategoryFetch(category: HomeCategory, index: Int) {
-        val trending = repository.getTrending(category)
-        val popular = repository.getPopular(category)
+        val trending = repository.getTrending(category).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
+        val popular = repository.getPopular(category).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
         _uiState.update { current ->
             current.copy(
                 trending = trending,

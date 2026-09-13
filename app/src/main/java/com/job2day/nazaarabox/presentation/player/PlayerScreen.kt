@@ -146,8 +146,10 @@ fun PlayerScreen(navController: NavController) {
     }
 
     DisposableEffect(Unit) {
+        view.keepScreenOn = true
         AdManager.isPlayerActive = true
         onDispose {
+            view.keepScreenOn = false
             AdManager.isPlayerActive = false
         }
     }

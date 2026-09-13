@@ -35,13 +35,13 @@ object AdManager {
     // Backward-compatibility alias
     const val FORCE_TEST_ADS = !USE_PRODUCTION_ADMOB_IDS
 
-    // --- Production AdMob Ad Unit IDs (Change your real AdMob IDs here directly) ---
-    const val PROD_BANNER_ID = ""
-    const val PROD_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
-    const val PROD_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
-    const val PROD_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
-    const val PROD_APP_OPEN_ID = "ca-app-pub-3940256099942544/9257395921"
-    const val PROD_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
+    // --- Production AdMob Ad Unit IDs (Configured with production IDs) ---
+    const val PROD_BANNER_ID = "ca-app-pub-2809929499941883/8827092219"
+    const val PROD_INTERSTITIAL_ID = "ca-app-pub-2809929499941883/8042860672"
+    const val PROD_REWARDED_ID = "ca-app-pub-2809929499941883/9752150282"
+    const val PROD_REWARDED_INTERSTITIAL_ID = "ca-app-pub-2809929499941883/9752150282"
+    const val PROD_APP_OPEN_ID = "ca-app-pub-2809929499941883/4609660939"
+    const val PROD_NATIVE_ID = "ca-app-pub-2809929499941883/2223642536"
 
     // --- Google Official Sample Test Ad Unit IDs ---
     const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"

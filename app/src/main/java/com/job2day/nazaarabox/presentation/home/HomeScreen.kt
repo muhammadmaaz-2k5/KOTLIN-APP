@@ -91,9 +91,9 @@ fun HomeScreen(
 
     val selected = state.selectedCategoryIndex
     val category = state.categories.getOrNull(selected)
-    val trending = state.trending
-    val popular = state.popular
-    val featured = if (state.featured.isNotEmpty()) state.featured else trending.take(5)
+    val trending = state.trending.filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
+    val popular = state.popular.filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
+    val featured = (if (state.featured.isNotEmpty()) state.featured.filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent) else trending).take(5)
 
     val trendingLabel = when (category?.label) {
         "All", null -> "Trending This Week"
@@ -160,26 +160,8 @@ fun HomeScreen(
                                         onClick = { viewModel.selectCategory(index) },
                                     )
                                 }
-                                if (AdManager.isLiveMode) {
-                                    com.job2day.nazaarabox.widgets.EngoraFilterChip(
-                                        label = "Midnight 18+",
-                                        emoji = "💃",
-                                        selected = false,
-                                        onClick = { navController.navigate(AppRoutes.MIDNIGHT) },
-                                    )
-                                }
                             }
                             Spacer(modifier = Modifier.height(14.dp))
-                        }
-                    }
-
-                    // 2.5 Midnight 18+ Categories & Lounge Showcase (Live Mode only)
-                    if (AdManager.isLiveMode && state.midnightCategories.isNotEmpty()) {
-                        item(key = "midnight_home_showcase") {
-                            MidnightHomeShowcase(
-                                navController = navController,
-                                categories = state.midnightCategories,
-                            )
                         }
                     }
 
@@ -364,13 +346,18 @@ private fun DynamicSectionRow(
     onMore: () -> Unit,
     onItemClick: (MediaItem) -> Unit,
 ) {
-    if (section.items.isEmpty()) return
+    val cleanItems = section.items.filter {
+        !it.isMidnight &&
+        !it.title.contains("midnight", ignoreCase = true) &&
+        it.genres.none { g -> g.contains("midnight", ignoreCase = true) || g.contains("18+", ignoreCase = true) }
+    }
+    if (cleanItems.isEmpty()) return
 
     Column(modifier = Modifier.padding(bottom = 22.dp)) {
         com.job2day.nazaarabox.widgets.EngoraSectionHeader(
             title = section.title,
             emoji = section.emoji.ifBlank { "🎬" },
-            itemCount = section.items.size.takeIf { it > 0 },
+            itemCount = cleanItems.size.takeIf { it > 0 },
             onSeeAll = onMore,
         )
 
@@ -382,9 +369,9 @@ private fun DynamicSectionRow(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 val rowItems = buildList<Any?> {
-                    addAll(section.items)
-                    section.items.forEachIndexed { index, _ ->
-                        if ((index + 1) % 4 == 0 && index < section.items.lastIndex) {
+                    addAll(cleanItems)
+                    cleanItems.forEachIndexed { index, _ ->
+                        if ((index + 1) % 4 == 0 && index < cleanItems.lastIndex) {
                             add(null)
                         }
                     }
