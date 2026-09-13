@@ -24,16 +24,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
         }
 
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-            sendNotification(it.body ?: "New Notification", it.title ?: "Nazaarabox", it.imageUrl?.toString(), remoteMessage.data)
-        } ?: run {
-            val title = remoteMessage.data["title"] ?: "Nazaarabox"
-            val body = remoteMessage.data["body"] ?: remoteMessage.data["message"] ?: "New Notification"
-            val imageUrl = remoteMessage.data["image"] ?: remoteMessage.data["image_url"]
-            Log.d(TAG, "Handling data-only message: title=$title, body=$body")
-            sendNotification(body, title, imageUrl, remoteMessage.data)
-        }
+        val notification = remoteMessage.notification
+        val title = notification?.title
+            ?: remoteMessage.data["title"]
+            ?: getString(R.string.app_name)
+
+        val body = notification?.body
+            ?: remoteMessage.data["body"]
+            ?: remoteMessage.data["message"]
+            ?: "New Notification"
+
+        val imageUrl = notification?.imageUrl?.toString()
+            ?: remoteMessage.data["image_url"]
+            ?: remoteMessage.data["image"]
+
+        Log.d(TAG, "Notification received: title=$title, body=$body, image=$imageUrl")
+        sendNotification(body, title, imageUrl, remoteMessage.data)
     }
 
     override fun onNewToken(token: String) {
@@ -80,23 +86,34 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
 
-            if (imageUrl != null && imageUrl.isNotEmpty()) {
+            if (!imageUrl.isNullOrBlank()) {
                 try {
-                    Log.d(TAG, "Loading image from URL: $imageUrl")
+                    Log.d(TAG, "Loading notification image from URL: $imageUrl")
                     val url = java.net.URL(imageUrl)
-                    val connection = url.openConnection() as java.net.HttpURLConnection
-                    connection.doInput = true
+                    val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
+                        doInput = true
+                        connectTimeout = 10000
+                        readTimeout = 15000
+                        instanceFollowRedirects = true
+                        setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile)")
+                    }
                     connection.connect()
                     val input = connection.inputStream
                     val bitmap = BitmapFactory.decodeStream(input)
-                    notificationBuilder.setStyle(
-                        NotificationCompat.BigPictureStyle()
-                            .bigPicture(bitmap)
-                            .bigLargeIcon(null as android.graphics.Bitmap?)
-                    )
+                    if (bitmap != null) {
+                        // Set LargeIcon so image is visible even in COLLAPSED view
+                        notificationBuilder.setLargeIcon(bitmap)
+                        // Set BigPictureStyle for full-width EXPANDED banner
+                        notificationBuilder.setStyle(
+                            NotificationCompat.BigPictureStyle()
+                                .bigPicture(bitmap)
+                                .setSummaryText(messageBody)
+                        )
+                    } else {
+                        Log.w(TAG, "BitmapFactory returned null for image: $imageUrl")
+                    }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to load image: ${e.message}")
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to load notification image: ${e.message}")
                 }
             }
 
