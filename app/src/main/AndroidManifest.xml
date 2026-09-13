@@ -50,11 +50,11 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/app_icon" />
+            android:resource="@drawable/ic_notification" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/purple_500" />
+            android:resource="@color/brand_red" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
