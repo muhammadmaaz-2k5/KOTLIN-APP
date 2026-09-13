@@ -13,8 +13,8 @@ android {
         applicationId = "com.job2day"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11
-        versionName = "2.0.1"
+        versionCode = 13
+        versionName = "3.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
         buildConfigField("String", "BACKEND_DEBUG_URL", "\"https://dashboard.thereviewepisode.com\"")
@@ -36,7 +36,12 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -47,6 +52,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "**/libdatastore_shared_counter.so"
+            )
+        }
     }
 }
 
@@ -62,7 +74,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
