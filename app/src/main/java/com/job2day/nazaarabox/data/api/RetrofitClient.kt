@@ -14,6 +14,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 object RetrofitClient {
     private const val TAG = "RetrofitCache"
@@ -108,5 +111,30 @@ object RetrofitClient {
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"
+
+    fun registerFcmToken(token: String) {
+        if (token.isBlank()) return
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val url = java.net.URL("${AppConfig.backendBaseUrl}/api/fcm/register-token")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                conn.setRequestProperty("Accept", "application/json")
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.doOutput = true
+                val payload = org.json.JSONObject().put("token", token).toString()
+                conn.outputStream.use { os ->
+                    os.write(payload.toByteArray(Charsets.UTF_8))
+                }
+                val code = conn.responseCode
+                Log.i("FCM_REGISTER", "Registered FCM token with backend response: HTTP $code")
+                conn.disconnect()
+            } catch (e: Exception) {
+                Log.e("FCM_REGISTER", "Failed to register FCM token with backend: ${e.message}")
+            }
+        }
+    }
 }
 

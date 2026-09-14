@@ -47,9 +47,45 @@ class NazaaraboxApplication : Application(), SingletonImageLoader.Factory, Appli
             android.util.Log.e("AdMob", "Failed to initialize Google Mobile Ads", e)
         }
 
+        createNotificationChannel()
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("all")
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        android.util.Log.d("FCM", "Successfully subscribed to topic 'all'")
+                    }
+                }
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        android.util.Log.i("ENGORA_FCM", "=================================================")
+                        android.util.Log.i("ENGORA_FCM", ">>> YOUR FCM DEVICE TOKEN: $token <<<")
+                        android.util.Log.i("ENGORA_FCM", "=================================================")
+                        RetrofitClient.registerFcmToken(token)
+                    }
+                }
+        } catch (e: Exception) {
+            android.util.Log.e("FCM", "FCM init error in Application: ${e.message}")
+        }
+
         OneSignal.initWithContext(this, "9afbbec9-7155-4766-a78b-4e22e6f926d4")
         applicationScope.launch {
             OneSignal.Notifications.requestPermission(true)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channelId = getString(R.string.default_notification_channel_id)
+            val channelName = getString(R.string.default_notification_channel_name)
+            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+            val channel = android.app.NotificationChannel(channelId, channelName, android.app.NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Default channel for app notifications"
+                enableLights(true)
+                enableVibration(true)
+            }
+            notificationManager?.createNotificationChannel(channel)
         }
     }
 

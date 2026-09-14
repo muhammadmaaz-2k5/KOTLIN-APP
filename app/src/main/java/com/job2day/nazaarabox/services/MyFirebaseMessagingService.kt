@@ -48,6 +48,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun sendRegistrationToServer(token: String) {
+        com.job2day.nazaarabox.data.api.RetrofitClient.registerFcmToken(token)
     }
 
     private fun sendNotification(messageBody: String, messageTitle: String, imageUrl: String? = null, data: Map<String, String> = emptyMap()) {

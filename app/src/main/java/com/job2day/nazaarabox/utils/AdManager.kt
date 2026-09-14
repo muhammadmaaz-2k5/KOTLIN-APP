@@ -30,7 +30,7 @@ object AdManager {
     // =========================================================================
     // Set USE_PRODUCTION_ADMOB_IDS = true when you are ready to use your real AdMob IDs.
     // When false, official Google test ad unit IDs are used safely.
-    const val USE_PRODUCTION_ADMOB_IDS = true
+    const val USE_PRODUCTION_ADMOB_IDS = false
 
     // Backward-compatibility alias
     const val FORCE_TEST_ADS = !USE_PRODUCTION_ADMOB_IDS
