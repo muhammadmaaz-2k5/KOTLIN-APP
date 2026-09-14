@@ -13,7 +13,7 @@ android {
         applicationId = "com.job2day"
         minSdk = 24
         targetSdk = 36
-        versionCode = 19
+        versionCode = 20
         versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BACKEND_BASE_URL", "\"https://dashboard.thereviewepisode.com\"")
