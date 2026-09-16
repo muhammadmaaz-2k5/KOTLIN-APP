@@ -1362,6 +1362,12 @@ private fun PlayerWebView(
                     override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
                         request?.grant(request.resources)
                     }
+                    override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                        super.onProgressChanged(view, newProgress)
+                        if (newProgress in 40..95) {
+                            view?.evaluateJavascript(PlayerWebHelper.getPlayerWatchdogScript(), null)
+                        }
+                    }
                     override fun onCreateWindow(
                         view: WebView?,
                         isDialog: Boolean,
@@ -1412,7 +1418,9 @@ private fun PlayerWebView(
                         handler: android.webkit.SslErrorHandler?,
                         error: android.net.http.SslError?
                     ) {
-                        handler?.proceed()
+                        android.util.Log.e("PlayerScreen", "SSL Error received: ${error?.toString()}. Cancelling connection for security.")
+                        // Comply with Google Play Device and Network Abuse policy by rejecting untrusted/invalid SSL certificates
+                        handler?.cancel()
                     }
 
                     override fun onRenderProcessGone(
@@ -1424,19 +1432,7 @@ private fun PlayerWebView(
 
                     override fun onPageFinished(view: WebView?, finishedUrl: String?) {
                         onPageLoaded()
-                        view?.evaluateJavascript(
-                            """
-                            (function() {
-                                try {
-                                    window.open = function() { return null; };
-                                    window.alert = function() {};
-                                    window.confirm = function() { return false; };
-                                    window.prompt = function() { return null; };
-                                } catch (e) {}
-                            })();
-                            """.trimIndent(),
-                            null
-                        )
+                        view?.evaluateJavascript(PlayerWebHelper.getPlayerWatchdogScript(), null)
                     }
                 }
                 loadPlayerContent(this, url)

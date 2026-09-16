@@ -244,7 +244,9 @@ private fun LanguageCard(item: MediaItem, accent: Color, onClick: () -> Unit) {
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
             ) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize()
                 )
                 

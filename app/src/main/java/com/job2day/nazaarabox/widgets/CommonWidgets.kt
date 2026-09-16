@@ -52,26 +52,82 @@ import com.job2day.nazaarabox.ui.theme.AppColors
 @Composable
 fun CustomImage(
     imageUrl: String?,
+    fallbackUrl: String? = null,
+    fallbackTitle: String? = null,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = null,
 ) {
-    if (imageUrl.isNullOrBlank()) {
+    val primaryFailed = androidx.compose.runtime.remember(imageUrl) { androidx.compose.runtime.mutableStateOf(false) }
+    val fallbackFailed = androidx.compose.runtime.remember(imageUrl, fallbackUrl) { androidx.compose.runtime.mutableStateOf(false) }
+
+    val effectiveUrl = when {
+        !primaryFailed.value && !imageUrl.isNullOrBlank() -> imageUrl
+        !fallbackFailed.value && !fallbackUrl.isNullOrBlank() && fallbackUrl != imageUrl -> fallbackUrl
+        else -> null
+    }
+
+    if (effectiveUrl.isNullOrBlank()) {
         Box(
-            modifier = modifier.background(AppColors.SurfaceVariantDark),
+            modifier = modifier
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF26293D),
+                            Color(0xFF161826),
+                            Color(0xFF0F1019),
+                        )
+                    )
+                )
+                .padding(8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("🎬", fontSize = 24.sp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Primary.copy(alpha = 0.22f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("🎬", fontSize = 18.sp)
+                }
+                if (!fallbackTitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = fallbackTitle,
+                        color = Color.White.copy(alpha = 0.95f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 15.sp,
+                    )
+                }
+            }
         }
     } else {
         AsyncImage(
-            model = imageUrl,
-            contentDescription = contentDescription,
+            model = effectiveUrl,
+            contentDescription = contentDescription ?: fallbackTitle,
             modifier = modifier,
             contentScale = contentScale,
+            onError = {
+                if (effectiveUrl == imageUrl) {
+                    primaryFailed.value = true
+                } else {
+                    fallbackFailed.value = true
+                }
+            },
         )
     }
 }
+
 
 @Composable
 fun StatusBadge(rating: Double, modifier: Modifier = Modifier) {
@@ -245,7 +301,9 @@ fun MovieGridCard(
                     .aspectRatio(2f / 3f),
             ) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (showTypeBadge) {
@@ -307,7 +365,9 @@ fun BrowseGridCard(
                     .aspectRatio(2f / 3f),
             ) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
                 Box(
@@ -378,7 +438,9 @@ fun TrendingCard(
         ) {
             Box {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
 
@@ -505,7 +567,9 @@ fun PopularMovieCard(
         ) {
             Box {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
 
@@ -657,6 +721,8 @@ fun FeaturedBanner(
             ) {
                 CustomImage(
                     imageUrl = item.backdropUrl.ifBlank { item.posterUrl },
+                    fallbackUrl = item.posterUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -885,7 +951,9 @@ fun AnimeGridCard(
                     .aspectRatio(2f / 3f),
             ) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
                 Box(
@@ -966,7 +1034,9 @@ fun SimilarTitleCard(
         ) {
             Box {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (item.rating > 0) {

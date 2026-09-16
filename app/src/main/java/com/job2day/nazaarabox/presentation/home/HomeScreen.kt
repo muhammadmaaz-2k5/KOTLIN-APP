@@ -279,6 +279,87 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
+                    // Must Watch Movies Section (Backend Custom Created)
+                    if (state.mustWatchMovies.isNotEmpty()) {
+                        item(key = "must_watch_movies_header") {
+                            com.job2day.nazaarabox.widgets.EngoraSectionHeader(
+                                title = "Must Watch Movies",
+                                emoji = "🎬",
+                                itemCount = state.mustWatchMovies.size,
+                                onSeeAll = { navController.navigateToSeeAll("Must Watch Movies", state.mustWatchMovies) },
+                            )
+                        }
+                        item(key = "must_watch_movies_content") {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                items(state.mustWatchMovies.size) { index ->
+                                    val entry = state.mustWatchMovies[index]
+                                    PopularMovieCard(
+                                        item = entry,
+                                        onClick = { navController.navigateToDetail(entry) },
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+                    }
+
+                    // Must Watch TV Shows Section (Backend Custom Created)
+                    if (state.mustWatchTv.isNotEmpty()) {
+                        item(key = "must_watch_tv_header") {
+                            com.job2day.nazaarabox.widgets.EngoraSectionHeader(
+                                title = "Must Watch TV Shows",
+                                emoji = "📺",
+                                itemCount = state.mustWatchTv.size,
+                                onSeeAll = { navController.navigateToSeeAll("Must Watch TV Shows", state.mustWatchTv) },
+                            )
+                        }
+                        item(key = "must_watch_tv_content") {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                items(state.mustWatchTv.size) { index ->
+                                    val entry = state.mustWatchTv[index]
+                                    PopularMovieCard(
+                                        item = entry,
+                                        onClick = { navController.navigateToDetail(entry) },
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+                    }
+
+                    // Must Watch Anime Section (Backend Custom Created)
+                    if (state.mustWatchAnime.isNotEmpty()) {
+                        item(key = "must_watch_anime_header") {
+                            com.job2day.nazaarabox.widgets.EngoraSectionHeader(
+                                title = "Must Watch Anime",
+                                emoji = "⛩️",
+                                itemCount = state.mustWatchAnime.size,
+                                onSeeAll = { navController.navigateToSeeAll("Must Watch Anime", state.mustWatchAnime) },
+                            )
+                        }
+                        item(key = "must_watch_anime_content") {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                items(state.mustWatchAnime.size) { index ->
+                                    val entry = state.mustWatchAnime[index]
+                                    PopularMovieCard(
+                                        item = entry,
+                                        onClick = { navController.navigateToDetail(entry) },
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+                    }
+
                     // 9. Dynamic Admin-Configured Sections (from backend home_sections table)
                     if (state.sections.isNotEmpty()) {
                         item(key = "sections_spacer") {
@@ -406,7 +487,9 @@ private fun SectionMovieCard(item: MediaItem, onClick: () -> Unit) {
         ) {
             Box {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (item.rating > 0) {

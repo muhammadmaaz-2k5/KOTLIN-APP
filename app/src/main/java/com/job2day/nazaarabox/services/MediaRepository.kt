@@ -42,11 +42,30 @@ class MediaRepository {
             }
         }
 
-        val result = runCatching {
+        var result = runCatching {
             val response = api.getHomeFeed(categoryId)
             MediaParser.parseHomeFeed(response)
         }.getOrElse {
             homeFeedCache[categoryId]?.data ?: HomeFeed()
+        }
+
+        // Fallback: If any mustWatch sections are empty, query custom content API directly to backfill
+        if (result.mustWatchMovies.isEmpty() || result.mustWatchTv.isEmpty() || result.mustWatchAnime.isEmpty()) {
+            val fallbackCustom = runCatching {
+                val customArr = api.getCustomContent(mapOf("is_midnight" to "false", "limit" to "100")).asList()
+                MediaParser.parseCustomContent(customArr).filter(MediaParser::isCleanHomeContent)
+            }.getOrDefault(emptyList())
+
+            if (fallbackCustom.isNotEmpty()) {
+                val anime = if (result.mustWatchAnime.isNotEmpty()) result.mustWatchAnime else fallbackCustom.filter { it.genres.contains("16") || it.type.equals("anime", ignoreCase = true) }
+                val tv = if (result.mustWatchTv.isNotEmpty()) result.mustWatchTv else fallbackCustom.filter { it.type.equals("tv", ignoreCase = true) && !it.genres.contains("16") }
+                val movies = if (result.mustWatchMovies.isNotEmpty()) result.mustWatchMovies else fallbackCustom.filter { !it.genres.contains("16") && !it.type.equals("tv", ignoreCase = true) && !it.type.equals("anime", ignoreCase = true) }
+                result = result.copy(
+                    mustWatchMovies = movies,
+                    mustWatchTv = tv,
+                    mustWatchAnime = anime,
+                )
+            }
         }
 
         if (result.categories.isNotEmpty() || result.trending.isNotEmpty()) {
@@ -228,16 +247,31 @@ class MediaRepository {
         params["query"] = query
         params["include_adult"] = "false"
         params["page"] = page.toString()
+
+        val customItems = if (page == 1) {
+            runCatching {
+                val customArr = api.getJsonArray("api/search/custom", mapOf("query" to query))
+                MediaParser.parseCustomContent(customArr.asList()).filter {
+                    when (type) {
+                        "movie" -> it.type == "movie"
+                        "tv" -> it.type == "tv"
+                        else -> true
+                    }
+                }
+            }.getOrDefault(emptyList())
+        } else emptyList()
+
         val response = tmdb(endpoint, params)
-        MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), type)
+        val tmdbItems = MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), type)
+        customItems + tmdbItems
     }.getOrDefault(emptyList())
 
     suspend fun loadDetail(item: MediaItem): MediaItem = runCatching {
-        if (item.isCustom || item.id >= 1000000000) {
+        if (item.isCustom || item.customId != null || item.id >= 1000000000) {
             val customId = item.customId ?: if (item.id >= 1000000000) item.id - 1000000000 else item.id
             val response = api.getJson("api/custom-movie/$customId")
             
-            val tmdbId = response.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: 0
+            val tmdbId = response.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: item.tmdbId
             val title = response.get("title")?.takeIf { !it.isJsonNull }?.asString ?: item.title
             val mediaType = response.get("type")?.takeIf { !it.isJsonNull }?.asString ?: item.type
             val posterPath = response.get("poster_path")?.takeIf { !it.isJsonNull }?.asString
@@ -249,18 +283,21 @@ class MediaRepository {
                 ?: response.get("release_date")?.takeIf { !it.isJsonNull }?.asString?.take(4) ?: item.year
             val overview = response.get("overview")?.takeIf { !it.isJsonNull }?.asString
                 ?: response.get("description")?.takeIf { !it.isJsonNull }?.asString ?: item.overview
-            
+            val isMidnight = response.get("is_midnight")?.takeIf { !it.isJsonNull }?.asBoolean ?: item.isMidnight
+
             var enriched = item.copy(
-                id = if (tmdbId > 0) tmdbId else item.id,
+                id = item.id,
                 title = title,
                 type = mediaType,
-                posterUrl = MediaParser.imageUrl(posterPath),
-                backdropUrl = MediaParser.imageUrl(backdropPath, "w780"),
-                rating = rating,
-                year = year,
-                overview = overview,
+                posterUrl = if (posterPath.isNotBlank()) MediaParser.imageUrl(posterPath) else item.posterUrl,
+                backdropUrl = if (backdropPath.isNotBlank()) MediaParser.imageUrl(backdropPath, "w780") else item.backdropUrl,
+                rating = if (rating > 0.0) rating else item.rating,
+                year = if (year.isNotBlank()) year else item.year,
+                overview = if (overview.isNotBlank()) overview else item.overview,
                 isCustom = true,
-                customId = customId
+                customId = customId,
+                tmdbId = tmdbId,
+                isMidnight = isMidnight,
             )
             
             if (tmdbId > 0) {
@@ -275,7 +312,11 @@ class MediaRepository {
                         rating = if (rating > 0) rating else parsed.rating,
                         year = if (year.isNotEmpty()) year else parsed.year,
                         overview = if (overview.isNotEmpty()) overview else parsed.overview,
-                        id = if (item.id >= 1000000000) item.id else parsed.id
+                        id = item.id,
+                        isCustom = true,
+                        customId = customId,
+                        tmdbId = tmdbId,
+                        isMidnight = isMidnight,
                     )
                 }
             }
@@ -288,27 +329,85 @@ class MediaRepository {
     }.getOrDefault(item)
 
     suspend fun getCast(item: MediaItem): List<CastMember> = runCatching {
-        val endpoint = if (item.type == "tv") "tv" else "movie"
-        val response = tmdb("$endpoint/${item.id}/credits", emptyMap())
-        MediaParser.parseCast(response.getAsJsonArray("cast")?.asList())
+        if (item.isCustom) {
+            if (item.tmdbId > 0) {
+                val endpoint = if (item.type == "tv") "tv" else "movie"
+                val response = tmdb("$endpoint/${item.tmdbId}/credits", emptyMap())
+                MediaParser.parseCast(response.getAsJsonArray("cast")?.asList())
+            } else {
+                emptyList()
+            }
+        } else {
+            val endpoint = if (item.type == "tv") "tv" else "movie"
+            val response = tmdb("$endpoint/${item.id}/credits", emptyMap())
+            MediaParser.parseCast(response.getAsJsonArray("cast")?.asList())
+        }
     }.getOrDefault(emptyList())
 
     suspend fun getSimilar(item: MediaItem): List<MediaItem> = runCatching {
-        val endpoint = if (item.type == "tv") "tv" else "movie"
-        val response = tmdb("$endpoint/${item.id}/similar", emptyMap())
-        MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), item.type)
+        if (item.isCustom) {
+            if (item.tmdbId > 0) {
+                val endpoint = if (item.type == "tv") "tv" else "movie"
+                val response = tmdb("$endpoint/${item.tmdbId}/similar", emptyMap())
+                MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), item.type)
+            } else {
+                val customArr = api.getCustomContent(mapOf("is_midnight" to item.isMidnight.toString(), "limit" to "20")).asList()
+                MediaParser.parseCustomContent(customArr).filter { it.customId != item.customId && it.id != item.id }
+            }
+        } else {
+            val endpoint = if (item.type == "tv") "tv" else "movie"
+            val response = tmdb("$endpoint/${item.id}/similar", emptyMap())
+            MediaParser.parseItems(response.getAsJsonArray("results")?.asList(), item.type)
+        }
     }.getOrDefault(emptyList())
 
     suspend fun getReviews(item: MediaItem): List<ReviewItem> = runCatching {
-        val endpoint = if (item.type == "tv") "tv" else "movie"
-        val response = tmdb("$endpoint/${item.id}/reviews", emptyMap())
-        MediaParser.parseReviews(response.getAsJsonArray("results")?.asList())
+        if (item.isCustom) {
+            if (item.tmdbId > 0) {
+                val endpoint = if (item.type == "tv") "tv" else "movie"
+                val response = tmdb("$endpoint/${item.tmdbId}/reviews", emptyMap())
+                MediaParser.parseReviews(response.getAsJsonArray("results")?.asList())
+            } else {
+                emptyList()
+            }
+        } else {
+            val endpoint = if (item.type == "tv") "tv" else "movie"
+            val response = tmdb("$endpoint/${item.id}/reviews", emptyMap())
+            MediaParser.parseReviews(response.getAsJsonArray("results")?.asList())
+        }
     }.getOrDefault(emptyList())
 
     suspend fun getSeasons(item: MediaItem): List<SeasonItem> = runCatching {
         if (item.type != "tv") return emptyList()
-        val response = tmdb("tv/${item.id}", emptyMap())
-        MediaParser.parseSeasons(response.getAsJsonArray("seasons")?.asList())
+        if (item.isCustom) {
+            if (item.tmdbId > 0) {
+                val response = tmdb("tv/${item.tmdbId}", emptyMap())
+                MediaParser.parseSeasons(response.getAsJsonArray("seasons")?.asList())
+            } else {
+                val customId = item.customId ?: if (item.id >= 1000000000) item.id - 1000000000 else item.id
+                val response = api.getJson("api/custom-movie/$customId")
+                val streams = response.getAsJsonArray("streams")?.asList().orEmpty()
+                val seasonNumbers = streams.mapNotNull {
+                    it.asJsonObject.get("season_number")?.takeIf { !it.isJsonNull }?.asInt
+                }.distinct().sorted()
+                if (seasonNumbers.isNotEmpty()) {
+                    seasonNumbers.map { sNum ->
+                        SeasonItem(
+                            name = "Season $sNum",
+                            seasonNumber = sNum,
+                            episodeCount = streams.count {
+                                it.asJsonObject.get("season_number")?.takeIf { !it.isJsonNull }?.asInt == sNum
+                            },
+                        )
+                    }
+                } else {
+                    listOf(SeasonItem(name = "Season 1", seasonNumber = 1, episodeCount = streams.size.coerceAtLeast(1)))
+                }
+            }
+        } else {
+            val response = tmdb("tv/${item.id}", emptyMap())
+            MediaParser.parseSeasons(response.getAsJsonArray("seasons")?.asList())
+        }
     }.getOrDefault(emptyList())
 
     suspend fun getEpisodes(showId: Int, seasonNumber: Int): List<EpisodeItem> = runCatching {
@@ -329,14 +428,107 @@ class MediaRepository {
 
     suspend fun getVideoServers(item: MediaItem, season: Int?, episode: Int?): List<VideoServer> =
         runCatching {
-            MediaParser.parseVideoServers(
-                api.getServers(
-                    id = item.id,
-                    type = item.type,
-                    season = season?.toString().orEmpty(),
-                    episode = episode?.toString().orEmpty(),
-                ).asList(),
-            )
+            if (item.isCustom || item.customId != null || item.id >= 1000000000) {
+                val customId = item.customId ?: if (item.id >= 1000000000) item.id - 1000000000 else item.id
+                val response = api.getJson("api/custom-movie/$customId")
+                val rawStreams = response.getAsJsonArray("streams")?.asList().orEmpty()
+
+                val customServers = mutableListOf<VideoServer>()
+                if (item.type.equals("tv", ignoreCase = true) && season != null && episode != null) {
+                    val matching = rawStreams.filter { el ->
+                        val obj = el.asJsonObject
+                        val s = obj.get("season_number")?.takeIf { !it.isJsonNull }?.asInt
+                        val e = obj.get("episode_number")?.takeIf { !it.isJsonNull }?.asInt
+                        s == season && e == episode
+                    }
+                    val targetStreams = if (matching.isNotEmpty()) matching else {
+                        val generic = rawStreams.filter { el ->
+                            el.asJsonObject.get("season_number")?.takeIf { !it.isJsonNull }?.asInt == null
+                        }
+                        if (generic.isNotEmpty()) generic else rawStreams
+                    }
+                    targetStreams.forEach { el ->
+                        val obj = el.asJsonObject
+                        val name = obj.get("server_name")?.takeIf { !it.isJsonNull }?.asString ?: "Server"
+                        val icon = obj.get("server_icon")?.takeIf { !it.isJsonNull }?.asString ?: "🔗"
+                        val url = obj.get("stream_url")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
+                        if (url.isNotBlank()) {
+                            customServers.add(
+                                VideoServer(
+                                    name = name,
+                                    label = name,
+                                    icon = icon.ifBlank { "🔗" },
+                                    movieUrlTemplate = url,
+                                    tvUrlTemplate = url,
+                                )
+                            )
+                        }
+                    }
+                } else {
+                    rawStreams.forEach { el ->
+                        val obj = el.asJsonObject
+                        val name = obj.get("server_name")?.takeIf { !it.isJsonNull }?.asString ?: "Server"
+                        val icon = obj.get("server_icon")?.takeIf { !it.isJsonNull }?.asString ?: "🔗"
+                        val url = obj.get("stream_url")?.takeIf { !it.isJsonNull }?.asString.orEmpty()
+                        if (url.isNotBlank()) {
+                            customServers.add(
+                                VideoServer(
+                                    name = name,
+                                    label = name,
+                                    icon = icon.ifBlank { "🔗" },
+                                    movieUrlTemplate = url,
+                                    tvUrlTemplate = url,
+                                )
+                            )
+                        }
+                    }
+                }
+
+                if (customServers.isNotEmpty()) {
+                    return@runCatching customServers
+                }
+
+                // If no direct custom streams, try /api/config/servers?id=$customId&type=custom
+                val backendServers = runCatching {
+                    MediaParser.parseVideoServers(
+                        api.getServers(
+                            id = customId,
+                            type = "custom",
+                            season = season?.toString().orEmpty(),
+                            episode = episode?.toString().orEmpty(),
+                        ).asList(),
+                    )
+                }.getOrDefault(emptyList())
+
+                if (backendServers.isNotEmpty()) {
+                    return@runCatching backendServers
+                }
+
+                // If still empty but item has tmdbId, fallback to standard servers
+                val tmdbId = response.get("tmdb_id")?.takeIf { !it.isJsonNull }?.asInt ?: item.tmdbId
+                if (tmdbId > 0) {
+                    return@runCatching MediaParser.parseVideoServers(
+                        api.getServers(
+                            id = tmdbId,
+                            type = item.type,
+                            season = season?.toString().orEmpty(),
+                            episode = episode?.toString().orEmpty(),
+                        ).asList(),
+                    )
+                }
+
+                emptyList()
+            } else {
+                // TMDB Content - fetch standard video servers
+                MediaParser.parseVideoServers(
+                    api.getServers(
+                        id = item.id,
+                        type = item.type,
+                        season = season?.toString().orEmpty(),
+                        episode = episode?.toString().orEmpty(),
+                    ).asList(),
+                )
+            }
         }.getOrElse { emptyList() }
 
     suspend fun getDownloadLinks(

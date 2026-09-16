@@ -521,7 +521,9 @@ fun EngoraMediaCard(
                             .aspectRatio(2f / 3f),
                     ) {
                         CustomImage(
-                            imageUrl = item.posterUrl,
+                            imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                            fallbackUrl = item.backdropUrl,
+                            fallbackTitle = item.title,
                             modifier = Modifier.fillMaxSize(),
                         )
                         // Top Left Badge
@@ -594,7 +596,9 @@ fun EngoraMediaCard(
                             .aspectRatio(0.72f),
                     ) {
                         CustomImage(
-                            imageUrl = item.posterUrl,
+                            imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                            fallbackUrl = item.backdropUrl,
+                            fallbackTitle = item.title,
                             modifier = Modifier.fillMaxSize(),
                         )
                         // Gradient bottom scrim over image
@@ -717,7 +721,9 @@ fun EngoraMediaCard(
                 ) {
                     Box {
                         CustomImage(
-                            imageUrl = item.posterUrl,
+                            imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                            fallbackUrl = item.backdropUrl,
+                            fallbackTitle = item.title,
                             modifier = Modifier.fillMaxSize(),
                         )
                         if (rankIndex != null) {
@@ -829,7 +835,9 @@ fun MidnightMediaCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     modifier = Modifier.fillMaxSize(),
                 )
 

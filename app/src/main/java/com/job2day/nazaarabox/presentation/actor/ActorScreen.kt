@@ -423,7 +423,8 @@ private fun FilmographyRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CustomImage(
-            imageUrl = item.posterUrl,
+            imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+            fallbackUrl = item.backdropUrl,
             modifier = Modifier
                 .width(48.dp)
                 .height(68.dp)

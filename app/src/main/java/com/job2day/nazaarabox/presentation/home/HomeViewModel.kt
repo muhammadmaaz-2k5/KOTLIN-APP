@@ -30,6 +30,9 @@ data class HomeUiState(
     val trending: List<MediaItem> = emptyList(),
     val popular: List<MediaItem> = emptyList(),
     val customExclusives: List<MediaItem> = emptyList(),
+    val mustWatchMovies: List<MediaItem> = emptyList(),
+    val mustWatchTv: List<MediaItem> = emptyList(),
+    val mustWatchAnime: List<MediaItem> = emptyList(),
     val sections: List<ThemedSection> = emptyList(),
     val isCategoryLoading: Boolean = false,
     val midnightCategories: List<HomeCategory> = defaultMidnightCategories,
@@ -121,13 +124,21 @@ class HomeViewModel(
             val popular = (if (feed.popular.isNotEmpty()) feed.popular else current.popular).filter(com.job2day.nazaarabox.utils.MediaParser::isCleanHomeContent)
             val sections = if (feed.sections.isNotEmpty()) feed.sections else current.sections
 
+            val mustWatchMovies = if (feed.mustWatchMovies.isNotEmpty()) feed.mustWatchMovies else current.mustWatchMovies
+            val mustWatchTv = if (feed.mustWatchTv.isNotEmpty()) feed.mustWatchTv else current.mustWatchTv
+            val mustWatchAnime = if (feed.mustWatchAnime.isNotEmpty()) feed.mustWatchAnime else current.mustWatchAnime
+            val customExclusives = if (feed.customExclusives.isNotEmpty()) feed.customExclusives else current.customExclusives
+
             current.copy(
                 categories = categories,
                 featured = featured,
                 trending = trending,
                 popular = popular,
+                mustWatchMovies = mustWatchMovies,
+                mustWatchTv = mustWatchTv,
+                mustWatchAnime = mustWatchAnime,
                 sections = sections,
-                customExclusives = emptyList(),
+                customExclusives = customExclusives,
                 isLoading = false,
             )
         }

@@ -607,6 +607,8 @@ private fun ExpansiveSectionCard(
         ) {
             CustomImage(
                 imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                fallbackUrl = item.backdropUrl,
+                fallbackTitle = item.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )

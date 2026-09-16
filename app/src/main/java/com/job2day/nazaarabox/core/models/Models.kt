@@ -23,7 +23,13 @@ data class MediaItem(
     val popularity: Double = 0.0,
     val tmdbId: Int = 0,
     val isMidnight: Boolean = false,
-)
+) {
+    val displayPosterUrl: String
+        get() = posterUrl.ifBlank { backdropUrl }
+
+    val displayBackdropUrl: String
+        get() = backdropUrl.ifBlank { posterUrl }
+}
 
 @Serializable
 data class ThemedSection(
@@ -43,6 +49,9 @@ data class HomeFeed(
     val trending: List<MediaItem> = emptyList(),
     val popular: List<MediaItem> = emptyList(),
     val customExclusives: List<MediaItem> = emptyList(),
+    val mustWatchMovies: List<MediaItem> = emptyList(),
+    val mustWatchTv: List<MediaItem> = emptyList(),
+    val mustWatchAnime: List<MediaItem> = emptyList(),
     val sections: List<ThemedSection> = emptyList(),
 )
 
@@ -123,6 +132,17 @@ data class VideoServer(
     val tvUrlTemplate: String = "",
 ) {
     fun buildUrl(item: MediaItem, season: Int? = null, episode: Int? = null): String {
+        if (item.isCustom || item.customId != null || item.id >= 1000000000) {
+            val template = if (item.type.equals("tv", ignoreCase = true) && tvUrlTemplate.isNotBlank()) tvUrlTemplate else movieUrlTemplate
+            if (!template.contains("{id}")) {
+                return template
+            }
+            val targetId = if (item.tmdbId > 0) item.tmdbId else (item.customId ?: if (item.id >= 1000000000) item.id - 1000000000 else item.id)
+            return template
+                .replace("{id}", targetId.toString())
+                .replace("{season}", (season ?: 1).toString())
+                .replace("{episode}", (episode ?: 1).toString())
+        }
         val id = item.id
         val type = item.type
         if (type == "tv" && season != null && episode != null) {

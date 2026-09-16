@@ -45,9 +45,10 @@ object MediaParser {
             ?: obj.get("backdrop_url")?.takeIf { !it.isJsonNull }?.asString
             ?: obj.get("backdropUrl")?.takeIf { !it.isJsonNull }?.asString
         val id = obj.intOr("id")
+        val isExplicitCustom = obj.get("is_custom")?.asBoolean == true
         val customId = obj.get("custom_id")?.takeIf { !it.isJsonNull }?.asInt
-            ?: if (id >= 1000000000) id - 1000000000 else null
-        val isCustom = obj.get("is_custom")?.asBoolean == true || customId != null || id >= 1000000000
+            ?: if (id >= 1000000000) id - 1000000000 else if (isExplicitCustom) id else null
+        val isCustom = isExplicitCustom || customId != null || id >= 1000000000
         val overview = obj.stringOr("overview", obj.stringOr("description", ""))
 
         val midnightFlagRaw = obj.get("is_midnight")?.takeIf { !it.isJsonNull }?.asString?.trim()?.lowercase()
@@ -55,29 +56,40 @@ object MediaParser {
             ?: obj.get("adult")?.takeIf { !it.isJsonNull }?.asString?.trim()?.lowercase()
         val posterPathLower = (posterPath ?: "").lowercase()
         val backdropPathLower = (backdropPath ?: "").lowercase()
-        val isMidnight = (midnightFlagRaw == "true" || midnightFlagRaw == "1" || obj.get("is_midnight")?.asBoolean == true)
+        val isExplicitMidnight = (midnightFlagRaw == "true" || midnightFlagRaw == "1" || obj.get("is_midnight")?.asBoolean == true)
             || (adultFlagRaw == "true" || adultFlagRaw == "1" || obj.get("is_adult")?.asBoolean == true || obj.get("adult")?.asBoolean == true)
-            || isCustom
-            || customId != null
-            || id >= 1000000000
-            || overview.contains("adult", ignoreCase = true)
-            || overview.contains("erotic", ignoreCase = true)
-            || overview.contains("midnight", ignoreCase = true)
-            || posterPathLower.contains("aoneroom")
-            || backdropPathLower.contains("aoneroom")
-            || obj.stringOr("category").contains("midnight", ignoreCase = true)
-            || obj.stringOr("genre").contains("midnight", ignoreCase = true)
-            || obj.stringOr("section").contains("midnight", ignoreCase = true)
-            || title.contains("midnight", ignoreCase = true)
-            || title.contains("passion", ignoreCase = true)
+
+        val isExplicitNonMidnight = (midnightFlagRaw == "false" || midnightFlagRaw == "0" || obj.get("is_midnight")?.asBoolean == false)
+
+        val isMidnight = if (isExplicitMidnight) {
+            true
+        } else if (isExplicitNonMidnight) {
+            false
+        } else {
+            overview.contains("adult", ignoreCase = true)
+                || overview.contains("erotic", ignoreCase = true)
+                || overview.contains("midnight", ignoreCase = true)
+                || posterPathLower.contains("aoneroom")
+                || backdropPathLower.contains("aoneroom")
+                || obj.stringOr("category").contains("midnight", ignoreCase = true)
+                || obj.stringOr("genre").contains("midnight", ignoreCase = true)
+                || obj.stringOr("section").contains("midnight", ignoreCase = true)
+                || title.contains("midnight", ignoreCase = true)
+                || title.contains("passion", ignoreCase = true)
+        }
+
+        val parsedPoster = imageUrl(posterPath)
+        val parsedBackdrop = imageUrl(backdropPath, "w780")
+        val effectivePoster = parsedPoster.ifBlank { parsedBackdrop }
+        val effectiveBackdrop = parsedBackdrop.ifBlank { parsedPoster }
 
         return MediaItem(
             id = id,
             customId = customId,
             title = title,
             type = type,
-            posterUrl = imageUrl(posterPath),
-            backdropUrl = imageUrl(backdropPath, "w780"),
+            posterUrl = effectivePoster,
+            backdropUrl = effectiveBackdrop,
             rating = obj.doubleOr("vote_average"),
             year = year,
             overview = overview,
@@ -93,17 +105,32 @@ object MediaParser {
         if (raw == null) return emptyList()
         return raw.map { element ->
             val obj = element.asJsonObject
+            val id = obj.intOr("id")
+            val customId = obj.get("custom_id")?.takeIf { !it.isJsonNull }?.asInt
+                ?: if (id >= 1000000000) id - 1000000000 else id
+            val genresList = mutableListOf<String>()
+            obj.getAsJsonArray("genre_ids")?.forEach {
+                if (!it.isJsonNull) genresList.add(it.asString)
+            }
+            val midnightFlag = obj.get("is_midnight")?.takeIf { !it.isJsonNull }?.asBoolean == true
+            val rawPoster = obj.stringOr("posterUrl", obj.stringOr("poster_path", ""))
+            val rawBackdrop = obj.stringOr("backdropUrl", obj.stringOr("backdrop_path", ""))
+            val effectivePoster = rawPoster.ifBlank { rawBackdrop }
+            val effectiveBackdrop = rawBackdrop.ifBlank { rawPoster }
             MediaItem(
-                id = obj.intOr("id"),
-                customId = obj.get("custom_id")?.takeIf { !it.isJsonNull }?.asInt,
+                id = id,
+                customId = customId,
                 title = obj.stringOr("title", "Unknown"),
                 type = obj.stringOr("type", "movie"),
-                posterUrl = obj.stringOr("posterUrl"),
-                backdropUrl = obj.stringOr("backdropUrl"),
-                rating = obj.doubleOr("rating"),
+                posterUrl = effectivePoster,
+                backdropUrl = effectiveBackdrop,
+                rating = obj.doubleOr("rating", obj.doubleOr("vote_average", 0.0)),
                 year = obj.stringOr("year"),
+                genres = genresList,
+                overview = obj.stringOr("overview", obj.stringOr("description", "")),
                 isCustom = true,
                 tmdbId = obj.intOr("tmdb_id"),
+                isMidnight = midnightFlag,
             )
         }
     }
@@ -142,7 +169,7 @@ object MediaParser {
     }
 
     fun isCleanHomeContent(item: MediaItem): Boolean {
-        if (item.isMidnight || item.isCustom || item.customId != null || item.id >= 1000000000) return false
+        if (item.isMidnight) return false
         val overview = item.overview.lowercase()
         if (overview.contains("adult") || overview.contains("erotic") || overview.contains("midnight") || overview.contains("porn")) return false
         val title = item.title.lowercase()
@@ -164,7 +191,14 @@ object MediaParser {
             .filter(::isCleanHomeContent)
         val popular = parseItems(obj.getAsJsonArray("popular")?.asList(), "movie")
             .filter(::isCleanHomeContent)
-        val customExclusives = emptyList<MediaItem>()
+        val customExclusives = parseItems(obj.getAsJsonArray("custom_exclusives")?.asList(), "movie")
+            .filter(::isCleanHomeContent)
+        val mustWatchMovies = parseItems(obj.getAsJsonArray("must_watch_movies")?.asList(), "movie")
+            .filter(::isCleanHomeContent)
+        val mustWatchTv = parseItems(obj.getAsJsonArray("must_watch_tv")?.asList(), "tv")
+            .filter(::isCleanHomeContent)
+        val mustWatchAnime = parseItems(obj.getAsJsonArray("must_watch_anime")?.asList(), "tv")
+            .filter(::isCleanHomeContent)
         val sections = parseThemedSections(obj.getAsJsonArray("sections")?.asList())
             .filter { !it.title.contains("midnight", ignoreCase = true) }
             .map { sec -> sec.copy(items = sec.items.filter(::isCleanHomeContent)) }
@@ -175,6 +209,9 @@ object MediaParser {
             trending = trending,
             popular = popular,
             customExclusives = customExclusives,
+            mustWatchMovies = mustWatchMovies,
+            mustWatchTv = mustWatchTv,
+            mustWatchAnime = mustWatchAnime,
             sections = sections
         )
     }
@@ -281,12 +318,18 @@ object MediaParser {
         if (raw == null) return emptyList()
         return raw.map { element ->
             val obj = element.asJsonObject
+            val streamUrl = obj.stringOr("stream_url")
+            val movieTpl = obj.stringOr("movie_url_template").ifBlank { streamUrl }
+            val tvTpl = obj.stringOr("tv_url_template").ifBlank { streamUrl }
+            val name = obj.stringOr("name", obj.stringOr("server_name", "Server"))
+            val label = obj.stringOr("label", name)
+            val icon = obj.stringOr("icon", obj.stringOr("server_icon", "▶"))
             VideoServer(
-                name = obj.stringOr("name"),
-                label = obj.stringOr("label"),
-                icon = obj.stringOr("icon", "▶"),
-                movieUrlTemplate = obj.stringOr("movie_url_template"),
-                tvUrlTemplate = obj.stringOr("tv_url_template"),
+                name = name,
+                label = label,
+                icon = if (icon.isNotBlank()) icon else "▶",
+                movieUrlTemplate = movieTpl,
+                tvUrlTemplate = tvTpl,
             )
         }
     }

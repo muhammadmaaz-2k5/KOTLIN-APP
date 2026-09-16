@@ -771,7 +771,9 @@ private fun TrendingItemCard(
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(165.dp)) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
                 )
@@ -847,7 +849,9 @@ private fun SearchGridCard(
                     .aspectRatio(0.68f),
             ) {
                 CustomImage(
-                    imageUrl = item.posterUrl,
+                    imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                    fallbackUrl = item.backdropUrl,
+                    fallbackTitle = item.title,
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
                 )
@@ -954,7 +958,9 @@ private fun SearchListCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CustomImage(
-                imageUrl = item.posterUrl,
+                imageUrl = item.posterUrl.ifBlank { item.backdropUrl },
+                fallbackUrl = item.backdropUrl,
+                fallbackTitle = item.title,
                 contentDescription = item.title,
                 modifier = Modifier
                     .then(

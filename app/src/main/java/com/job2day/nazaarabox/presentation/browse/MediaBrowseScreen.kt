@@ -172,10 +172,12 @@ fun MediaBrowseScreen(
                                                     .fillMaxWidth()
                                                     .aspectRatio(2f / 3f),
                                             ) {
-                                                com.job2day.nazaarabox.widgets.CustomImage(
-                                                    imageUrl = rowItem.posterUrl,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                )
+                                                  com.job2day.nazaarabox.widgets.CustomImage(
+                                                      imageUrl = rowItem.posterUrl.ifBlank { rowItem.backdropUrl },
+                                                      fallbackUrl = rowItem.backdropUrl,
+                                                      fallbackTitle = rowItem.title,
+                                                      modifier = Modifier.fillMaxSize(),
+                                                  )
                                             }
                                         }
                                     }

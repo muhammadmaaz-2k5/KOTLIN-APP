@@ -391,11 +391,9 @@ fun DynamicWebView(
                                     handler: SslErrorHandler?,
                                     error: android.net.http.SslError?
                                 ) {
-                                    if (enableDebug) {
-                                        android.util.Log.e("DynamicWebView", "SSL Error: ${error?.toString()}")
-                                    }
-                                    // For video sites, proceed despite SSL errors
-                                    handler?.proceed()
+                                    android.util.Log.e("DynamicWebView", "SSL Error received: ${error?.toString()}. Cancelling connection for security.")
+                                    // Comply with Google Play Device and Network Abuse policy by rejecting untrusted/invalid SSL certificates
+                                    handler?.cancel()
                                 }
                             }
 
